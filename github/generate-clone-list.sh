@@ -4,8 +4,9 @@
 
 set -e
 
-# Output file
+# Output files
 OUTPUT_FILE="git-clone-commands.sh"
+MAPPING_FILE="workspace-repos.json"
 
 # Get GitHub token from git credentials
 GITHUB_TOKEN=$(grep "github.com" ~/.git-credentials | sed 's/https:\/\/.*:\(ghp_[^@]*\)@github.com/\1/')
@@ -38,7 +39,7 @@ fetch_org_repos() {
         if [ "$repo_count" -eq 0 ]; then
             has_more=false
         else
-            echo "$response" | jq -r '.[] | "\(.full_name)|\(.ssh_url)"' >> "$REPOS_FILE"
+            echo "$response" | jq -r '.[] | "\(.full_name)|\(.clone_url)"' >> "$REPOS_FILE"
             echo "  - Fetched page $page ($repo_count repos)"
             page=$((page + 1))
         fi
@@ -65,7 +66,7 @@ fetch_user_repos() {
         else
             # Filter for repos owned by the authenticated user (not org repos)
             local user_repos=$(echo "$response" | jq -r --arg user "$username" \
-                '.[] | select(.owner.login == $user) | "\(.full_name)|\(.ssh_url)"')
+                '.[] | select(.owner.login == $user) | "\(.full_name)|\(.clone_url)"')
 
             if [ -n "$user_repos" ]; then
                 echo "$user_repos" >> "$REPOS_FILE"
@@ -123,7 +124,7 @@ HEADER
 current_org=""
 org_count=0
 
-while IFS='|' read -r full_name ssh_url; do
+while IFS='|' read -r full_name https_url; do
     org=$(echo "$full_name" | cut -d'/' -f1)
 
     if [ "$org" != "$current_org" ]; then
@@ -142,7 +143,7 @@ while IFS='|' read -r full_name ssh_url; do
         org_count=$((org_count + 1))
     fi
 
-    echo "git clone $ssh_url" >> "$OUTPUT_FILE"
+    echo "git clone $https_url" >> "$OUTPUT_FILE"
 done < "$TEMP_DIR/sorted_repos.txt"
 
 # Add summary
@@ -167,9 +168,35 @@ echo "# ============================================" >> "$OUTPUT_FILE"
 # Make output script executable
 chmod +x "$OUTPUT_FILE"
 
+# ============================================
+# Generate JSON mapping file for workspace script
+# ============================================
+echo "Generating $MAPPING_FILE..."
+
+echo "{" > "$MAPPING_FILE"
+
+# Create JSON mapping of repo_name -> git_url
+first=true
+while IFS='|' read -r full_name https_url; do
+    repo_name=$(echo "$full_name" | cut -d'/' -f2)
+
+    if [ "$first" = true ]; then
+        first=false
+    else
+        echo "," >> "$MAPPING_FILE"
+    fi
+
+    # Use jq to properly escape strings and format JSON
+    printf "  \"%s\": \"%s\"" "$repo_name" "$https_url" >> "$MAPPING_FILE"
+done < "$TEMP_DIR/sorted_repos.txt"
+
+echo "" >> "$MAPPING_FILE"
+echo "}" >> "$MAPPING_FILE"
+
 # Clean up
 rm -rf "$TEMP_DIR"
 
 echo "✓ Generated $OUTPUT_FILE"
+echo "✓ Generated $MAPPING_FILE"
 echo "✓ Total repositories: $total_repos"
 echo "✓ Organizations: $org_count"
