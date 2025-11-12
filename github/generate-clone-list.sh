@@ -25,17 +25,60 @@ REPOS_FILE="$TEMP_DIR/repos.txt"
 fetch_org_repos() {
     local org=$1
     echo "Fetching repos from organization: $org"
-    curl -s -H "Authorization: token $GITHUB_TOKEN" \
-        "https://api.github.com/orgs/$org/repos?per_page=100" \
-        | jq -r '.[] | "\(.full_name)|\(.ssh_url)"' >> "$REPOS_FILE"
+    local page=1
+    local has_more=true
+
+    while [ "$has_more" = true ]; do
+        local response=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/orgs/$org/repos?per_page=100&page=$page")
+
+        # Check if response has any repos
+        local repo_count=$(echo "$response" | jq '. | length')
+
+        if [ "$repo_count" -eq 0 ]; then
+            has_more=false
+        else
+            echo "$response" | jq -r '.[] | "\(.full_name)|\(.ssh_url)"' >> "$REPOS_FILE"
+            echo "  - Fetched page $page ($repo_count repos)"
+            page=$((page + 1))
+        fi
+    done
 }
 
 # Function to fetch user's personal repos (owner only, not org repos)
 fetch_user_repos() {
     local username=$1
-    echo "Fetching personal repositories for $username..."
-    curl -s "https://api.github.com/users/$username/repos?per_page=100" \
-        | jq -r '.[] | "\(.full_name)|\(.ssh_url)"' >> "$REPOS_FILE"
+    echo "Fetching personal repositories for $username (including private)..."
+    local page=1
+    local has_more=true
+    local user_total=0
+
+    while [ "$has_more" = true ]; do
+        local response=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/user/repos?per_page=100&page=$page&visibility=all&affiliation=owner")
+
+        # Check if response has any repos
+        local repo_count=$(echo "$response" | jq '. | length')
+
+        if [ "$repo_count" -eq 0 ]; then
+            has_more=false
+        else
+            # Filter for repos owned by the authenticated user (not org repos)
+            local user_repos=$(echo "$response" | jq -r --arg user "$username" \
+                '.[] | select(.owner.login == $user) | "\(.full_name)|\(.ssh_url)"')
+
+            if [ -n "$user_repos" ]; then
+                echo "$user_repos" >> "$REPOS_FILE"
+                local user_count=$(echo "$user_repos" | wc -l)
+                user_total=$((user_total + user_count))
+                echo "  - Fetched page $page ($user_count personal repos)"
+            fi
+
+            page=$((page + 1))
+        fi
+    done
+
+    echo "  - Total personal repos: $user_total"
 }
 
 # Get authenticated user info
