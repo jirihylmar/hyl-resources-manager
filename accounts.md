@@ -14,9 +14,3 @@ account = 299025166536
 profile = JiHy__d4m__975
 account = 975050190402
 ```
-
-amplify
-
-table with core info like
-
-app, amplify_domain, assigned_domain
