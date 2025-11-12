@@ -39,7 +39,7 @@ fetch_org_repos() {
         if [ "$repo_count" -eq 0 ]; then
             has_more=false
         else
-            echo "$response" | jq -r '.[] | "\(.full_name)|\(.clone_url)"' >> "$REPOS_FILE"
+            echo "$response" | jq -r '.[] | "\(.full_name)|\(.clone_url)|\(.archived)|\(.updated_at)"' >> "$REPOS_FILE"
             echo "  - Fetched page $page ($repo_count repos)"
             page=$((page + 1))
         fi
@@ -66,7 +66,7 @@ fetch_user_repos() {
         else
             # Filter for repos owned by the authenticated user (not org repos)
             local user_repos=$(echo "$response" | jq -r --arg user "$username" \
-                '.[] | select(.owner.login == $user) | "\(.full_name)|\(.clone_url)"')
+                '.[] | select(.owner.login == $user) | "\(.full_name)|\(.clone_url)|\(.archived)|\(.updated_at)"')
 
             if [ -n "$user_repos" ]; then
                 echo "$user_repos" >> "$REPOS_FILE"
@@ -124,7 +124,7 @@ HEADER
 current_org=""
 org_count=0
 
-while IFS='|' read -r full_name https_url; do
+while IFS='|' read -r full_name https_url archived updated_at; do
     org=$(echo "$full_name" | cut -d'/' -f1)
 
     if [ "$org" != "$current_org" ]; then
@@ -157,7 +157,7 @@ cat >> "$OUTPUT_FILE" <<FOOTER
 FOOTER
 
 # List org counts
-while IFS='|' read -r full_name ssh_url; do
+while IFS='|' read -r full_name ssh_url archived updated_at; do
     echo "$full_name" | cut -d'/' -f1
 done < "$TEMP_DIR/sorted_repos.txt" | sort | uniq -c | while read count org; do
     echo "# - $org: $count repos" >> "$OUTPUT_FILE"
@@ -175,9 +175,9 @@ echo "Generating $MAPPING_FILE..."
 
 echo "{" > "$MAPPING_FILE"
 
-# Create JSON mapping of repo_name -> git_url
+# Create JSON mapping of repo_name -> {git_url, archived, updated_at}
 first=true
-while IFS='|' read -r full_name https_url; do
+while IFS='|' read -r full_name https_url archived updated_at; do
     repo_name=$(echo "$full_name" | cut -d'/' -f2)
 
     if [ "$first" = true ]; then
@@ -187,7 +187,8 @@ while IFS='|' read -r full_name https_url; do
     fi
 
     # Use jq to properly escape strings and format JSON
-    printf "  \"%s\": \"%s\"" "$repo_name" "$https_url" >> "$MAPPING_FILE"
+    printf "  \"%s\": {\"url\": \"%s\", \"archived\": %s, \"updated_at\": \"%s\"}" \
+        "$repo_name" "$https_url" "$archived" "$updated_at" >> "$MAPPING_FILE"
 done < "$TEMP_DIR/sorted_repos.txt"
 
 echo "" >> "$MAPPING_FILE"
