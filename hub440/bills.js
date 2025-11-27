@@ -5,12 +5,19 @@
  * Gmail Labels: "Bills Anthropic", "Bills AWS", "Bills Google"
  * All data goes to the same spreadsheet with Company column distinguishing vendors
  *
+ * SUPPORTED DOCUMENT TYPES:
+ * - Anthropic: Regular receipts (#XXXX-XXXX-XXXX) and Credit Notes (CN-XX)
+ *   Note: Refund emails are skipped (duplicates of credit notes)
+ * - AWS: Regular invoices (EUINCZ25-...) and Marketplace Tax Invoices (IINCZ25-...)
+ * - Google: Workspace invoices
+ *
  * FEATURES:
  * - Automatic extraction of invoice details from emails
  * - PDF parsing using Drive OCR to extract amounts when missing from email body
  * - Duplicate detection to prevent reprocessing
  * - Automatic attachment saving to Google Drive with structured filenames
  * - Hyperlinked attachment names in spreadsheet
+ * - Credit note handling (negative amounts)
  *
  * ⚠️ CRITICAL SETUP REQUIREMENT ⚠️
  *
@@ -232,6 +239,52 @@ function processLabelEmails(labelName, vendorKey, existingEntries, attachmentsFo
       }
     }
 
+    // If Anthropic credit note has no receipt number, extract from PDF attachment filename
+    // PDF filename pattern: CreditNote-1YDHSHFS-0001-CN-01.pdf
+    if (vendorKey === 'ANTHROPIC' && parsedData && !parsedData.receiptNumber &&
+        subject.toLowerCase().includes('credit note')) {
+      try {
+        const attachments = latestMessage.getAttachments();
+        if (attachments && attachments.length > 0) {
+          for (let attachment of attachments) {
+            const attachmentName = attachment.getName();
+            // Extract credit note number from filename (e.g., "CreditNote-1YDHSHFS-0001-CN-01.pdf")
+            const creditNoteMatch = attachmentName.match(/CreditNote-([A-Z0-9]+-\d+-CN-\d+)/i);
+            if (creditNoteMatch) {
+              parsedData.receiptNumber = creditNoteMatch[1];
+              Logger.log(`Extracted credit note from filename: ${creditNoteMatch[1]}`);
+              break;
+            }
+          }
+        }
+      } catch (e) {
+        Logger.log(`Error extracting credit note from attachment: ${e.toString()}`);
+      }
+    }
+
+    // If AWS tax invoice has no receipt number, extract from PDF attachment filename
+    // PDF filename pattern: IINCZ25-1376.pdf
+    if (vendorKey === 'AWS' && parsedData && !parsedData.receiptNumber) {
+      try {
+        const attachments = latestMessage.getAttachments();
+        if (attachments && attachments.length > 0) {
+          for (let attachment of attachments) {
+            const attachmentName = attachment.getName();
+            // Extract invoice number from filename (e.g., "IINCZ25-1376.pdf" or "EUINCZ25-174255.pdf")
+            const invoiceMatch = attachmentName.match(/([A-Z]{1,2}INCZ\d{2}-\d+)/i);
+            if (invoiceMatch) {
+              parsedData.receiptNumber = invoiceMatch[1];
+              parsedData.invoiceNumber = invoiceMatch[1];
+              Logger.log(`Extracted AWS invoice from filename: ${invoiceMatch[1]}`);
+              break;
+            }
+          }
+        }
+      } catch (e) {
+        Logger.log(`Error extracting AWS invoice from attachment: ${e.toString()}`);
+      }
+    }
+
     if (parsedData && parsedData.receiptNumber) {
       // CHECK FOR DUPLICATE FIRST - skip entire processing if already exists
       const uniqueKey = `${parsedData.receiptNumber}|${subject}`;
@@ -359,7 +412,7 @@ function processLabelEmails(labelName, vendorKey, existingEntries, attachmentsFo
 
 function parseAnthropicBill(subject, body, emailDate) {
   const cleanBody = body.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim();
-  
+
   let parsedData = {
     date: Utilities.formatDate(emailDate, Session.getScriptTimeZone(), 'yyyy-MM-dd'),
     receiptNumber: '',
@@ -371,26 +424,84 @@ function parseAnthropicBill(subject, body, emailDate) {
     billingPeriod: '',
     category: ''
   };
-  
+
+  // Check if this is a credit note or refund
+  // Subject patterns:
+  // - Credit note: "Credit note from Anthropic, PBC for invoice..."
+  // - Refund: "Your refund from Anthropic, PBC #XXXX-XXXX" (SKIP - duplicate of credit note)
+  const isCreditNote = subject.toLowerCase().includes('credit note from anthropic');
+  const isRefund = subject.toLowerCase().includes('refund from anthropic');
+
+  // Skip refund emails - they duplicate credit notes with less detail
+  if (isRefund) {
+    Logger.log(`Skipping refund email (duplicate of credit note): ${subject}`);
+    return parsedData; // Return without receiptNumber so it gets skipped
+  }
+
+  if (isCreditNote) {
+    // Parse credit note - extract credit note number from body or subject
+    // Credit note number format: 1YDHSHFS-0001-CN-01
+    const creditNoteMatch = cleanBody.match(/Credit Note[:\s]*([A-Z0-9]+-\d+-CN-\d+)/i) ||
+                           subject.match(/([A-Z0-9]+-\d+-CN-\d+)/i);
+    if (creditNoteMatch) {
+      parsedData.receiptNumber = creditNoteMatch[1];
+    }
+
+    // Extract original invoice number
+    const origInvoiceMatch = cleanBody.match(/Invoice[:\s]*([A-Z0-9]+-\d{4})/i) ||
+                            subject.match(/for invoice[:\s#]*([A-Z0-9]+-\d{4})/i) ||
+                            subject.match(/#([A-Z0-9]+-\d{4})/i);
+    if (origInvoiceMatch) {
+      parsedData.invoiceNumber = origInvoiceMatch[1];
+    }
+
+    // Extract credit amount (format: $X.XX refunded or Total credit $X.XX)
+    const creditAmountMatches = [
+      cleanBody.match(/\$\s*([\d,.]+)\s*refunded/i),
+      cleanBody.match(/Total credit\s*\$?\s*([\d,.]+)/i),
+      cleanBody.match(/Adjustment total\s*\$?\s*([\d,.]+)/i)
+    ];
+
+    for (let match of creditAmountMatches) {
+      if (match && match[1]) {
+        const cleanAmount = match[1].replace(/[,\s]/g, '');
+        parsedData.amount = -parseFloat(cleanAmount); // Negative for credit
+        break;
+      }
+    }
+
+    // Extract refund payment method
+    const refundMethodMatch = cleanBody.match(/Refund issued\s*[-–]\s*(\w+)\s*[-–]\s*(\d{4})/i);
+    if (refundMethodMatch) {
+      parsedData.paymentMethod = `${refundMethodMatch[1]} ****${refundMethodMatch[2]}`;
+    }
+
+    parsedData.description = 'Credit Note';
+    parsedData.category = 'Credit Note';
+
+    return parsedData;
+  }
+
+  // Regular invoice processing
   // Extract receipt number from subject
   const receiptMatch = subject.match(/#(\d{4}-\d{4}-\d{4})/);
   if (receiptMatch) {
     parsedData.receiptNumber = receiptMatch[1];
   }
-  
+
   // Extract invoice number
   const invoiceMatch = cleanBody.match(/Invoice number ([A-Z0-9-]+)/i);
   if (invoiceMatch) {
     parsedData.invoiceNumber = invoiceMatch[1];
   }
-  
+
   // Extract amount
   const amountMatches = [
     cleanBody.match(/Total\s+(\d+\.\s*\d+)/i),
     cleanBody.match(/Amount paid\s+(\d+\.\s*\d+)/i),
     cleanBody.match(/(\d+\.\s*\d+)\s+Paid/i)
   ];
-  
+
   for (let match of amountMatches) {
     if (match && match[1]) {
       const cleanAmount = match[1].replace(/\s+/g, '');
@@ -398,23 +509,23 @@ function parseAnthropicBill(subject, body, emailDate) {
       break;
     }
   }
-  
+
   // Extract payment method
   const paymentMatch = cleanBody.match(/Payment method[:\s-]*\*?(\d{4})/i);
   if (paymentMatch) {
     parsedData.paymentMethod = `****${paymentMatch[1]}`;
   }
-  
+
   // Determine bill type
   if (cleanBody.includes('Max plan')) {
     parsedData.description = 'Max Plan Subscription';
     parsedData.category = 'Subscription';
-    
+
     const periodMatch = cleanBody.match(/(\w{3}\s+\d{1,2})\s+(\w{3}\s+\d{1,2},?\s+\d{4})/);
     if (periodMatch) {
       parsedData.billingPeriod = `${periodMatch[1]} - ${periodMatch[2]}`;
     }
-  } 
+  }
   else if (cleanBody.includes('Auto-recharge credits')) {
     parsedData.description = 'Auto-recharge Credits';
     parsedData.category = 'Credits';
@@ -427,13 +538,13 @@ function parseAnthropicBill(subject, body, emailDate) {
     parsedData.description = 'Anthropic Service';
     parsedData.category = 'Other';
   }
-  
+
   return parsedData;
 }
 
 function parseAWSBill(subject, body, emailDate) {
   const cleanBody = body.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim();
-  
+
   let parsedData = {
     date: Utilities.formatDate(emailDate, Session.getScriptTimeZone(), 'yyyy-MM-dd'),
     receiptNumber: '',
@@ -445,13 +556,18 @@ function parseAWSBill(subject, body, emailDate) {
     billingPeriod: '',
     category: 'Cloud Services'
   };
-  
-  // Extract VAT Invoice Number (format: EUINCZ25-174255 or similar)
+
+  // Check if this is an AWS Marketplace Tax Invoice
+  // Subject pattern: "Amazon Web Services Tax Invoice Available ..."
+  const isMarketplaceTaxInvoice = subject.toLowerCase().includes('tax invoice available');
+
+  // Extract VAT Invoice Number
+  // Formats: EUINCZ25-174255 (regular), IINCZ25-1376 (marketplace tax invoice)
   const invoicePatterns = [
     /\[Invoice ID:\s*([A-Z0-9-]+)\]/i,  // [Invoice ID: EUINCZ25-174255]
     /VAT Invoice Number[:\s]*([A-Z0-9-]+)/i,
     /Invoice Number[:\s]*([A-Z0-9-]+)/i,
-    /([A-Z]{2}INCZ\d{2}-\d+)/i,  // EUINCZ25-174255
+    /([A-Z]{1,2}INCZ\d{2}-\d+)/i,  // EUINCZ25-174255 or IINCZ25-1376
     subject.match(/\[Invoice ID:\s*([A-Z0-9-]+)\]/i),
     cleanBody.match(/VAT Invoice Number[:\s]*([A-Z0-9-]+)/i)
   ];
@@ -466,13 +582,23 @@ function parseAWSBill(subject, body, emailDate) {
       }
     }
   }
-  
-  // Extract billing period (format: October 1 - October 31, 2025)
+
+  // If still no invoice number found, try to extract from PDF attachment filename
+  // AWS Marketplace Tax Invoice PDF names like: IINCZ25-1376.pdf
+  if (!parsedData.receiptNumber) {
+    const pdfInvoiceMatch = subject.match(/([A-Z]{1,2}INCZ\d{2}-\d+)/i);
+    if (pdfInvoiceMatch) {
+      parsedData.invoiceNumber = pdfInvoiceMatch[1];
+      parsedData.receiptNumber = pdfInvoiceMatch[1];
+    }
+  }
+
+  // Extract billing period (format: October 1 - October 31, 2025 or November 1 - November 30, 2025)
   const periodPatterns = [
     /billing period[:\s]*(\w+\s+\d{1,2})\s*[-–]\s*(\w+\s+\d{1,2},?\s*\d{4})/i,
     /(\w+\s+\d{1,2})\s*[-–]\s*(\w+\s+\d{1,2},?\s*\d{4})/i
   ];
-  
+
   for (let pattern of periodPatterns) {
     const match = cleanBody.match(pattern);
     if (match) {
@@ -480,7 +606,7 @@ function parseAWSBill(subject, body, emailDate) {
       break;
     }
   }
-  
+
   // Extract amounts - AWS has multiple currencies, prefer EUR or USD
   // NOTE: "Invoice Available" notification emails often don't contain amounts - only in PDF
   const amountPatterns = [
@@ -514,10 +640,15 @@ function parseAWSBill(subject, body, emailDate) {
   if (!parsedData.amount) {
     Logger.log(`AWS: No amount found in email body for ${parsedData.invoiceNumber} - will attempt PDF extraction`);
   }
-  
-  // Set simple description
-  parsedData.description = 'AWS Cloud';
-  
+
+  // Set description based on invoice type
+  if (isMarketplaceTaxInvoice) {
+    parsedData.description = 'AWS Marketplace';
+    parsedData.category = 'AWS Marketplace';
+  } else {
+    parsedData.description = 'AWS Cloud';
+  }
+
   // Extract account number if available
   const accountMatch = subject.match(/\[Account:\s*(\d+)\]/i) ||
                       cleanBody.match(/Account number[:\s]*(\d+)/i) ||
@@ -525,7 +656,7 @@ function parseAWSBill(subject, body, emailDate) {
   if (accountMatch) {
     parsedData.paymentMethod = `Account: ${accountMatch[1]}`;
   }
-  
+
   return parsedData;
 }
 
@@ -945,50 +1076,66 @@ function setupSpreadsheetHeaders() {
 
 function testAllParsers() {
   Logger.log('=== TESTING ALL PARSERS ===\n');
-  
+
   // Test Anthropic
   Logger.log('--- ANTHROPIC PARSER ---');
   const anthropicTests = [
     {
+      name: "Regular Receipt",
       subject: "Your receipt from Anthropic, PBC #2200-5755-9758",
       body: "Receipt number 2200-5755-9758 Invoice number DBBYCVSC-0002 Payment method - 3708 Sep 14 Oct 14, 2025 Max plan - 20x Qty 1 180. 00 Total 180. 00 Amount paid 180. 00",
       date: new Date('2025-09-14')
+    },
+    {
+      name: "Credit Note",
+      subject: "Credit note from Anthropic, PBC for invoice 1YDHSHFS-0001",
+      body: "Credit Note 1YDHSHFS-0001-CN-01 Invoice 1YDHSHFS-0001 Date of issue October 15, 2025 $1.05 refunded on October 15, 2025 Credit — Other $1.05 Subtotal $1.05 Adjustment total $1.05 Refund issued - Visa - 3708 $1.05 Total credit $1.05",
+      date: new Date('2025-10-15')
     }
+    // Note: Refund emails are skipped (duplicates of credit notes)
   ];
-  
+
   anthropicTests.forEach((test, i) => {
     const result = parseAnthropicBill(test.subject, test.body, test.date);
-    Logger.log(`Anthropic Test ${i + 1}: ${JSON.stringify(result, null, 2)}`);
+    Logger.log(`Anthropic Test ${i + 1} (${test.name}): ${JSON.stringify(result, null, 2)}`);
   });
-  
+
   // Test AWS
   Logger.log('\n--- AWS PARSER ---');
   const awsTests = [
     {
+      name: "Regular Invoice",
       subject: "Amazon Web Services Invoice Available [Account: 182059100462] [Invoice ID: EUINCZ25-174255]",
       body: "Your AWS invoice is now available. VAT Invoice Date: November 1, 2025 TOTAL AMOUNT EUR 103.53 billing period October 1 - October 31, 2025 VAT - 21%",
       date: new Date('2025-11-01')
+    },
+    {
+      name: "Marketplace Tax Invoice",
+      subject: "Amazon Web Services Tax Invoice Available [Account: 565393049593]",
+      body: "VAT Invoice Number: IINCZ25-1376 VAT Invoice Date: November 25, 2025 TOTAL AMOUNT EUR 30.62 billing period November 1 - November 30, 2025 AWS Marketplace Charges Account number: 565393049593",
+      date: new Date('2025-11-25')
     }
   ];
-  
+
   awsTests.forEach((test, i) => {
     const result = parseAWSBill(test.subject, test.body, test.date);
-    Logger.log(`AWS Test ${i + 1}: ${JSON.stringify(result, null, 2)}`);
+    Logger.log(`AWS Test ${i + 1} (${test.name}): ${JSON.stringify(result, null, 2)}`);
   });
-  
+
   // Test Google
   Logger.log('\n--- GOOGLE PARSER ---');
   const googleTests = [
     {
+      name: "Regular Invoice",
       subject: "Google Workspace: Your invoice is available for hub440.cz",
       body: "Číslo faktury: 5396779091 Datum faktury: 31. 10. 2025 Fakturační číslo zákazníka: 2515-3845-4639 Google Workspace Business Standard Celková částka v EUR 10,53 € Souhrn za 1. 10. 2025 - 31. 10. 2025",
       date: new Date('2025-10-31')
     }
   ];
-  
+
   googleTests.forEach((test, i) => {
     const result = parseGoogleBill(test.subject, test.body, test.date);
-    Logger.log(`Google Test ${i + 1}: ${JSON.stringify(result, null, 2)}`);
+    Logger.log(`Google Test ${i + 1} (${test.name}): ${JSON.stringify(result, null, 2)}`);
   });
 }
 

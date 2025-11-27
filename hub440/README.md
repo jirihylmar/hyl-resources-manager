@@ -6,10 +6,22 @@ Automated bill processing system for Anthropic, AWS, and Google Workspace invoic
 
 - ✅ **Automatic PDF Parsing**: Extracts amounts from AWS/Google PDF invoices using OCR
 - ✅ **Multi-Vendor Support**: Anthropic, AWS, Google Workspace
+- ✅ **Multiple Document Types**: Invoices, Credit Notes, Marketplace invoices
 - ✅ **Duplicate Detection**: Prevents reprocessing based on receipt number + subject
 - ✅ **Smart Attachment Management**: Structured filenames with hyperlinked spreadsheet entries
 - ✅ **Multi-Language**: Handles Czech and English invoices
 - ✅ **Automated Processing**: Optional weekly triggers
+
+## 📄 Supported Document Types
+
+| Vendor | Type | Subject Contains | Category |
+|--------|------|------------------|----------|
+| **Anthropic** | Receipt | `Your receipt from Anthropic, PBC #` | Subscription/Credits |
+| **Anthropic** | Credit Note | `Credit note from Anthropic, PBC` | Credit Note (negative) |
+| **Anthropic** | Refund | `Your refund from Anthropic` | ⚠️ SKIPPED (duplicate) |
+| **AWS** | Invoice | `Amazon Web Services Invoice Available` | Cloud Services |
+| **AWS** | Tax Invoice | `Amazon Web Services Tax Invoice Available` | AWS Marketplace |
+| **Google** | Invoice | `Google Workspace: Your invoice` | Subscription |
 
 ## 📋 Quick Start
 
@@ -211,15 +223,105 @@ if (!parsedData.amount && firstPdfBlob &&
     (vendorKey === 'AWS' || vendorKey === 'GOOGLE' || vendorKey === 'NEWVENDOR')) {
 ```
 
+### Adding a New Document Type to Existing Vendor
+
+This is needed when a vendor sends a different email format (e.g., credit notes, marketplace invoices).
+
+**Example: Adding Anthropic Credit Notes**
+
+1. **Identify the email pattern**:
+   - Get sample email subject: `"Credit note from Anthropic, PBC for invoice #1YDHSHFS-0001"`
+   - Get sample PDF attachment: `CreditNote-1YDHSHFS-0001-CN-01.pdf`
+   - Note unique identifiers (receipt number format, keywords)
+
+2. **Update the vendor parser** (e.g., `parseAnthropicBill()`):
+   ```javascript
+   // Add detection at the start of parser
+   const isCreditNote = subject.toLowerCase().includes('credit note from anthropic');
+
+   if (isCreditNote) {
+     // Extract credit note number from body
+     const creditNoteMatch = cleanBody.match(/Credit Note[:\s]*([A-Z0-9]+-\d+-CN-\d+)/i);
+     if (creditNoteMatch) {
+       parsedData.receiptNumber = creditNoteMatch[1];
+     }
+
+     // Extract amount (negative for credits)
+     const amountMatch = cleanBody.match(/\$\s*([\d,.]+)\s*refunded/i);
+     if (amountMatch) {
+       parsedData.amount = -parseFloat(amountMatch[1]); // Negative!
+     }
+
+     parsedData.description = 'Credit Note';
+     parsedData.category = 'Credit Note';
+     return parsedData;
+   }
+
+   // ... rest of regular invoice parsing
+   ```
+
+3. **Add attachment filename extraction** in `processLabelEmails()` (~line 240):
+   ```javascript
+   // If credit note has no receipt number, extract from PDF filename
+   if (vendorKey === 'ANTHROPIC' && parsedData && !parsedData.receiptNumber &&
+       subject.toLowerCase().includes('credit note')) {
+     try {
+       const attachments = latestMessage.getAttachments();
+       for (let attachment of attachments) {
+         const attachmentName = attachment.getName();
+         // Pattern: CreditNote-1YDHSHFS-0001-CN-01.pdf
+         const match = attachmentName.match(/CreditNote-([A-Z0-9]+-\d+-CN-\d+)/i);
+         if (match) {
+           parsedData.receiptNumber = match[1];
+           break;
+         }
+       }
+     } catch (e) {
+       Logger.log(`Error extracting from attachment: ${e.toString()}`);
+     }
+   }
+   ```
+
+4. **Add test case** in `testAllParsers()`:
+   ```javascript
+   {
+     name: "Credit Note",
+     subject: "Credit note from Anthropic, PBC for invoice #1YDHSHFS-0001",
+     body: "Credit Note 1YDHSHFS-0001-CN-01 $1.05 refunded...",
+     date: new Date('2025-10-15')
+   }
+   ```
+
+5. **Handle duplicate emails** (if vendor sends multiple emails for same transaction):
+   ```javascript
+   // Skip refund emails - they duplicate credit notes
+   const isRefund = subject.toLowerCase().includes('refund from anthropic');
+   if (isRefund) {
+     Logger.log(`Skipping duplicate: ${subject}`);
+     return parsedData; // Empty receiptNumber = skipped
+   }
+   ```
+
+**Key patterns used in this codebase:**
+
+| Vendor | Document Type | Subject Pattern | Receipt Number Source |
+|--------|--------------|-----------------|----------------------|
+| Anthropic | Receipt | `Your receipt from Anthropic, PBC #XXXX-XXXX-XXXX` | Subject |
+| Anthropic | Credit Note | `Credit note from Anthropic, PBC for invoice...` | PDF filename |
+| Anthropic | Refund | `Your refund from Anthropic, PBC #XXXX-XXXX` | SKIPPED (duplicate) |
+| AWS | Invoice | `Amazon Web Services Invoice Available [Invoice ID: EUINCZ25-...]` | Subject |
+| AWS | Tax Invoice | `Amazon Web Services Tax Invoice Available` | PDF filename |
+| Google | Invoice | `Google Workspace: Your invoice is available...` | PDF filename |
+
 ### Modifying Parsing Logic
 
 **Email Body Parsing:**
-- Edit vendor-specific parser functions (lines 329-633)
+- Edit vendor-specific parser functions
 - Use regex patterns on `cleanBody` variable
 - Test with `testAllParsers()` function
 
 **PDF Parsing:**
-- Update patterns in `extractAmountFromPDFText()` (lines 713-770)
+- Update patterns in `extractAmountFromPDFText()`
 - Add debug logging to see extracted text:
   ```javascript
   Logger.log(`PDF text: ${cleanText}`);
@@ -457,8 +559,12 @@ When vendor changes invoice format:
 - **v1.2** - Fixed blob handling and improved error handling
 - **v1.3** - Added hyperlinked attachment names
 - **v1.4** - Enhanced debugging and pattern matching
+- **v1.5** - Added Anthropic Credit Notes and AWS Marketplace Tax Invoices
+  - New document types: Credit Notes (negative amounts), Marketplace Tax Invoices
+  - Attachment filename extraction for receipt numbers
+  - Skip duplicate refund emails
 
 ---
 
-**Last Updated**: 2025-11-24
+**Last Updated**: 2025-11-27
 **Status**: ✅ Fully Operational
