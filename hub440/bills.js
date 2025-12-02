@@ -1,8 +1,8 @@
 /**
  * MULTI-VENDOR BILLS PROCESSOR
- * Processes bills from: Anthropic, AWS, Google Workspace
+ * Processes bills from: Anthropic, AWS, Google Workspace, Figma, OpenAI
  *
- * Gmail Labels: "Bills Anthropic", "Bills AWS", "Bills Google"
+ * Gmail Labels: "Bills Anthropic", "Bills AWS", "Bills Google", "Bills Figma", "Bills OpenAI"
  * All data goes to the same spreadsheet with Company column distinguishing vendors
  *
  * SUPPORTED DOCUMENT TYPES:
@@ -10,6 +10,8 @@
  *   Note: Refund emails are skipped (duplicates of credit notes)
  * - AWS: Regular invoices (EUINCZ25-...) and Marketplace Tax Invoices (IINCZ25-...)
  * - Google: Workspace invoices
+ * - Figma: Professional/Organization invoices (XXXXXXXX-XXXX format)
+ * - OpenAI: API usage credits (XXXXXXXX-XXXX format, USD currency)
  *
  * FEATURES:
  * - Automatic extraction of invoice details from emails
@@ -38,7 +40,7 @@
 // ===== CONFIGURATION =====
 const CONFIG = {
   SPREADSHEET_ID: '1my3him8rFe6g9GYReOjKUCi1Ua2MtQM364DbCTowONE',
-  SHEET_NAME: 'anthropic', // Consider renaming to 'all_bills' for clarity
+  SHEET_NAME: 'all_bills',
   DRIVE_FOLDER_ID: '13wGFkzVVjtFAb6iwIGgVBtWxzjMWoAjA', // Summary reports folder
   DRIVE_FOLDER_ID_ATTACHMENTS: '1jIjJpNG4enG8lv4tCBMm2w_qL-a5m0sm', // Attachments folder
   MAX_EMAILS: 50,
@@ -47,7 +49,9 @@ const CONFIG = {
   LABELS: {
     ANTHROPIC: 'Bills Anthropic',
     AWS: 'Bills AWS',
-    GOOGLE: 'Bills Google'
+    GOOGLE: 'Bills Google',
+    FIGMA: 'Bills Figma',
+    OPENAI: 'Bills OpenAI'
   }
 };
 
@@ -72,12 +76,12 @@ function processAllBills() {
     const existingEntries = new Set();
     
     for (let i = 1; i < existingData.length; i++) {
-      if (existingData[i][1] && existingData[i][9]) {
-        const uniqueKey = `${existingData[i][1]}|${existingData[i][9]}`;
+      if (existingData[i][1] && existingData[i][10]) {
+        const uniqueKey = `${existingData[i][1]}|${existingData[i][10]}`;
         existingEntries.add(uniqueKey);
       }
     }
-    
+
     let allProcessedEmails = [];
     let allNewSpreadsheetEntries = [];
     let totalAttachmentsSaved = 0;
@@ -115,13 +119,13 @@ function processAllBills() {
     // Add new entries to spreadsheet
     if (allNewSpreadsheetEntries.length > 0) {
       const lastRow = sheet.getLastRow();
-      const entriesWithoutLinks = allNewSpreadsheetEntries.map(row => row.slice(0, 12));
-      sheet.getRange(lastRow + 1, 1, allNewSpreadsheetEntries.length, 12)
+      const entriesWithoutLinks = allNewSpreadsheetEntries.map(row => row.slice(0, 13));
+      sheet.getRange(lastRow + 1, 1, allNewSpreadsheetEntries.length, 13)
            .setValues(entriesWithoutLinks);
-      
-      // Add hyperlinks in column M
+
+      // Add hyperlinks in column N (14)
       allNewSpreadsheetEntries.forEach((entry, index) => {
-        const attachmentData = entry[12]; // Array of {name, url} objects
+        const attachmentData = entry[13]; // Array of {name, url} objects (index 13 in array)
         if (attachmentData && attachmentData.length > 0) {
           if (attachmentData.length === 1) {
             // Single attachment - use filename as link text
@@ -129,7 +133,7 @@ function processAllBills() {
               .setText(attachmentData[0].name)
               .setLinkUrl(attachmentData[0].url)
               .build();
-            sheet.getRange(lastRow + 1 + index, 13).setRichTextValue(richText);
+            sheet.getRange(lastRow + 1 + index, 14).setRichTextValue(richText);
           } else {
             // Multiple attachments - create comma-separated links with actual filenames
             let displayText = [];
@@ -156,11 +160,11 @@ function processAllBills() {
             linkRanges.forEach(range => {
               richTextBuilder.setLinkUrl(range.start, range.end, range.url);
             });
-            sheet.getRange(lastRow + 1 + index, 13).setRichTextValue(richTextBuilder.build());
+            sheet.getRange(lastRow + 1 + index, 14).setRichTextValue(richTextBuilder.build());
           }
         }
       });
-      
+
       Logger.log(`Added ${allNewSpreadsheetEntries.length} new entries to spreadsheet`);
     } else {
       Logger.log('No new entries to add to spreadsheet');
@@ -211,6 +215,12 @@ function processLabelEmails(labelName, vendorKey, existingEntries, attachmentsFo
         break;
       case 'GOOGLE':
         parsedData = parseGoogleBill(subject, body, date);
+        break;
+      case 'FIGMA':
+        parsedData = parseFigmaBill(subject, body, date);
+        break;
+      case 'OPENAI':
+        parsedData = parseOpenAIBill(subject, body, date);
         break;
       default:
         Logger.log(`Unknown vendor: ${vendorKey}`);
@@ -285,6 +295,52 @@ function processLabelEmails(labelName, vendorKey, existingEntries, attachmentsFo
       }
     }
 
+    // If Figma bill has no receipt number, extract from PDF attachment filename
+    // PDF filename pattern: Invoice-GENMSV8K-0002.pdf
+    if (vendorKey === 'FIGMA' && parsedData && !parsedData.receiptNumber) {
+      try {
+        const attachments = latestMessage.getAttachments();
+        if (attachments && attachments.length > 0) {
+          for (let attachment of attachments) {
+            const attachmentName = attachment.getName();
+            // Extract invoice number from filename (e.g., "Invoice-GENMSV8K-0002.pdf")
+            const invoiceMatch = attachmentName.match(/Invoice-([A-Z0-9]+-\d+)/i);
+            if (invoiceMatch) {
+              parsedData.receiptNumber = invoiceMatch[1];
+              parsedData.invoiceNumber = invoiceMatch[1];
+              Logger.log(`Extracted Figma invoice from filename: ${invoiceMatch[1]}`);
+              break;
+            }
+          }
+        }
+      } catch (e) {
+        Logger.log(`Error extracting Figma invoice from attachment: ${e.toString()}`);
+      }
+    }
+
+    // If OpenAI bill has no receipt number, extract from PDF attachment filename
+    // PDF filename pattern: Invoice-P6TOEEBC-0001.pdf
+    if (vendorKey === 'OPENAI' && parsedData && !parsedData.receiptNumber) {
+      try {
+        const attachments = latestMessage.getAttachments();
+        if (attachments && attachments.length > 0) {
+          for (let attachment of attachments) {
+            const attachmentName = attachment.getName();
+            // Extract invoice number from filename (e.g., "Invoice-P6TOEEBC-0001.pdf")
+            const invoiceMatch = attachmentName.match(/Invoice-([A-Z0-9]+-\d+)/i);
+            if (invoiceMatch) {
+              parsedData.receiptNumber = invoiceMatch[1];
+              parsedData.invoiceNumber = invoiceMatch[1];
+              Logger.log(`Extracted OpenAI invoice from filename: ${invoiceMatch[1]}`);
+              break;
+            }
+          }
+        }
+      } catch (e) {
+        Logger.log(`Error extracting OpenAI invoice from attachment: ${e.toString()}`);
+      }
+    }
+
     if (parsedData && parsedData.receiptNumber) {
       // CHECK FOR DUPLICATE FIRST - skip entire processing if already exists
       const uniqueKey = `${parsedData.receiptNumber}|${subject}`;
@@ -345,7 +401,7 @@ function processLabelEmails(labelName, vendorKey, existingEntries, attachmentsFo
       }
 
       // If amount is missing and we have a PDF, try to extract from PDF
-      if (!parsedData.amount && firstPdfBlob && (vendorKey === 'AWS' || vendorKey === 'GOOGLE')) {
+      if (!parsedData.amount && firstPdfBlob && (vendorKey === 'AWS' || vendorKey === 'GOOGLE' || vendorKey === 'FIGMA' || vendorKey === 'OPENAI')) {
         Logger.log(`Attempting to extract amount from PDF for ${vendorKey} invoice ${parsedData.receiptNumber}`);
         try {
           const pdfText = extractTextFromPDF(firstPdfBlob, `${parsedData.receiptNumber}.pdf`);
@@ -380,6 +436,7 @@ function processLabelEmails(labelName, vendorKey, existingEntries, attachmentsFo
         parsedData.receiptNumber,
         parsedData.company,
         parsedData.amount,
+        parsedData.currency || 'EUR',
         parsedData.description,
         parsedData.paymentMethod,
         parsedData.invoiceNumber,
@@ -418,6 +475,7 @@ function parseAnthropicBill(subject, body, emailDate) {
     receiptNumber: '',
     company: 'Anthropic, PBC',
     amount: '',
+    currency: 'USD',
     description: '',
     paymentMethod: '',
     invoiceNumber: '',
@@ -550,6 +608,7 @@ function parseAWSBill(subject, body, emailDate) {
     receiptNumber: '',
     company: 'AWS',
     amount: '',
+    currency: 'EUR',
     description: '',
     paymentMethod: '',
     invoiceNumber: '',
@@ -662,12 +721,13 @@ function parseAWSBill(subject, body, emailDate) {
 
 function parseGoogleBill(subject, body, emailDate) {
   const cleanBody = body.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim();
-  
+
   let parsedData = {
     date: Utilities.formatDate(emailDate, Session.getScriptTimeZone(), 'yyyy-MM-dd'),
     receiptNumber: '',
     company: 'Google',
     amount: '',
+    currency: 'EUR',
     description: '',
     paymentMethod: '',
     invoiceNumber: '',
@@ -770,7 +830,162 @@ function parseGoogleBill(subject, body, emailDate) {
   if (!parsedData.description) {
     parsedData.description = 'Google Workspace';
   }
-  
+
+  return parsedData;
+}
+
+function parseFigmaBill(subject, body, emailDate) {
+  const cleanBody = body.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim();
+
+  let parsedData = {
+    date: Utilities.formatDate(emailDate, Session.getScriptTimeZone(), 'yyyy-MM-dd'),
+    receiptNumber: '',
+    company: 'Figma, Inc.',
+    amount: '',
+    currency: 'EUR',
+    description: '',
+    paymentMethod: '',
+    invoiceNumber: '',
+    billingPeriod: '',
+    category: 'Subscription'
+  };
+
+  // Extract invoice number (format: GENMSV8K-0002)
+  const invoicePatterns = [
+    /Invoice number[:\s]*([A-Z0-9]+-\d+)/i,
+    /Invoice[:\s#]*([A-Z0-9]+-\d{4})/i,
+    subject.match(/Invoice[:\s#-]*([A-Z0-9]+-\d+)/i)
+  ];
+
+  for (let pattern of invoicePatterns) {
+    if (pattern) {
+      const match = typeof pattern === 'object' && pattern !== null ? pattern : cleanBody.match(pattern);
+      if (match && match[1]) {
+        parsedData.invoiceNumber = match[1];
+        parsedData.receiptNumber = match[1];
+        break;
+      }
+    }
+  }
+
+  // Extract amount (format: €20.00 or EUR 20.00)
+  const amountPatterns = [
+    /Amount due[:\s]*€\s*([\d,.]+)/i,
+    /Total[:\s]*€\s*([\d,.]+)/i,
+    /€\s*([\d,.]+)\s*due/i,
+    /EUR\s*([\d,.]+)/i,
+    /€\s*([\d,.]+)/
+  ];
+
+  for (let pattern of amountPatterns) {
+    const match = cleanBody.match(pattern);
+    if (match && match[1]) {
+      let amount = match[1].replace(/\s/g, '').replace(',', '.');
+      const parsedAmount = parseFloat(amount);
+      if (!isNaN(parsedAmount) && parsedAmount > 0) {
+        parsedData.amount = parsedAmount;
+        break;
+      }
+    }
+  }
+
+  // Extract billing period (format: Nov 15 – Dec 15, 2025)
+  const periodPatterns = [
+    /(\w{3}\s+\d{1,2})\s*[–-]\s*(\w{3}\s+\d{1,2},?\s*\d{4})/i,
+    /(\w+\s+\d{1,2})\s*[–-]\s*(\w+\s+\d{1,2},?\s*\d{4})/i
+  ];
+
+  for (let pattern of periodPatterns) {
+    const match = cleanBody.match(pattern);
+    if (match) {
+      parsedData.billingPeriod = `${match[1]} - ${match[2]}`;
+      break;
+    }
+  }
+
+  // Determine description based on plan type
+  if (cleanBody.includes('Professional Full seats') || cleanBody.includes('Professional')) {
+    parsedData.description = 'Figma Professional';
+  } else if (cleanBody.includes('Organization')) {
+    parsedData.description = 'Figma Organization';
+  } else if (cleanBody.includes('Enterprise')) {
+    parsedData.description = 'Figma Enterprise';
+  } else {
+    parsedData.description = 'Figma Subscription';
+  }
+
+  return parsedData;
+}
+
+function parseOpenAIBill(subject, body, emailDate) {
+  const cleanBody = body.replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim();
+
+  let parsedData = {
+    date: Utilities.formatDate(emailDate, Session.getScriptTimeZone(), 'yyyy-MM-dd'),
+    receiptNumber: '',
+    company: 'OpenAI, LLC',
+    amount: '',
+    currency: 'USD',
+    description: '',
+    paymentMethod: '',
+    invoiceNumber: '',
+    billingPeriod: '',
+    category: 'API Credits'
+  };
+
+  // Extract invoice number (format: P6TOEEBC-0001)
+  const invoicePatterns = [
+    /Invoice number[:\s]*([A-Z0-9]+-\d+)/i,
+    /Invoice[:\s#]*([A-Z0-9]+-\d{4})/i,
+    subject.match(/Invoice[:\s#-]*([A-Z0-9]+-\d+)/i)
+  ];
+
+  for (let pattern of invoicePatterns) {
+    if (pattern) {
+      const match = typeof pattern === 'object' && pattern !== null ? pattern : cleanBody.match(pattern);
+      if (match && match[1]) {
+        parsedData.invoiceNumber = match[1];
+        parsedData.receiptNumber = match[1];
+        break;
+      }
+    }
+  }
+
+  // Extract amount - OpenAI uses USD (format: $10.00 or USD 10.00)
+  // Store amount as-is in USD, note: other vendors use EUR
+  const amountPatterns = [
+    /Amount due[:\s]*\$\s*([\d,.]+)/i,
+    /Total[:\s]*\$\s*([\d,.]+)/i,
+    /\$\s*([\d,.]+)\s*USD/i,
+    /USD\s*([\d,.]+)/i,
+    /\$\s*([\d,.]+)/
+  ];
+
+  for (let pattern of amountPatterns) {
+    const match = cleanBody.match(pattern);
+    if (match && match[1]) {
+      let amount = match[1].replace(/\s/g, '').replace(',', '');
+      const parsedAmount = parseFloat(amount);
+      if (!isNaN(parsedAmount) && parsedAmount > 0) {
+        parsedData.amount = parsedAmount;
+        break;
+      }
+    }
+  }
+
+  // Determine description based on content
+  if (cleanBody.includes('API usage credit') || cleanBody.includes('API')) {
+    parsedData.description = 'OpenAI API Credits';
+  } else if (cleanBody.includes('ChatGPT Plus')) {
+    parsedData.description = 'ChatGPT Plus';
+    parsedData.category = 'Subscription';
+  } else if (cleanBody.includes('ChatGPT Team')) {
+    parsedData.description = 'ChatGPT Team';
+    parsedData.category = 'Subscription';
+  } else {
+    parsedData.description = 'OpenAI Service';
+  }
+
   return parsedData;
 }
 
@@ -871,6 +1086,24 @@ function extractAmountFromPDFText(pdfText, vendor) {
       /EUR\s+([\d]+[.,]\d{2})/i,
       /([\d]+[.,]\d{2})\s*€/,
       /€\s*([\d]+[.,]\d{2})/
+    ];
+  } else if (vendor === 'FIGMA') {
+    amountPatterns = [
+      /Amount due[:\s]*€\s*([\d,.]+)/i,
+      /Total[:\s]*€\s*([\d,.]+)/i,
+      /€\s*([\d,.]+)\s*due/i,
+      /EUR\s*([\d,.]+)/i,
+      /€\s*([\d]+[.,]\d{2})/
+    ];
+  } else if (vendor === 'OPENAI') {
+    // OpenAI uses USD
+    amountPatterns = [
+      /Amount due[:\s]*\$\s*([\d,.]+)\s*USD/i,
+      /Amount due[:\s]*\$\s*([\d,.]+)/i,
+      /Total[:\s]*\$\s*([\d,.]+)/i,
+      /\$\s*([\d,.]+)\s*USD/i,
+      /USD\s*([\d,.]+)/i,
+      /\$\s*([\d]+[.,]\d{2})/
     ];
   }
 
@@ -1024,6 +1257,14 @@ function processGoogleBills() {
   processSpecificLabel('GOOGLE');
 }
 
+function processFigmaBills() {
+  processSpecificLabel('FIGMA');
+}
+
+function processOpenAIBills() {
+  processSpecificLabel('OPENAI');
+}
+
 function processSpecificLabel(vendorKey) {
   try {
     const spreadsheet = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
@@ -1034,19 +1275,19 @@ function processSpecificLabel(vendorKey) {
     const existingEntries = new Set();
     
     for (let i = 1; i < existingData.length; i++) {
-      if (existingData[i][1] && existingData[i][9]) {
-        const uniqueKey = `${existingData[i][1]}|${existingData[i][9]}`;
+      if (existingData[i][1] && existingData[i][10]) {
+        const uniqueKey = `${existingData[i][1]}|${existingData[i][10]}`;
         existingEntries.add(uniqueKey);
       }
     }
-    
+
     const labelName = CONFIG.LABELS[vendorKey];
     const result = processLabelEmails(labelName, vendorKey, existingEntries, attachmentsFolder);
     
     if (result && result.newEntries.length > 0) {
       const lastRow = sheet.getLastRow();
-      const entriesWithoutLinks = result.newEntries.map(row => row.slice(0, 12));
-      sheet.getRange(lastRow + 1, 1, result.newEntries.length, 12).setValues(entriesWithoutLinks);
+      const entriesWithoutLinks = result.newEntries.map(row => row.slice(0, 13));
+      sheet.getRange(lastRow + 1, 1, result.newEntries.length, 13).setValues(entriesWithoutLinks);
       Logger.log(`Added ${result.newEntries.length} entries for ${vendorKey}`);
     }
     
@@ -1060,18 +1301,18 @@ function processSpecificLabel(vendorKey) {
 function setupSpreadsheetHeaders() {
   const spreadsheet = SpreadsheetApp.openById(CONFIG.SPREADSHEET_ID);
   const sheet = spreadsheet.getSheetByName(CONFIG.SHEET_NAME);
-  
+
   const headers = [
-    'Date', 'Receipt Number', 'Company', 'Amount', 'Description', 
-    'Payment Method', 'Invoice Number', 'Billing Period', 'Category', 
+    'Date', 'Receipt Number', 'Company', 'Amount', 'Currency', 'Description',
+    'Payment Method', 'Invoice Number', 'Billing Period', 'Category',
     'Subject', 'Sender Email', 'Attachments', 'Attachment Links'
   ];
-  
-  sheet.getRange(1, 1, 1, 13).setValues([headers]);
-  sheet.getRange(1, 1, 1, 13).setFontWeight('bold');
-  sheet.autoResizeColumns(1, 13);
-  
-  Logger.log('Headers added to spreadsheet (columns A-M)');
+
+  sheet.getRange(1, 1, 1, 14).setValues([headers]);
+  sheet.getRange(1, 1, 1, 14).setFontWeight('bold');
+  sheet.autoResizeColumns(1, 14);
+
+  Logger.log('Headers added to spreadsheet (columns A-N)');
 }
 
 function testAllParsers() {
@@ -1136,6 +1377,38 @@ function testAllParsers() {
   googleTests.forEach((test, i) => {
     const result = parseGoogleBill(test.subject, test.body, test.date);
     Logger.log(`Google Test ${i + 1} (${test.name}): ${JSON.stringify(result, null, 2)}`);
+  });
+
+  // Test Figma
+  Logger.log('\n--- FIGMA PARSER ---');
+  const figmaTests = [
+    {
+      name: "Professional Invoice",
+      subject: "Your Figma invoice",
+      body: "Invoice number GENMSV8K-0002 Date of issue November 15, 2025 Figma, Inc. Professional Full seats (monthly) Nov 15 – Dec 15, 2025 1 €20.00 €20.00 Total €20.00 Amount due €20.00",
+      date: new Date('2025-11-15')
+    }
+  ];
+
+  figmaTests.forEach((test, i) => {
+    const result = parseFigmaBill(test.subject, test.body, test.date);
+    Logger.log(`Figma Test ${i + 1} (${test.name}): ${JSON.stringify(result, null, 2)}`);
+  });
+
+  // Test OpenAI
+  Logger.log('\n--- OPENAI PARSER ---');
+  const openaiTests = [
+    {
+      name: "API Credits Invoice",
+      subject: "Your OpenAI invoice",
+      body: "Invoice number P6TOEEBC-0001 Date of issue November 18, 2025 OpenAI, LLC OpenAI API usage credit 1 $10.00 $10.00 Total $10.00 Amount due $10.00 USD",
+      date: new Date('2025-11-18')
+    }
+  ];
+
+  openaiTests.forEach((test, i) => {
+    const result = parseOpenAIBill(test.subject, test.body, test.date);
+    Logger.log(`OpenAI Test ${i + 1} (${test.name}): ${JSON.stringify(result, null, 2)}`);
   });
 }
 
@@ -1202,7 +1475,7 @@ function sendCompletionNotification() {
   const subject = 'Bills Processing Complete - All Vendors';
   const body = `Your weekly bill processing has completed successfully at ${new Date()}.
 
-Processed labels: Bills Anthropic, Bills AWS, Bills Google
+Processed labels: Bills Anthropic, Bills AWS, Bills Google, Bills Figma, Bills OpenAI
 
 Check your Google Sheets and Drive folders for updated data.
 
@@ -1244,11 +1517,13 @@ function setup() {
   Logger.log('• Anthropic (Label: "Bills Anthropic")');
   Logger.log('• Amazon Web Services (Label: "Bills AWS")');
   Logger.log('• Google Workspace (Label: "Bills Google")');
+  Logger.log('• Figma (Label: "Bills Figma")');
+  Logger.log('• OpenAI (Label: "Bills OpenAI")');
   Logger.log('');
 
   Logger.log('SETUP STEPS:');
   Logger.log('1. Enable Drive API: Editor menu > Services > Add "Drive API" (v2)');
-  Logger.log('2. Create Gmail labels: "Bills Anthropic", "Bills AWS", "Bills Google"');
+  Logger.log('2. Create Gmail labels: "Bills Anthropic", "Bills AWS", "Bills Google", "Bills Figma", "Bills OpenAI"');
   Logger.log('3. Apply labels to your bill emails from each vendor');
   Logger.log('4. Run setupSpreadsheetHeaders() to initialize the spreadsheet');
   Logger.log('5. Run testAllParsers() to verify parsing logic');
@@ -1257,24 +1532,27 @@ function setup() {
   Logger.log('');
 
   Logger.log('FEATURES:');
-  Logger.log('• Automatic PDF parsing to extract amounts from AWS/Google invoices');
+  Logger.log('• Automatic PDF parsing to extract amounts from AWS/Google/Figma/OpenAI invoices');
   Logger.log('• Duplicate detection prevents reprocessing');
   Logger.log('• Attachments saved with structured filenames and linked in spreadsheet');
   Logger.log('');
-  
+
   Logger.log('MANUAL PROCESSING FUNCTIONS:');
-  Logger.log('• processAllBills() - Process all three vendors');
+  Logger.log('• processAllBills() - Process all five vendors');
   Logger.log('• processAnthropicBills() - Process only Anthropic');
   Logger.log('• processAWSBills() - Process only AWS');
   Logger.log('• processGoogleBills() - Process only Google');
+  Logger.log('• processFigmaBills() - Process only Figma');
+  Logger.log('• processOpenAIBills() - Process only OpenAI');
   Logger.log('');
-  
-  Logger.log('SPREADSHEET COLUMNS (A-M):');
-  Logger.log('A: Date, B: Receipt#, C: Company, D: Amount, E: Description');
-  Logger.log('F: Payment Method, G: Invoice#, H: Billing Period, I: Category');
-  Logger.log('J: Subject, K: Sender Email, L: Attachments, M: Links');
+
+  Logger.log('SPREADSHEET COLUMNS (A-N):');
+  Logger.log('A: Date, B: Receipt#, C: Company, D: Amount, E: Currency, F: Description');
+  Logger.log('G: Payment Method, H: Invoice#, I: Billing Period, J: Category');
+  Logger.log('K: Subject, L: Sender Email, M: Attachments, N: Links');
   Logger.log('');
-  Logger.log('The Company column (C) distinguishes vendors: Anthropic, AWS, Google');
+  Logger.log('The Company column (C) distinguishes vendors: Anthropic, AWS, Google, Figma, OpenAI');
+  Logger.log('Currency column (E): USD for Anthropic/OpenAI, EUR for AWS/Google/Figma');
   Logger.log('');
   Logger.log('NOTE: Script automatically extracts amounts from PDFs when missing from email body');
 }
