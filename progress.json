@@ -105,28 +105,42 @@
     },
     "phase_3_skill_refresh": {
       "name": "Refresh Stale Skill Outputs",
-      "status": "pending",
+      "status": "complete",
+      "started_at": "2026-03-27",
+      "completed_at": "2026-03-27",
       "tasks": [
         {
           "id": "3.1",
           "name": "aws-check-amplify: re-run Amplify inventory as structured JSON across all 6 MCP accounts",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-03-27",
           "size": "medium",
-          "verify": "aws/amplify-inventory.json exists with current data from all accounts"
+          "verify": "aws/amplify-inventory.json exists with current data from all accounts",
+          "verify_result": "PASSED — 6 accounts, 37 apps",
+          "artifacts": ["aws/amplify-inventory.json"],
+          "notes": "2 apps with FAILED branch: useiot-frontend-admin (565), nutritech-office (734)"
         },
         {
           "id": "3.2",
           "name": "aws-check-dynamodb: re-run DynamoDB inventory as structured JSON across all 6 MCP accounts",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-03-27",
           "size": "small",
-          "verify": "aws/dynamodb-inventory.json exists with current table data"
+          "verify": "aws/dynamodb-inventory.json exists with current table data",
+          "verify_result": "PASSED — 6 accounts, 59 tables",
+          "artifacts": ["aws/dynamodb-inventory.json"],
+          "notes": "58/59 PAY_PER_REQUEST. goldsport-scheduler-data-dev 1.79GB largest. vsb-299 has 32 tables."
         },
         {
           "id": "3.3",
           "name": "github-check-repos: refresh workspace-repos.json via generate-clone-list.sh",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-03-27",
           "size": "small",
-          "verify": "github/workspace-repos.json updated with current repo count"
+          "verify": "github/workspace-repos.json updated with current repo count",
+          "verify_result": "PASSED — 191 repos (was 152)",
+          "artifacts": ["github/workspace-repos.json"],
+          "notes": "44 added (incl hub440-syndicate org), 5 removed, 6 orgs"
         },
         {
           "id": "3.4",
