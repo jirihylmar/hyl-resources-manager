@@ -139,9 +139,8 @@
     },
     "phase_4_google": {
       "name": "Google Services Inventory",
-      "status": "complete",
+      "status": "in_progress",
       "started_at": "2026-03-27",
-      "completed_at": "2026-03-27",
       "tasks": [
         {
           "id": "4.1",
@@ -180,12 +179,27 @@
           "verify": "google/integrations.json cross-references Google credentials to AWS accounts/services",
           "artifacts": ["google/integrations.json"],
           "notes": "6 integrations mapped: 3 active, 2 needs_investigation (credential source unknown), 1 active local"
+        },
+        {
+          "id": "4.5",
+          "name": "google-fix-accounts: Add Chrome profile directory mapping to all 7 accounts in accounts.json",
+          "status": "pending",
+          "size": "small",
+          "verify": "accounts.json has chrome_profile_dir for all 7 accounts",
+          "added_reason": "Chrome profiles accessible at /mnt/c/Users/jirih/AppData/Local/Google/Chrome/User Data/"
+        },
+        {
+          "id": "4.6",
+          "name": "google-check-chrome: Create chrome-profiles.json — profile dirs, available data types (bookmarks, extensions, preferences)",
+          "status": "pending",
+          "size": "small",
+          "verify": "google/chrome-profiles.json exists with profile mapping and data type inventory"
         }
       ]
     }
   },
 
-  "current_task": "4.3",
+  "current_task": "4.5",
   "current_phase": "phase_4_google",
 
   "git_repos": {
