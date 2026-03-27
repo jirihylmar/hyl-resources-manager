@@ -1,21 +1,31 @@
 [
   {
+    "email": "jiri.hylmar@gmail.com",
+    "domain": "gmail.com",
+    "org": "Personal",
+    "gaia_name": "Jiří Hylmar",
+    "gaia_id": "115619540577558745221",
+    "chrome_profile_dir": "Default",
+    "gcp_projects": ["red-formula-306011", "quickstart-1583930073537"],
+    "tags": ["personal"]
+  },
+  {
     "email": "admin@hub440.cz",
     "domain": "hub440.cz",
     "org": "Hylmar",
-    "purpose": "Primary admin account, hub440.cz domain management",
-    "chrome_profile": "windows-side",
-    "api_access": true,
+    "gaia_name": "hub440 admin",
+    "gaia_id": "112523183940212998438",
+    "chrome_profile_dir": "Profile 3",
     "gcp_projects": ["default-project-hub440"],
-    "tags": ["primary", "admin", "domain-owner"]
+    "tags": ["admin", "domain-owner"]
   },
   {
     "email": "info@hylmar.eu",
     "domain": "hylmar.eu",
     "org": "Hylmar",
-    "purpose": "Hylmar business account",
-    "chrome_profile": "windows-side",
-    "api_access": true,
+    "gaia_name": "Info Hylmar",
+    "gaia_id": "103055621359770728088",
+    "chrome_profile_dir": "Profile 6",
     "gcp_projects": [],
     "tags": ["business"]
   },
@@ -23,9 +33,9 @@
     "email": "service@d4m.tech",
     "domain": "d4m.tech",
     "org": "D4M",
-    "purpose": "D4M service account, Google Drive automation",
-    "chrome_profile": "windows-side",
-    "api_access": true,
+    "gaia_name": "Service D4M",
+    "gaia_id": "117379897099382645092",
+    "chrome_profile_dir": "Profile 5",
     "gcp_projects": ["d4m-goo-master", "macro-griffin-441215-v4"],
     "tags": ["service", "automation"]
   },
@@ -33,29 +43,19 @@
     "email": "master@goldsport.cz",
     "domain": "goldsport.cz",
     "org": "Goldsport",
-    "purpose": "Goldsport master account, booking-to-sheets integration",
-    "chrome_profile": "windows-side",
-    "api_access": true,
+    "gaia_name": "Master Goldsport",
+    "gaia_id": "116086145906988689478",
+    "chrome_profile_dir": "Profile 2",
     "gcp_projects": ["goldsport-default-project"],
     "tags": ["business", "automation"]
-  },
-  {
-    "email": "jiri.hylmar@gmail.com",
-    "domain": "gmail.com",
-    "org": "Personal",
-    "purpose": "Personal Gmail, Google Photos, legacy GDrive desktop clients",
-    "chrome_profile": "windows-side",
-    "api_access": true,
-    "gcp_projects": ["red-formula-306011", "quickstart-1583930073537"],
-    "tags": ["personal", "legacy"]
   },
   {
     "email": "jiri.hylmar@g.vsb.cz",
     "domain": "g.vsb.cz",
     "org": "VSB",
-    "purpose": "VSB university account, Google Drive access",
-    "chrome_profile": "windows-side",
-    "api_access": true,
+    "gaia_name": "Jiří Hylmar",
+    "gaia_id": "113149692816978183805",
+    "chrome_profile_dir": "Profile 7",
     "gcp_projects": ["vsb-bh6-gdr"],
     "tags": ["university"]
   },
@@ -63,9 +63,9 @@
     "email": "hylmar@brainmarket.cz",
     "domain": "brainmarket.cz",
     "org": "BrainMarket",
-    "purpose": "BrainMarket business account",
-    "chrome_profile": "windows-side",
-    "api_access": true,
+    "gaia_name": "Jiří Hylmar",
+    "gaia_id": "114461891226782094321",
+    "chrome_profile_dir": "Profile 4",
     "gcp_projects": [],
     "tags": ["business"]
   }

@@ -1,0 +1,107 @@
+{
+  "chrome_data_root": "/mnt/c/Users/jirih/AppData/Local/Google/Chrome/User Data",
+  "metadata_file": "Local State",
+  "profiles": [
+    {
+      "dir": "Default",
+      "email": "jiri.hylmar@gmail.com",
+      "data": {
+        "Bookmarks": true,
+        "Preferences": true,
+        "History": true,
+        "Login Data": true,
+        "Web Data": true,
+        "Extension Cookies": true,
+        "extensions_count": 23
+      }
+    },
+    {
+      "dir": "Profile 2",
+      "email": "master@goldsport.cz",
+      "data": {
+        "Bookmarks": true,
+        "Preferences": true,
+        "History": true,
+        "Login Data": true,
+        "Web Data": true,
+        "Extension Cookies": true,
+        "extensions_count": 3
+      }
+    },
+    {
+      "dir": "Profile 3",
+      "email": "admin@hub440.cz",
+      "data": {
+        "Bookmarks": true,
+        "Preferences": true,
+        "History": true,
+        "Login Data": true,
+        "Web Data": true,
+        "Extension Cookies": true,
+        "extensions_count": 6
+      }
+    },
+    {
+      "dir": "Profile 4",
+      "email": "hylmar@brainmarket.cz",
+      "data": {
+        "Bookmarks": true,
+        "Preferences": true,
+        "History": true,
+        "Login Data": true,
+        "Web Data": true,
+        "Extension Cookies": false,
+        "extensions_count": 4
+      }
+    },
+    {
+      "dir": "Profile 5",
+      "email": "service@d4m.tech",
+      "data": {
+        "Bookmarks": true,
+        "Preferences": true,
+        "History": true,
+        "Login Data": true,
+        "Web Data": true,
+        "Extension Cookies": false,
+        "extensions_count": 5
+      }
+    },
+    {
+      "dir": "Profile 6",
+      "email": "info@hylmar.eu",
+      "data": {
+        "Bookmarks": true,
+        "Preferences": true,
+        "History": true,
+        "Login Data": true,
+        "Web Data": true,
+        "Extension Cookies": false,
+        "extensions_count": 4
+      }
+    },
+    {
+      "dir": "Profile 7",
+      "email": "jiri.hylmar@g.vsb.cz",
+      "data": {
+        "Bookmarks": true,
+        "Preferences": true,
+        "History": true,
+        "Login Data": true,
+        "Web Data": true,
+        "Extension Cookies": false,
+        "extensions_count": 4
+      }
+    }
+  ],
+  "readable_formats": {
+    "Bookmarks": "JSON — full bookmark tree with URLs, folders, timestamps",
+    "Preferences": "JSON — settings, sync config, extensions config, default search",
+    "History": "SQLite — browsing history, downloads (read when Chrome closed)",
+    "Login Data": "SQLite — encrypted, not readable without OS keychain",
+    "Web Data": "SQLite — autofill, search engines",
+    "Extension Cookies": "SQLite — extension cookie storage",
+    "Extensions/": "Directory — each extension as subfolder, manifest.json readable"
+  },
+  "notes": "History and SQLite files may be locked when Chrome is running. Bookmarks and Preferences are always readable."
+}

@@ -183,17 +183,21 @@
         {
           "id": "4.5",
           "name": "google-fix-accounts: Add Chrome profile directory mapping to all 7 accounts in accounts.json",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-03-27",
           "size": "small",
           "verify": "accounts.json has chrome_profile_dir for all 7 accounts",
-          "added_reason": "Chrome profiles accessible at /mnt/c/Users/jirih/AppData/Local/Google/Chrome/User Data/"
+          "notes": "Added gaia_name, gaia_id, chrome_profile_dir. Removed misleading fields (purpose, api_access, chrome_profile)."
         },
         {
           "id": "4.6",
           "name": "google-check-chrome: Create chrome-profiles.json — profile dirs, available data types (bookmarks, extensions, preferences)",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-03-27",
           "size": "small",
-          "verify": "google/chrome-profiles.json exists with profile mapping and data type inventory"
+          "verify": "google/chrome-profiles.json exists with profile mapping and data type inventory",
+          "artifacts": ["google/chrome-profiles.json"],
+          "notes": "7 profiles, 49 extensions total, documented readable formats (JSON vs SQLite)"
         }
       ]
     }
