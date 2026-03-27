@@ -47,30 +47,38 @@
         {
           "id": "2.2",
           "name": "Document AWS Organizations structure and member accounts",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-03-27",
           "size": "small",
-          "verify": "aws/README.md has 3 orgs with all accounts listed"
+          "verify": "aws/README.md has 3 orgs with all accounts listed",
+          "notes": "3 orgs documented: o-j8lu4vyjwi (VSB, 6 accounts), o-8i3fdvbxq7 (Hylmar, 2 accounts), o-o4t4kfs7th (BrainMarket, 3 accounts)"
         },
         {
           "id": "2.3",
           "name": "Document cross-account IAM roles and trust relationships",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-03-27",
           "size": "small",
-          "verify": "aws/README.md has cross-account roles section"
+          "verify": "aws/README.md has cross-account roles section",
+          "notes": "6 cross-account methods documented: OrgAccessRole, SSO, BMPSS pipeline, data access roles, CDK cross-org, ConsoleAccess"
         },
         {
           "id": "2.4",
           "name": "Document MCP connector access and IAM user inventory",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-03-27",
           "size": "small",
-          "verify": "aws/README.md has MCP tools and IAM users mapped"
+          "verify": "aws/README.md has MCP tools and IAM users mapped",
+          "notes": "6 IAM users mapped to MCP tools, usage examples included"
         },
         {
           "id": "2.5",
           "name": "Document AWS SSO and CDK cross-org deploy access",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-03-27",
           "size": "small",
-          "verify": "aws/README.md has SSO and CDK cross-org section"
+          "verify": "aws/README.md has SSO and CDK cross-org section",
+          "notes": "5 SSO roles documented, 4 CDK cross-org deploy roles (182->975) documented"
         },
         {
           "id": "2.6",
@@ -83,7 +91,7 @@
     }
   },
 
-  "current_task": "2.2",
+  "current_task": "2.6",
   "current_phase": "phase_2_service_org",
 
   "git_repos": {
