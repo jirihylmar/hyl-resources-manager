@@ -1,0 +1,44 @@
+{
+  "version": "2.0",
+  "project": "hyl-resources-manager",
+  "description": "Infrastructure and resource management for AWS accounts - Amplify apps, domains, DNS, and DynamoDB across multiple AWS accounts",
+  "created_at": "2026-03-27",
+  "last_updated": "2026-03-27",
+  "last_session_summary": "Workflow injected into existing project",
+
+  "context_hints": {
+    "aws_accounts": {
+      "hylmar": { "id": "182059100462", "region": "eu-west-1", "mcp_tool": "mcp__aws-hylmar__call_aws" },
+      "vsb-565": { "id": "565393049593", "region": "eu-central-1", "mcp_tool": "mcp__aws-vsb-565__call_aws" },
+      "vsb-299": { "id": "299025166536", "region": "eu-central-1", "mcp_tool": "mcp__aws-vsb-299__call_aws" },
+      "d4m-975": { "id": "975050190402", "region": "eu-central-1", "mcp_tool": "mcp__aws-d4m-975__call_aws" }
+    },
+    "primary_domain": "hub440.cz"
+  },
+
+  "phases": {
+    "phase_1_setup": {
+      "name": "Project Setup & Resource Inventory",
+      "status": "in_progress",
+      "started_at": "2026-03-27",
+      "tasks": [
+        {
+          "id": "1.1",
+          "name": "Audit and update Amplify apps inventory across all accounts",
+          "status": "pending",
+          "size": "medium"
+        }
+      ]
+    }
+  },
+
+  "current_task": "1.1",
+  "current_phase": "phase_1_setup",
+
+  "git_repos": {
+    "main": "https://github.com/jirihylmar/hyl-resources-manager.git"
+  },
+
+  "blockers": [],
+  "backlog": []
+}
