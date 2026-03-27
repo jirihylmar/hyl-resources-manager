@@ -2,247 +2,369 @@
   "_meta": {
     "description": "AWS account inventory - structured source of truth",
     "last_updated": "2026-03-27",
-    "source": "~/.aws/credentials, ~/.aws/config, MCP connectors, AWS Organizations API"
+    "source": "~/.aws/credentials, ~/.aws/config, MCP connectors, AWS Organizations API, IAM ListUsers"
   },
 
   "organizations": {
     "o-j8lu4vyjwi": {
       "name": "VSB/Academic",
       "master_account_id": "182059100462",
+      "master_name": "vsb_bh6_dat_dev",
       "master_email": "miroslav.voznak@vsb.cz",
-      "feature_set": "ALL",
-      "member_account_ids": ["565393049593", "030062527147", "313426237404", "919765081653", "235542510807"]
+      "feature_set": "ALL"
     },
     "o-8i3fdvbxq7": {
       "name": "Hylmar",
       "master_account_id": "287773673380",
+      "master_name": "hylmar_OA",
       "master_email": "info@hylmar.eu",
-      "feature_set": "ALL",
-      "member_account_ids": ["299025166536"]
+      "feature_set": "ALL"
     },
     "o-o4t4kfs7th": {
       "name": "BrainMarket/D4M",
       "master_account_id": "471112898889",
+      "master_name": "brainmarket_master",
       "master_email": "tomicek@brainmarket.cz",
-      "feature_set": "ALL",
-      "member_account_ids": ["975050190402", "734468801561"]
+      "feature_set": "ALL"
     }
   },
 
   "accounts": {
     "182059100462": {
       "name": "vsb_bh6_dat_dev",
+      "default_region": "eu-west-1",
       "org_id": "o-j8lu4vyjwi",
+      "org_name": "VSB/Academic",
       "org_role": "master",
+      "master_account": null,
       "costcenter": "vsb",
-      "region": "eu-west-1",
       "contents": "Development. Main account. Secondary data warehouse. Sorona 911, mobility atlas implementations.",
       "console_login": "https://182059100462.signin.aws.amazon.com/console",
       "profiles": ["default", "HylmarJ"],
-      "mcp_connector": "aws-hylmar"
+      "mcp_connector": "aws-hylmar",
+      "mcp_iam_user": "mcp-182059100462",
+      "iam_users": ["HylmarJ", "mcp-182059100462", "amplify-cSpkq", "amplify-doJJK", "amplify-IxHho", "amplify-PBIf8", "amplify-UvV6Z", "amplify-zkMZQ", "BehanL", "executionApi", "githubActions", "Lorcik", "OrcikL", "RuzickaJ", "voznakM"]
     },
     "565393049593": {
       "name": "dev_zoneiot",
+      "default_region": "eu-central-1",
       "org_id": "o-j8lu4vyjwi",
+      "org_name": "VSB/Academic",
       "org_role": "member",
+      "master_account": "182059100462 (vsb_bh6_dat_dev)",
       "costcenter": "vsb",
-      "region": "eu-central-1",
       "console_login": "https://565393049593.signin.aws.amazon.com/console",
       "profiles": ["JiHy__vsb__565"],
-      "mcp_connector": "aws-vsb-565"
+      "mcp_connector": "aws-vsb-565",
+      "mcp_iam_user": "mcp-565393049593",
+      "iam_users": ["JiHy__vsb__565", "mcp-565393049593"]
     },
     "030062527147": {
       "name": "projekt1_hub440",
+      "default_region": "eu-west-1",
       "org_id": "o-j8lu4vyjwi",
+      "org_name": "VSB/Academic",
       "org_role": "member",
+      "master_account": "182059100462 (vsb_bh6_dat_dev)",
       "costcenter": "vsb",
-      "region": "eu-west-1",
       "console_login": "https://030062527147.signin.aws.amazon.com/console",
       "profiles": ["JiHy__vsb__030"],
-      "mcp_connector": "aws-vsb-030"
+      "mcp_connector": "aws-vsb-030",
+      "mcp_iam_user": "mcp-030062527147",
+      "iam_users": ["JiHy__vsb__030", "mcp-030062527147"]
     },
     "313426237404": {
       "name": "open_qkd_dev",
+      "default_region": null,
       "org_id": "o-j8lu4vyjwi",
+      "org_name": "VSB/Academic",
       "org_role": "member",
+      "master_account": "182059100462 (vsb_bh6_dat_dev)",
       "costcenter": "d4m",
       "profiles": [],
-      "mcp_connector": null
+      "mcp_connector": null,
+      "mcp_iam_user": null,
+      "iam_users": []
     },
     "919765081653": {
       "name": "D4M_npl_dat_tes",
+      "default_region": null,
       "org_id": "o-j8lu4vyjwi",
+      "org_name": "VSB/Academic",
       "org_role": "member",
+      "master_account": "182059100462 (vsb_bh6_dat_dev)",
       "costcenter": "d4m",
       "contents": "Development. Front end, workflow facana, objsce. Photos warehouse. Functional prototypes implementations neuropal 1q 2020.",
       "console_login": "https://919765081653.signin.aws.amazon.com/console",
       "profiles": ["JiHy_d4m_npl_dat_tes", "JiHy__vsb__919"],
-      "mcp_connector": null
+      "mcp_connector": null,
+      "mcp_iam_user": null,
+      "iam_users": []
     },
     "235542510807": {
       "name": "voip_dev_001",
+      "default_region": null,
       "org_id": "o-j8lu4vyjwi",
+      "org_name": "VSB/Academic",
       "org_role": "member",
+      "master_account": "182059100462 (vsb_bh6_dat_dev)",
       "costcenter": "vsb",
       "profiles": [],
-      "mcp_connector": null
+      "mcp_connector": null,
+      "mcp_iam_user": null,
+      "iam_users": []
     },
     "287773673380": {
       "name": "hylmar_OA",
+      "default_region": null,
       "org_id": "o-8i3fdvbxq7",
+      "org_name": "Hylmar",
       "org_role": "master",
+      "master_account": null,
       "costcenter": "hylmar",
       "console_login": "https://287773673380.signin.aws.amazon.com/console",
       "profiles": ["JiHy__hylmar__287"],
-      "mcp_connector": null
+      "mcp_connector": null,
+      "mcp_iam_user": null,
+      "iam_users": []
     },
     "299025166536": {
       "name": "digital_horizon",
+      "default_region": "eu-central-1",
       "org_id": "o-8i3fdvbxq7",
+      "org_name": "Hylmar",
       "org_role": "member",
+      "master_account": "287773673380 (hylmar_OA)",
       "costcenter": "hylmar",
-      "region": "eu-central-1",
       "console_login": "https://299025166536.signin.aws.amazon.com/console",
       "profiles": ["JiHy__vsb__299", "DigitalHorizon_root_299"],
-      "mcp_connector": "aws-vsb-299"
+      "mcp_connector": "aws-vsb-299",
+      "mcp_iam_user": "mcp-299025166536",
+      "iam_users": ["JiHy__vsb__299", "mcp-299025166536", "Admin", "amplify-2gYTH", "GH-workflow", "LuKa__vsb__299", "LuOr", "MaLy__vsb__299", "MaTo__vsb__299"]
     },
     "471112898889": {
       "name": "brainmarket_master",
+      "default_region": null,
       "org_id": "o-o4t4kfs7th",
+      "org_name": "BrainMarket/D4M",
       "org_role": "master",
+      "master_account": null,
       "costcenter": "d4m",
       "profiles": [],
-      "mcp_connector": null
+      "mcp_connector": null,
+      "mcp_iam_user": null,
+      "iam_users": []
     },
     "975050190402": {
       "name": "brainmarket_preprod",
+      "default_region": "eu-central-1",
       "org_id": "o-o4t4kfs7th",
+      "org_name": "BrainMarket/D4M",
       "org_role": "member",
+      "master_account": "471112898889 (brainmarket_master)",
       "costcenter": "d4m",
-      "region": "eu-central-1",
       "console_login": "https://975050190402.signin.aws.amazon.com/console",
       "profiles": ["JiHy__d4m__975"],
-      "mcp_connector": "aws-d4m-975"
+      "mcp_connector": "aws-d4m-975",
+      "mcp_iam_user": "mcp-975050190402",
+      "iam_users": ["JiHy__d4m__975", "mcp-975050190402", "brain-product-specification", "GH", "LukasO", "n8n-cred", "product-compliance"]
     },
     "734468801561": {
       "name": "nutritech",
+      "default_region": "eu-central-1",
       "org_id": "o-o4t4kfs7th",
+      "org_name": "BrainMarket/D4M",
       "org_role": "member",
+      "master_account": "471112898889 (brainmarket_master)",
       "costcenter": "d4m",
-      "region": "eu-central-1",
       "console_login": "https://734468801561.signin.aws.amazon.com/console",
       "profiles": ["JiHy__brm__734"],
-      "mcp_connector": "aws-brm-734"
+      "mcp_connector": "aws-brm-734",
+      "mcp_iam_user": "mcp-734468801561",
+      "iam_users": ["JiHy__brm__734", "mcp-734468801561", "claude-code", "gh-actions"]
     },
     "622620886650": {
       "name": "d4m_legacy",
+      "default_region": null,
+      "org_id": null,
+      "org_name": null,
+      "org_role": null,
+      "master_account": null,
       "costcenter": "d4m",
       "console_login": "https://622620886650.signin.aws.amazon.com/console",
       "profiles": ["JiHy__d4m__622"],
-      "mcp_connector": null
+      "mcp_connector": null,
+      "mcp_iam_user": null,
+      "iam_users": []
     },
     "582796011012": {
       "name": "d4m_tra_xxx_xxx",
+      "default_region": null,
+      "org_id": null,
+      "org_name": null,
+      "org_role": null,
+      "master_account": null,
       "costcenter": "d4m",
       "contents": "Training. Blank. Account used to prepare structures S3, etc.",
       "console_login": "https://582796011012.signin.aws.amazon.com/console",
       "profiles": ["JiHy_d4m_tra_xxx_xxx"],
-      "mcp_connector": null
+      "mcp_connector": null,
+      "mcp_iam_user": null,
+      "iam_users": []
     },
     "715123384340": {
       "name": "d4m_nnn_nnn_pri",
+      "default_region": null,
+      "org_id": null,
+      "org_name": null,
+      "org_role": null,
+      "master_account": null,
       "costcenter": "d4m",
-      "is_org_account": true,
       "contents": "Governance. D4M activities.",
       "console_login": "https://715123384340.signin.aws.amazon.com/console",
       "profiles": ["JiHy_d4m_nnn_nnn_pri"],
       "mcp_connector": null,
+      "mcp_iam_user": null,
+      "iam_users": [],
       "notes": "Account 975050190402 OrganizationAccountAccessRole trusts this account - likely previous org master"
     },
     "982266905859": {
       "name": "d4m_ipr_dat_dev",
+      "default_region": null,
+      "org_id": null,
+      "org_name": null,
+      "org_role": null,
+      "master_account": null,
       "costcenter": "vsb",
       "contents": "Development. Ipr project, o2 access, data exchange",
       "profiles": ["JiHy_d4m-ipr-dat-dev"],
-      "mcp_connector": null
+      "mcp_connector": null,
+      "mcp_iam_user": null,
+      "iam_users": []
     },
     "967175382102": {
       "name": "d4m_npl_dat_dev",
+      "default_region": null,
+      "org_id": null,
+      "org_name": null,
+      "org_role": null,
+      "master_account": null,
       "costcenter": "vsb",
       "contents": "Development. Ready to implement neuropal app version 5, summer 2020",
       "console_login": "https://967175382102.signin.aws.amazon.com/console",
       "profiles": ["JiHy_d4m_npl_dat_dev"],
-      "mcp_connector": null
+      "mcp_connector": null,
+      "mcp_iam_user": null,
+      "iam_users": []
     },
     "835627731962": {
       "name": "d4m_com_mis_dev",
+      "default_region": null,
+      "org_id": null,
+      "org_name": null,
+      "org_role": null,
+      "master_account": null,
       "costcenter": "vsb",
       "contents": "Training. HPC workflow testing. Miscellaneous tests, workflows, dictionaries.",
       "console_login": "https://835627731962.signin.aws.amazon.com/console",
       "profiles": ["JiHy_d4m_com_mis_dev"],
-      "mcp_connector": null
+      "mcp_connector": null,
+      "mcp_iam_user": null,
+      "iam_users": []
     },
     "779806927382": {
       "name": "vsb_ipr_dat_tes",
+      "default_region": null,
+      "org_id": null,
+      "org_name": null,
+      "org_role": null,
+      "master_account": null,
       "costcenter": "vsb",
       "contents": "Test. Training IPR. Data processing, data exchange with partners.",
       "console_login": "https://779806927382.signin.aws.amazon.com/console",
       "profiles": ["JiHy_vsb_ipr_dat_tes", "JiHy__vsb_tra_xxx_xxx__779", "JiHy__rop__779"],
-      "mcp_connector": null
+      "mcp_connector": null,
+      "mcp_iam_user": null,
+      "iam_users": []
     },
     "548498577022": {
       "name": "ipr_production",
+      "default_region": null,
+      "org_id": null,
+      "org_name": null,
+      "org_role": null,
+      "master_account": null,
       "costcenter": "vsb",
       "console_login": "https://548498577022.signin.aws.amazon.com/console",
       "profiles": ["JiHy__ipr__548"],
-      "mcp_connector": null
+      "mcp_connector": null,
+      "mcp_iam_user": null,
+      "iam_users": []
     },
     "382042182464": {
       "name": "vsb_bh6_doc_nnn",
+      "default_region": null,
+      "org_id": null,
+      "org_name": null,
+      "org_role": null,
+      "master_account": null,
       "costcenter": "vsb",
       "contents": "Documentation, previews, metainfo. Core team and externals contracted.",
       "console_login": "https://382042182464.signin.aws.amazon.com/console",
       "profiles": ["JiHy__vsb_bh6_doc_nnn__382"],
-      "mcp_connector": null
+      "mcp_connector": null,
+      "mcp_iam_user": null,
+      "iam_users": []
     },
     "063293852267": {
       "name": "vsb_bh6_gis_dev",
+      "default_region": null,
+      "org_id": null,
+      "org_name": null,
+      "org_role": null,
+      "master_account": null,
       "costcenter": "vsb",
       "contents": "Development geodata. Account with production ready implementation of specific territories and cell maps codes deployments.",
       "console_login": "https://063293852267.signin.aws.amazon.com/console",
       "profiles": ["JiHy__vsb_bh6_gis_dev__063"],
-      "mcp_connector": null
+      "mcp_connector": null,
+      "mcp_iam_user": null,
+      "iam_users": []
     },
     "643483795114": {
       "name": "vsb_ipr_xxx_dev",
+      "default_region": null,
+      "org_id": null,
+      "org_name": null,
+      "org_role": null,
+      "master_account": null,
       "costcenter": "vsb",
       "contents": "IPR. Core customer IPR team access. Partners limited access. Workflows, schemes, data structures definition.",
       "console_login": "https://643483795114.signin.aws.amazon.com/console",
       "profiles": ["JiHy__vsb_ipr_xxx_dev__643"],
-      "mcp_connector": null
+      "mcp_connector": null,
+      "mcp_iam_user": null,
+      "iam_users": []
     },
     "356945791424": {
       "name": "thw_npl_dat_tes",
+      "default_region": null,
+      "org_id": null,
+      "org_name": null,
+      "org_role": null,
+      "master_account": null,
       "costcenter": "thw",
-      "is_org_account": true,
       "contents": "Test. Core implementation of image registration from summer 2019 - Bastien Hammand.",
       "console_login": "https://356945791424.signin.aws.amazon.com/console",
       "profiles": ["JiHy_thw_npl_dat_tes", "jiriH"],
-      "mcp_connector": null
+      "mcp_connector": null,
+      "mcp_iam_user": null,
+      "iam_users": []
     }
   },
 
-  "mcp_connectors": {
-    "aws-hylmar":  { "profile": "HylmarJ",          "account_id": "182059100462", "region": "eu-west-1",    "status": "connected", "mcp_iam_user": "mcp-182059100462" },
-    "aws-vsb-565": { "profile": "JiHy__vsb__565",   "account_id": "565393049593", "region": "eu-central-1", "status": "connected", "mcp_iam_user": "mcp-565393049593" },
-    "aws-vsb-299": { "profile": "JiHy__vsb__299",   "account_id": "299025166536", "region": "eu-central-1", "status": "connected", "mcp_iam_user": "mcp-299025166536" },
-    "aws-d4m-975": { "profile": "JiHy__d4m__975",   "account_id": "975050190402", "region": "eu-central-1", "status": "connected", "mcp_iam_user": "mcp-975050190402" },
-    "aws-vsb-030": { "profile": "JiHy__vsb__030",   "account_id": "030062527147", "region": "eu-west-1",    "status": "connected", "mcp_iam_user": "mcp-030062527147" },
-    "aws-brm-734": { "profile": "JiHy__brm__734",   "account_id": "734468801561", "region": "eu-central-1", "status": "connected", "mcp_iam_user": "mcp-734468801561" }
-  },
-
   "mcp_service_access_policy": {
-    "description": "Identical MCP-Service-Access policy deployed to all 6 accounts, attached to mcp-{account_id} user",
+    "description": "Identical MCP-Service-Access policy deployed to all 6 MCP-connected accounts, attached to mcp-{account_id} user",
     "created": "2025-12-30",
     "permissions": {
       "AthenaAccess": ["athena:StartQueryExecution", "athena:GetQueryExecution", "athena:GetQueryResults", "athena:StopQueryExecution", "athena:GetWorkGroup", "athena:ListWorkGroups", "athena:ListDatabases", "athena:ListTableMetadata", "athena:GetTableMetadata"],
@@ -254,15 +376,6 @@
       "LambdaReadAccess": ["lambda:ListFunctions", "lambda:GetFunction", "lambda:InvokeFunction"],
       "STSAccess": ["sts:GetCallerIdentity"]
     }
-  },
-
-  "iam_users": {
-    "182059100462": ["HylmarJ", "mcp-182059100462", "amplify-cSpkq", "amplify-doJJK", "amplify-IxHho", "amplify-PBIf8", "amplify-UvV6Z", "amplify-zkMZQ", "BehanL", "executionApi", "githubActions", "Lorcik", "OrcikL", "RuzickaJ", "voznakM"],
-    "565393049593": ["JiHy__vsb__565", "mcp-565393049593"],
-    "299025166536": ["JiHy__vsb__299", "mcp-299025166536", "Admin", "amplify-2gYTH", "GH-workflow", "LuKa__vsb__299", "LuOr", "MaLy__vsb__299", "MaTo__vsb__299"],
-    "975050190402": ["JiHy__d4m__975", "mcp-975050190402", "brain-product-specification", "GH", "LukasO", "n8n-cred", "product-compliance"],
-    "030062527147": ["JiHy__vsb__030", "mcp-030062527147"],
-    "734468801561": ["JiHy__brm__734", "mcp-734468801561", "claude-code", "gh-actions"]
   },
 
   "cross_account_roles": {
@@ -289,28 +402,5 @@
       { "role": "cdk-hnb659fds-image-publishing-role-975050190402-eu-central-1","in_account": "975050190402", "trusts": "182059100462" },
       { "role": "cdk-hnb659fds-lookup-role-975050190402-eu-central-1",          "in_account": "975050190402", "trusts": "182059100462" }
     ]
-  },
-
-  "profiles_without_mcp": [
-    { "profile": "JiHy__hylmar__287",             "account_id": "287773673380", "note": "Org 2 master - no MCP" },
-    { "profile": "JiHy__d4m__622",                "account_id": "622620886650" },
-    { "profile": "JiHy_d4m_npl_dat_tes",          "account_id": "919765081653" },
-    { "profile": "JiHy__vsb__919",                "account_id": "919765081653" },
-    { "profile": "JiHy_d4m_tra_xxx_xxx",          "account_id": "582796011012" },
-    { "profile": "JiHy_d4m_nnn_nnn_pri",          "account_id": "715123384340", "note": "D4M governance OA" },
-    { "profile": "JiHy_d4m-ipr-dat-dev",          "account_id": "982266905859" },
-    { "profile": "JiHy_d4m_npl_dat_dev",          "account_id": "967175382102" },
-    { "profile": "JiHy_d4m_com_mis_dev",          "account_id": "835627731962" },
-    { "profile": "JiHy_vsb_ipr_dat_tes",          "account_id": "779806927382" },
-    { "profile": "JiHy__vsb_tra_xxx_xxx__779",    "account_id": "779806927382" },
-    { "profile": "JiHy__rop__779",                "account_id": "779806927382" },
-    { "profile": "JiHy__ipr__548",                "account_id": "548498577022" },
-    { "profile": "DigitalHorizon_root_299",        "account_id": "299025166536" },
-    { "profile": "JiHy__vsb_bh6_doc_nnn__382",    "account_id": "382042182464" },
-    { "profile": "JiHy__vsb_bh6_gis_dev__063",    "account_id": "063293852267" },
-    { "profile": "JiHy__vsb_ipr_xxx_dev__643",    "account_id": "643483795114" },
-    { "profile": "JiHy_thw_npl_dat_tes",          "account_id": "356945791424" },
-    { "profile": "jiriH",                         "account_id": "356945791424" },
-    { "profile": "default",                       "account_id": "182059100462" }
-  ]
+  }
 }
