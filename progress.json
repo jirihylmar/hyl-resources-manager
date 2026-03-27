@@ -32,8 +32,9 @@
     },
     "phase_2_service_org": {
       "name": "Service Organization & Cross-Account Documentation",
-      "status": "in_progress",
+      "status": "complete",
       "started_at": "2026-03-27",
+      "completed_at": "2026-03-27",
       "tasks": [
         {
           "id": "2.1",
@@ -83,9 +84,11 @@
         {
           "id": "2.6",
           "name": "Create placeholder docs for GitHub and Google services",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-03-27",
           "size": "small",
-          "verify": "github/README.md and google/README.md exist"
+          "verify": "github/README.md and google/README.md exist",
+          "notes": "github/ already had comprehensive docs, google/README.md created with known integrations from AWS"
         }
       ]
     }
