@@ -1,55 +1,29 @@
-# AWS Account Management
+# AWS
 
 **Source of truth**: [`accounts.json`](accounts.json)
 
-## Summary
+## Skill Outputs
 
-- **23 accounts** with CLI profiles in `~/.aws/credentials`
-- **3 AWS Organizations** (VSB, Hylmar, BrainMarket)
-- **6 MCP connectors** for Claude Code access
-- **20 profiles** without MCP (CLI-only via `aws --profile`)
+| Skill | Output | Description | Status |
+|-------|--------|-------------|--------|
+| `aws-check-accounts` | `accounts.json` | 23 accounts, 3 orgs, MCP connectors, cross-account roles, IAM users | done |
+| `aws-check-amplify` | `amplify-inventory.md` | Amplify apps across accounts with domains | stale |
+| `aws-optimize-dynamodb` | `dynamodb-optimization.md` | DynamoDB cost optimization actions | stale |
 
-## MCP Connectors (Claude Code)
+## Quick Reference (from accounts.json)
 
-| Connector | Profile | Account | Region |
-|-----------|---------|---------|--------|
-| `aws-hylmar` | `HylmarJ` | 182059100462 | eu-west-1 |
-| `aws-vsb-565` | `JiHy__vsb__565` | 565393049593 | eu-central-1 |
-| `aws-vsb-299` | `JiHy__vsb__299` | 299025166536 | eu-central-1 |
-| `aws-d4m-975` | `JiHy__d4m__975` | 975050190402 | eu-central-1 |
-| `aws-vsb-030` | `JiHy__vsb__030` | 030062527147 | eu-west-1 |
-| `aws-brm-734` | `JiHy__brm__734` | 734468801561 | eu-central-1 |
+6 MCP-connected accounts (active):
 
-All use `awslabs.aws-api-mcp-server` with `AWS_PROFILE` env var pointing to `~/.aws/credentials`.
+| Account ID | Name | Region | MCP Connector | Org | Master |
+|------------|------|--------|---------------|-----|--------|
+| 182059100462 | vsb_bh6_dat_dev | eu-west-1 | `aws-hylmar` | VSB/Academic | *(is master)* |
+| 565393049593 | dev_zoneiot | eu-central-1 | `aws-vsb-565` | VSB/Academic | vsb_bh6_dat_dev |
+| 299025166536 | digital_horizon | eu-central-1 | `aws-vsb-299` | Hylmar | hylmar_OA |
+| 975050190402 | brainmarket_preprod | eu-central-1 | `aws-d4m-975` | BrainMarket/D4M | brainmarket_master |
+| 030062527147 | projekt1_hub440 | eu-west-1 | `aws-vsb-030` | VSB/Academic | vsb_bh6_dat_dev |
+| 734468801561 | nutritech | eu-central-1 | `aws-brm-734` | BrainMarket/D4M | brainmarket_master |
 
-## Cross-Account Access
-
-See `accounts.json` `cross_account_roles` for full structured data.
-
-**Key relationships:**
-- `182059100462` (HylmarJ) is Org 1 master, can assume `OrganizationAccountAccessRole` in 565 and 030
-- `182059100462` can CDK deploy into `975050190402` (cross-org)
-- `565393049593` <-> `975050190402` bidirectional BMPSS pipeline
-- `299025166536` and `030062527147` have data access roles into `975050190402`
-
-## Profiles Without MCP
-
-20 CLI profiles have credentials but no MCP connector. See `accounts.json` `profiles_without_mcp` for the full list. Key ones:
-
-| Profile | Account | Note |
-|---------|---------|------|
-| `JiHy__hylmar__287` | 287773673380 | Org 2 master |
-| `JiHy_d4m_nnn_nnn_pri` | 715123384340 | D4M governance, old org master |
-| `DigitalHorizon_root_299` | 299025166536 | Root user for Digital Horizon |
-
-## File Index
-
-| File | Contents |
-|------|----------|
-| `accounts.json` | Structured inventory: accounts, orgs, MCP connectors, cross-account roles, profiles |
-| `amplify.md` | Amplify apps inventory across accounts |
-| `dynamodb-optimization.md` | DynamoDB cost optimization notes |
-| `copy_workspaces.sh` | Workspace copy script |
++17 passive/legacy accounts with CLI profiles only. See `accounts.json`.
 
 ---
 
