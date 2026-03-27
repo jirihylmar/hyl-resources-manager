@@ -78,9 +78,31 @@ This file tracks session history for context continuity between Claude Code sess
 - 4 OAuth Clients: macro-griffin-441215-v4, red-formula-306011, default-project-hub440, quickstart-1583930073537
 - Credential paths provided for all 8 credentials
 
+**Completed**:
+- Phase 4 (6 tasks, 4.1-4.6): all complete
+- 4.1: `google/accounts.json` — 7 Google accounts
+- 4.2: `google/gcp-projects.json` — 7 GCP projects, 4 SAs, 4 OAuth clients
+- 4.3: Verified all 8 credential files exist at listed paths
+- 4.4: `google/integrations.json` — 6 Google↔AWS integration points
+- 4.5: Added Chrome profile dir mapping (`Default`, `Profile 2`..`7`), gaia_name, gaia_id to accounts.json
+- 4.6: `google/chrome-profiles.json` — 7 profiles with available data types (Bookmarks/Preferences as JSON, History/WebData as SQLite)
+- Removed misleading `aws_association` from accounts.json per user feedback
+
+**Key Decisions**:
+- Google accounts are the core resource — 7 accounts, each is a Chrome profile
+- Chrome data accessible via `/mnt/c/Users/jirih/AppData/Local/Google/Chrome/User Data/`
+- Bookmarks and Preferences always readable (JSON), History/SQLite when Chrome closed
+- Don't put speculative cross-references (aws_association was wrong)
+
+**Artifacts Created**:
+- `google/accounts.json` — 7 accounts with chrome_profile_dir, gaia_id
+- `google/gcp-projects.json` — 7 projects, 8 credentials (all verified)
+- `google/integrations.json` — 6 integration points
+- `google/chrome-profiles.json` — profile data access inventory
+- `google/README.md` — updated skill output index
+
 **Next Session**:
-- Continue with Task 4.1: google-check-accounts
-- Or proceed to execute tasks 4.1-4.4
+- Phase 3 remains: 3.1 aws-check-amplify, 3.2 aws-check-dynamodb, 3.3 github-check-repos
 
 ---
 
