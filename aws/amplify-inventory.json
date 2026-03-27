@@ -1,0 +1,1044 @@
+{
+  "generated_at": "2026-03-27",
+  "accounts": [
+    {
+      "account": "HylmarJ",
+      "account_id": "182059100462",
+      "region": "eu-west-1",
+      "apps": [
+        {
+          "appId": "d1t3vdt7o1z6f6",
+          "appArn": "arn:aws:amplify:eu-west-1:182059100462:apps/d1t3vdt7o1z6f6",
+          "name": "web-danse-tech",
+          "repository": "https://github.com/Danse4mobility/web-danse-tech",
+          "platform": "WEB",
+          "defaultDomain": "d1t3vdt7o1z6f6.amplifyapp.com",
+          "createTime": "2022-11-25T15:37:39.337000+01:00",
+          "updateTime": "2022-11-25T15:37:39.337000+01:00",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": false,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "TOKEN",
+          "productionBranch": {
+            "lastDeployTime": "2025-10-21T09:37:26.844000+02:00",
+            "status": "SUCCEED",
+            "branchName": "master"
+          },
+          "environmentVariables": {
+            "_CUSTOM_IMAGE": "amplify:al2"
+          },
+          "customRules": [
+            { "source": "/<*>", "target": "/index.html", "status": "404-200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED" }
+        },
+        {
+          "appId": "d2vi9zvekhlpua",
+          "appArn": "arn:aws:amplify:eu-west-1:182059100462:apps/d2vi9zvekhlpua",
+          "name": "fro-danse-portal",
+          "repository": "https://github.com/Danse4mobility/fro-danse-portal",
+          "platform": "WEB",
+          "defaultDomain": "d2vi9zvekhlpua.amplifyapp.com",
+          "createTime": "2022-02-17T22:51:16.962000+01:00",
+          "updateTime": "2022-04-07T23:44:15.759000+02:00",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": false,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "SSH",
+          "productionBranch": {
+            "lastDeployTime": "2022-04-28T12:26:09.372000+02:00",
+            "status": "SUCCEED",
+            "branchName": "v005"
+          },
+          "environmentVariables": {
+            "_CUSTOM_IMAGE": "amplify:al2"
+          },
+          "customRules": [
+            { "source": "/<*>", "target": "/index.html", "status": "404-200" },
+            { "source": "</^[^.]+$|\\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|ttf|map|json)$)([^.]+$)/>", "target": "/index.html", "status": "200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED" }
+        },
+        {
+          "appId": "d3hgg9jtwyuijn",
+          "appArn": "arn:aws:amplify:eu-west-1:182059100462:apps/d3hgg9jtwyuijn",
+          "name": "fro-danse",
+          "repository": "https://github.com/Danse4mobility/fro-danse",
+          "platform": "WEB",
+          "defaultDomain": "d3hgg9jtwyuijn.amplifyapp.com",
+          "createTime": "2023-02-14T13:03:24.742000+01:00",
+          "updateTime": "2023-08-01T20:37:23.402000+02:00",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": false,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "TOKEN",
+          "productionBranch": {
+            "lastDeployTime": "2025-10-21T10:25:58.822000+02:00",
+            "status": "SUCCEED",
+            "branchName": "dev"
+          },
+          "environmentVariables": {
+            "_CUSTOM_IMAGE": "amplify:al2"
+          },
+          "customRules": [
+            { "source": "/<*>", "target": "/index.html", "status": "404-200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED" }
+        },
+        {
+          "appId": "d9lm5ar4v0ogf",
+          "appArn": "arn:aws:amplify:eu-west-1:182059100462:apps/d9lm5ar4v0ogf",
+          "name": "doc-ropid",
+          "repository": "https://github.com/Danse4mobility/doc-ropid",
+          "platform": "WEB",
+          "defaultDomain": "d9lm5ar4v0ogf.amplifyapp.com",
+          "createTime": "2021-11-08T07:53:02.927000+01:00",
+          "updateTime": "2021-12-07T19:07:13.588000+01:00",
+          "iamServiceRoleArn": "arn:aws:iam::182059100462:role/amplify-docBuild",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": false,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "SSH",
+          "productionBranch": {
+            "lastDeployTime": "2022-09-12T14:46:18.636000+02:00",
+            "status": "SUCCEED",
+            "branchName": "master"
+          },
+          "environmentVariables": {
+            "_CUSTOM_IMAGE": "amplify:al2"
+          },
+          "customRules": [
+            { "source": "https://danse.tech", "target": "https://www.danse.tech", "status": "302" },
+            { "source": "/<*>", "target": "/index.html", "status": "404-200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED" }
+        },
+        {
+          "appId": "dj10ebi8s4z2r",
+          "appArn": "arn:aws:amplify:eu-west-1:182059100462:apps/dj10ebi8s4z2r",
+          "name": "doc-data-processing",
+          "repository": "https://github.com/Danse4mobility/doc-data-processing",
+          "platform": "WEB",
+          "defaultDomain": "dj10ebi8s4z2r.amplifyapp.com",
+          "createTime": "2021-10-20T18:10:55.020000+02:00",
+          "updateTime": "2024-08-19T12:48:27.848000+02:00",
+          "iamServiceRoleArn": "arn:aws:iam::182059100462:role/amplify-docBuild",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": false,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "TOKEN",
+          "productionBranch": {
+            "lastDeployTime": "2025-10-21T09:44:12.309000+02:00",
+            "status": "SUCCEED",
+            "branchName": "master"
+          },
+          "environmentVariables": {
+            "_CUSTOM_IMAGE": "amplify:al2"
+          },
+          "customRules": [
+            { "source": "/<*>", "target": "/index.html", "status": "404-200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED" },
+          "webhookCreateTime": "2024-08-19T12:48:27.791000+02:00"
+        },
+        {
+          "appId": "dnfgmzdgwfdv4",
+          "appArn": "arn:aws:amplify:eu-west-1:182059100462:apps/dnfgmzdgwfdv4",
+          "name": "doc-ipr",
+          "repository": "https://github.com/Danse4mobility/doc-ipr",
+          "platform": "WEB",
+          "defaultDomain": "dnfgmzdgwfdv4.amplifyapp.com",
+          "createTime": "2021-12-05T02:19:22.756000+01:00",
+          "updateTime": "2021-12-09T08:37:20.675000+01:00",
+          "iamServiceRoleArn": "arn:aws:iam::182059100462:role/amplify-docBuild",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": false,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "SSH",
+          "productionBranch": {
+            "lastDeployTime": "2022-11-03T11:18:38.519000+01:00",
+            "status": "SUCCEED",
+            "branchName": "master"
+          },
+          "environmentVariables": {
+            "_CUSTOM_IMAGE": "amplify:al2"
+          },
+          "customRules": [
+            { "source": "/<*>", "target": "/index.html", "status": "404-200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED" }
+        },
+        {
+          "appId": "dx974c7c1hctw",
+          "appArn": "arn:aws:amplify:eu-west-1:182059100462:apps/dx974c7c1hctw",
+          "name": "doc-internship",
+          "repository": "https://github.com/Danse4mobility/doc-internship",
+          "platform": "WEB",
+          "defaultDomain": "dx974c7c1hctw.amplifyapp.com",
+          "createTime": "2022-05-02T11:29:54.617000+02:00",
+          "updateTime": "2022-05-02T11:34:10.320000+02:00",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": false,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "TOKEN",
+          "productionBranch": {
+            "lastDeployTime": "2022-05-02T13:49:33.529000+02:00",
+            "status": "SUCCEED",
+            "branchName": "master"
+          },
+          "environmentVariables": {
+            "_CUSTOM_IMAGE": "amplify:al2"
+          },
+          "customRules": [
+            { "source": "/<*>", "target": "/index.html", "status": "404-200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED" }
+        }
+      ]
+    },
+    {
+      "account": "JiHy__vsb__565",
+      "account_id": "565393049593",
+      "region": "eu-central-1",
+      "apps": [
+        {
+          "appId": "d19tc6keq9pu07",
+          "appArn": "arn:aws:amplify:eu-central-1:565393049593:apps/d19tc6keq9pu07",
+          "name": "goldsport-video-feedback-frontend",
+          "repository": "https://github.com/DigitalHorizonCz/goldsport-video-feedback-frontend",
+          "platform": "WEB",
+          "defaultDomain": "d19tc6keq9pu07.amplifyapp.com",
+          "createTime": "2026-02-14T19:39:25.886000+01:00",
+          "updateTime": "2026-02-14T20:03:20.630000+01:00",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": false,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "TOKEN",
+          "productionBranch": {
+            "lastDeployTime": "2026-02-22T14:20:45.847000+01:00",
+            "status": "SUCCEED",
+            "branchName": "main"
+          },
+          "customRules": [
+            { "source": "</^[^.]+$|\\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json|webp|mp4)$)([^.]+$)/>", "target": "/index.html", "status": "200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED_NO_COOKIES" },
+          "webhookCreateTime": "2026-02-14T19:39:25.691000+01:00",
+          "jobConfig": { "buildComputeType": "STANDARD_8GB" }
+        },
+        {
+          "appId": "d2er5zhyh7jn4l",
+          "appArn": "arn:aws:amplify:eu-central-1:565393049593:apps/d2er5zhyh7jn4l",
+          "name": "useiot-frontend-user",
+          "repository": "https://github.com/DigitalHorizonCz/useiot-frontend-user",
+          "platform": "WEB",
+          "defaultDomain": "d2er5zhyh7jn4l.amplifyapp.com",
+          "createTime": "2025-12-15T17:31:34.911000+01:00",
+          "updateTime": "2025-12-15T17:32:17.946000+01:00",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": false,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "TOKEN",
+          "productionBranch": {
+            "lastDeployTime": "2025-12-16T20:48:29.952000+01:00",
+            "status": "SUCCEED",
+            "branchName": "main"
+          },
+          "customRules": [
+            { "source": "/<*>", "target": "/index.html", "status": "404-200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED_NO_COOKIES" },
+          "webhookCreateTime": "2025-12-15T17:31:34.683000+01:00",
+          "jobConfig": { "buildComputeType": "STANDARD_8GB" }
+        },
+        {
+          "appId": "d2hva8le7y75im",
+          "appArn": "arn:aws:amplify:eu-central-1:565393049593:apps/d2hva8le7y75im",
+          "name": "hyl-assistants",
+          "repository": "https://github.com/jirihylmar/hyl-assistants",
+          "platform": "WEB",
+          "defaultDomain": "d2hva8le7y75im.amplifyapp.com",
+          "createTime": "2025-09-30T18:14:11.222000+02:00",
+          "updateTime": "2025-09-30T18:14:11.222000+02:00",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": false,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "TOKEN",
+          "productionBranch": {
+            "lastDeployTime": "2026-03-18T16:18:39.506000+01:00",
+            "status": "SUCCEED",
+            "branchName": "main"
+          },
+          "customRules": [
+            { "source": "/<*>", "target": "/index.html", "status": "404-200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED_NO_COOKIES" },
+          "webhookCreateTime": "2025-09-30T18:14:11.051000+02:00",
+          "jobConfig": { "buildComputeType": "STANDARD_8GB" }
+        },
+        {
+          "appId": "d3qizyf5m8lvpg",
+          "appArn": "arn:aws:amplify:eu-central-1:565393049593:apps/d3qizyf5m8lvpg",
+          "name": "useiot-frontend-admin",
+          "repository": "https://github.com/DigitalHorizonCz/useiot-frontend-admin",
+          "platform": "WEB",
+          "defaultDomain": "d3qizyf5m8lvpg.amplifyapp.com",
+          "createTime": "2025-12-03T17:53:51.755000+01:00",
+          "updateTime": "2025-12-03T17:53:51.755000+01:00",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": false,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "TOKEN",
+          "productionBranch": {
+            "lastDeployTime": "2025-12-16T20:11:37.584000+01:00",
+            "status": "FAILED",
+            "branchName": "main"
+          },
+          "customRules": [
+            { "source": "/<*>", "target": "/index.html", "status": "404-200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED_NO_COOKIES" },
+          "webhookCreateTime": "2025-12-03T17:53:51.519000+01:00",
+          "jobConfig": { "buildComputeType": "STANDARD_8GB" }
+        }
+      ]
+    },
+    {
+      "account": "JiHy__vsb__299",
+      "account_id": "299025166536",
+      "region": "eu-central-1",
+      "apps": [
+        {
+          "appId": "d14a7pjxtutfzh",
+          "appArn": "arn:aws:amplify:eu-central-1:299025166536:apps/d14a7pjxtutfzh",
+          "name": "aps-goldsport-pages",
+          "repository": "https://github.com/jirihylmar/aps-goldsport-pages",
+          "platform": "WEB",
+          "defaultDomain": "d14a7pjxtutfzh.amplifyapp.com",
+          "createTime": "2024-12-10T11:40:35.679000+01:00",
+          "updateTime": "2025-02-01T09:32:57.377000+01:00",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": false,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "TOKEN",
+          "productionBranch": {
+            "lastDeployTime": "2025-12-07T08:33:32.223000+01:00",
+            "status": "SUCCEED",
+            "branchName": "main"
+          },
+          "environmentVariables": {
+            "REACT_APP_DEBUG": "false"
+          },
+          "customRules": [
+            { "source": "https://pages.classicskischool.cz", "target": "https://www.pages.classicskischool.cz", "status": "302" },
+            { "source": "/<*>", "target": "/index.html", "status": "404-200" },
+            { "source": "</^[^.]+$|\\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|ttf|map|json)$)([^.]+$)/>", "target": "/index.html", "status": "200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED" },
+          "webhookCreateTime": "2024-12-10T11:40:35.490000+01:00"
+        },
+        {
+          "appId": "d1b1qc78tjgti9",
+          "appArn": "arn:aws:amplify:eu-central-1:299025166536:apps/d1b1qc78tjgti9",
+          "name": "aps-goldsport-events",
+          "repository": "https://github.com/jirihylmar/aps-goldsport-events",
+          "platform": "WEB",
+          "defaultDomain": "d1b1qc78tjgti9.amplifyapp.com",
+          "createTime": "2026-02-09T11:36:48.709000+01:00",
+          "updateTime": "2026-02-09T13:33:07.742000+01:00",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": false,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "TOKEN",
+          "productionBranch": {
+            "lastDeployTime": "2026-02-19T14:50:07.536000+01:00",
+            "status": "SUCCEED",
+            "branchName": "main"
+          },
+          "customRules": [
+            { "source": "</^[^.]+$|\\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|woff2|ttf|map|json|webp)$)([^.]+$)/>", "target": "/index.html", "status": "200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED_NO_COOKIES" },
+          "webhookCreateTime": "2026-02-09T11:36:48.512000+01:00",
+          "jobConfig": { "buildComputeType": "STANDARD_8GB" }
+        },
+        {
+          "appId": "d1qp75p0jorm55",
+          "appArn": "arn:aws:amplify:eu-central-1:299025166536:apps/d1qp75p0jorm55",
+          "name": "hyl-flashcards",
+          "repository": "https://github.com/jirihylmar/hyl-flashcards",
+          "platform": "WEB",
+          "defaultDomain": "d1qp75p0jorm55.amplifyapp.com",
+          "createTime": "2025-06-09T19:16:22.290000+02:00",
+          "updateTime": "2025-06-09T19:16:22.290000+02:00",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": false,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "TOKEN",
+          "productionBranch": {
+            "lastDeployTime": "2025-06-09T19:22:05.299000+02:00",
+            "status": "SUCCEED",
+            "branchName": "main"
+          },
+          "customRules": [
+            { "source": "/<*>", "target": "/index.html", "status": "404-200" },
+            { "source": "</^[^.]+$|\\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|ttf|map|json)$)([^.]+$)/>", "target": "/index.html", "status": "200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED_NO_COOKIES" },
+          "webhookCreateTime": "2025-06-09T19:16:22.092000+02:00",
+          "jobConfig": { "buildComputeType": "STANDARD_8GB" }
+        },
+        {
+          "appId": "d1qwlu0mkb3ati",
+          "appArn": "arn:aws:amplify:eu-central-1:299025166536:apps/d1qwlu0mkb3ati",
+          "name": "aps-digital-horizon-platform",
+          "repository": "https://github.com/DigitalHorizonCz/aps-digital-horizon-platform",
+          "platform": "WEB",
+          "defaultDomain": "d1qwlu0mkb3ati.amplifyapp.com",
+          "createTime": "2025-05-07T09:56:44.627000+02:00",
+          "updateTime": "2025-05-10T18:55:21.179000+02:00",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": false,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "TOKEN",
+          "environmentVariables": {
+            "AMPLIFY_DIFF_DEPLOY": "false",
+            "AMPLIFY_MONOREPO_APP_ROOT": "/frontend"
+          },
+          "customRules": [
+            { "source": "/<*>", "target": "/index.html", "status": "404-200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED_NO_COOKIES" },
+          "webhookCreateTime": "2025-05-07T09:56:44.437000+02:00"
+        },
+        {
+          "appId": "d1xyxx6t262hva",
+          "appArn": "arn:aws:amplify:eu-central-1:299025166536:apps/d1xyxx6t262hva",
+          "name": "hyl-graphics",
+          "repository": "https://github.com/jirihylmar/hyl-graphics",
+          "platform": "WEB",
+          "defaultDomain": "d1xyxx6t262hva.amplifyapp.com",
+          "createTime": "2025-10-27T17:01:21.408000+01:00",
+          "updateTime": "2025-10-27T17:01:21.408000+01:00",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": false,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "TOKEN",
+          "productionBranch": {
+            "lastDeployTime": "2025-10-28T07:41:54.045000+01:00",
+            "status": "SUCCEED",
+            "branchName": "main"
+          },
+          "customRules": [
+            { "source": "/<*>", "target": "/index.html", "status": "404-200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED_NO_COOKIES" },
+          "webhookCreateTime": "2025-10-27T17:01:21.205000+01:00",
+          "jobConfig": { "buildComputeType": "STANDARD_8GB" }
+        },
+        {
+          "appId": "d267f060c4kfsk",
+          "appArn": "arn:aws:amplify:eu-central-1:299025166536:apps/d267f060c4kfsk",
+          "name": "aps-goldsport-page-reviews",
+          "repository": "https://github.com/jirihylmar/aps-goldsport-page-reviews",
+          "platform": "WEB",
+          "defaultDomain": "d267f060c4kfsk.amplifyapp.com",
+          "createTime": "2025-02-01T09:17:17.460000+01:00",
+          "updateTime": "2025-02-01T09:27:28.783000+01:00",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": false,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "TOKEN",
+          "productionBranch": {
+            "lastDeployTime": "2025-03-05T17:38:41.278000+01:00",
+            "status": "SUCCEED",
+            "branchName": "main"
+          },
+          "customRules": [
+            { "source": "https://reviews.classicskischool.cz", "target": "https://www.reviews.classicskischool.cz", "status": "302" },
+            { "source": "/<*>", "target": "/index.html", "status": "404-200" },
+            { "source": "</^[^.]+$|\\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|ttf|map|json)$)([^.]+$)/>", "target": "/index.html", "status": "200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED" },
+          "webhookCreateTime": "2025-02-01T09:17:17.303000+01:00"
+        },
+        {
+          "appId": "d288ymnjtgaakc",
+          "appArn": "arn:aws:amplify:eu-central-1:299025166536:apps/d288ymnjtgaakc",
+          "name": "broadcast-admin-frontend",
+          "repository": "https://github.com/DigitalHorizonCz/broadcast-admin-frontend",
+          "platform": "WEB",
+          "defaultDomain": "d288ymnjtgaakc.amplifyapp.com",
+          "createTime": "2025-12-15T09:44:40.774000+01:00",
+          "updateTime": "2025-12-15T19:20:12.260000+01:00",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": false,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "TOKEN",
+          "environmentVariables": {
+            "VITE_API_BASE_URL": "https://ff7rnd5oc6.execute-api.eu-central-1.amazonaws.com/prod/api",
+            "VITE_COGNITO_CLIENT_ID": "7qqgjkolfk30gc000recdln1um",
+            "VITE_COGNITO_USER_POOL_ID": "eu-central-1_KGhgKNNHV"
+          },
+          "productionBranch": {
+            "lastDeployTime": "2026-01-29T09:17:15.527000+01:00",
+            "status": "SUCCEED",
+            "branchName": "main"
+          },
+          "customRules": [
+            { "source": "</^[^.]+$/>", "target": "/index.html", "status": "200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED_NO_COOKIES" },
+          "webhookCreateTime": "2025-12-15T09:44:40.563000+01:00",
+          "jobConfig": { "buildComputeType": "STANDARD_8GB" }
+        },
+        {
+          "appId": "d2gdyjw8ri34l2",
+          "appArn": "arn:aws:amplify:eu-central-1:299025166536:apps/d2gdyjw8ri34l2",
+          "name": "doc-digital-horizon-goldsport",
+          "repository": "https://github.com/jirihylmar/doc-digital-horizon-goldsport",
+          "platform": "WEB",
+          "defaultDomain": "d2gdyjw8ri34l2.amplifyapp.com",
+          "createTime": "2024-11-25T16:53:08.615000+01:00",
+          "updateTime": "2025-02-01T09:35:30.348000+01:00",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": true,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "TOKEN",
+          "productionBranch": {
+            "lastDeployTime": "2026-01-18T08:24:13.701000+01:00",
+            "status": "SUCCEED",
+            "branchName": "main"
+          },
+          "customRules": [
+            { "source": "https://doc.classicskischool.cz", "target": "https://www.doc.classicskischool.cz", "status": "302" },
+            { "source": "/<*>", "target": "/index.html", "status": "404-200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED" },
+          "webhookCreateTime": "2024-11-25T16:53:08.420000+01:00"
+        },
+        {
+          "appId": "d2r70lavusnzlx",
+          "appArn": "arn:aws:amplify:eu-central-1:299025166536:apps/d2r70lavusnzlx",
+          "name": "hyl-media",
+          "repository": "https://github.com/jirihylmar/hyl-media",
+          "platform": "WEB",
+          "defaultDomain": "d2r70lavusnzlx.amplifyapp.com",
+          "createTime": "2026-03-22T17:57:38.244000+01:00",
+          "updateTime": "2026-03-22T20:32:22.717000+01:00",
+          "iamServiceRoleArn": "arn:aws:iam::299025166536:role/service-role/AmplifySSRLoggingRole-b6709d32-8e9e-46b8-b628-7852429aefc1",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": false,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "TOKEN",
+          "productionBranch": {
+            "lastDeployTime": "2026-03-24T15:28:55.349000+01:00",
+            "status": "SUCCEED",
+            "branchName": "main"
+          },
+          "customRules": [
+            { "source": "</^[^.]+$/>", "target": "/index.html", "status": "200" },
+            { "source": "/<*>", "target": "/index.html", "status": "404-200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED_NO_COOKIES" },
+          "webhookCreateTime": "2026-03-22T17:57:38.047000+01:00",
+          "jobConfig": { "buildComputeType": "STANDARD_8GB" }
+        },
+        {
+          "appId": "d2thadu8jkg00",
+          "appArn": "arn:aws:amplify:eu-central-1:299025166536:apps/d2thadu8jkg00",
+          "name": "digital-horizon-platform",
+          "repository": "https://github.com/DigitalHorizonCz/digital-horizon-platform",
+          "platform": "WEB",
+          "defaultDomain": "d2thadu8jkg00.amplifyapp.com",
+          "createTime": "2026-03-27T15:33:13.644000+01:00",
+          "updateTime": "2026-03-27T15:39:21.619000+01:00",
+          "iamServiceRoleArn": "arn:aws:iam::299025166536:role/service-role/AmplifySSRLoggingRole-369e2759-8d00-4b40-aeec-13a4c8966462",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": false,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "TOKEN",
+          "productionBranch": {
+            "lastDeployTime": "2026-03-27T17:21:07.951000+01:00",
+            "status": "SUCCEED",
+            "branchName": "main"
+          },
+          "customRules": [
+            { "source": "/<*>", "target": "/index.html", "status": "404-200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED_NO_COOKIES" },
+          "webhookCreateTime": "2026-03-27T15:33:13.421000+01:00",
+          "jobConfig": { "buildComputeType": "STANDARD_8GB" }
+        },
+        {
+          "appId": "d3f9qt4fnd0v",
+          "appArn": "arn:aws:amplify:eu-central-1:299025166536:apps/d3f9qt4fnd0v",
+          "name": "aps-goldsport-booking",
+          "repository": "https://github.com/jirihylmar/aps-goldsport-booking",
+          "platform": "WEB",
+          "defaultDomain": "d3f9qt4fnd0v.amplifyapp.com",
+          "createTime": "2025-02-19T16:48:33.614000+01:00",
+          "updateTime": "2025-09-24T18:24:44.506000+02:00",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": false,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "TOKEN",
+          "environmentVariables": {
+            "REACT_APP_API_URL": "https://v8g4v2g3mj.execute-api.eu-central-1.amazonaws.com/prod"
+          },
+          "productionBranch": {
+            "lastDeployTime": "2026-03-03T19:58:52.355000+01:00",
+            "status": "SUCCEED",
+            "branchName": "main"
+          },
+          "customRules": [
+            { "source": "https://booking.classicskischool.cz", "target": "https://www.booking.classicskischool.cz", "status": "302" },
+            { "source": "/<*>", "target": "/index.html", "status": "404-200" },
+            { "source": "</^[^.]+$|\\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|ttf|map|json)$)([^.]+$)/>", "target": "/index.html", "status": "200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED" },
+          "webhookCreateTime": "2025-02-19T16:48:33.196000+01:00"
+        },
+        {
+          "appId": "d3nqdoqo4ia3hy",
+          "appArn": "arn:aws:amplify:eu-central-1:299025166536:apps/d3nqdoqo4ia3hy",
+          "name": "aps-goldsport-booking",
+          "repository": "https://github.com/jirihylmar/aps-goldsport-booking",
+          "platform": "WEB",
+          "defaultDomain": "d3nqdoqo4ia3hy.amplifyapp.com",
+          "createTime": "2025-09-25T05:59:55.604000+02:00",
+          "updateTime": "2025-09-25T05:59:55.604000+02:00",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": false,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "TOKEN",
+          "productionBranch": {
+            "lastDeployTime": "2026-03-07T20:17:07.043000+01:00",
+            "status": "SUCCEED",
+            "branchName": "server"
+          },
+          "customRules": [
+            { "source": "/<*>", "target": "/index.html", "status": "404-200" },
+            { "source": "</^[^.]+$|\\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|ttf|map|json)$)([^.]+$)/>", "target": "/index.html", "status": "200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED_NO_COOKIES" },
+          "webhookCreateTime": "2025-09-25T05:59:55.414000+02:00",
+          "jobConfig": { "buildComputeType": "STANDARD_8GB" }
+        },
+        {
+          "appId": "d3o4j1kmvoqm2n",
+          "appArn": "arn:aws:amplify:eu-central-1:299025166536:apps/d3o4j1kmvoqm2n",
+          "name": "doc-nutritech",
+          "repository": "https://github.com/jirihylmar/doc-nutritech",
+          "platform": "WEB",
+          "defaultDomain": "d3o4j1kmvoqm2n.amplifyapp.com",
+          "createTime": "2025-07-21T07:09:27.354000+02:00",
+          "updateTime": "2025-07-21T07:09:27.354000+02:00",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": false,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "TOKEN",
+          "productionBranch": {
+            "lastDeployTime": "2025-11-12T07:28:10.213000+01:00",
+            "status": "SUCCEED",
+            "branchName": "main"
+          },
+          "customRules": [
+            { "source": "/<*>", "target": "/index.html", "status": "404-200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED_NO_COOKIES" },
+          "webhookCreateTime": "2025-07-21T07:09:27.121000+02:00",
+          "jobConfig": { "buildComputeType": "STANDARD_8GB" }
+        },
+        {
+          "appId": "dap2lufm0xbjf",
+          "appArn": "arn:aws:amplify:eu-central-1:299025166536:apps/dap2lufm0xbjf",
+          "name": "hyl-web",
+          "repository": "https://github.com/jirihylmar/hyl-web",
+          "platform": "WEB",
+          "defaultDomain": "dap2lufm0xbjf.amplifyapp.com",
+          "createTime": "2024-11-08T09:47:26.452000+01:00",
+          "updateTime": "2024-11-08T10:24:21.260000+01:00",
+          "iamServiceRoleArn": "arn:aws:iam::299025166536:role/amplifyconsole-backend-role",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": false,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "TOKEN",
+          "productionBranch": {
+            "lastDeployTime": "2025-09-23T12:23:08.043000+02:00",
+            "status": "SUCCEED",
+            "branchName": "master"
+          },
+          "customRules": [
+            { "source": "/<*>", "target": "/index.html", "status": "404-200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED" },
+          "webhookCreateTime": "2024-11-08T09:47:26.235000+01:00"
+        },
+        {
+          "appId": "dph7uvak04lpm",
+          "appArn": "arn:aws:amplify:eu-central-1:299025166536:apps/dph7uvak04lpm",
+          "name": "doc-zoneiot",
+          "repository": "https://github.com/jirihylmar/doc-zoneiot",
+          "platform": "WEB",
+          "defaultDomain": "dph7uvak04lpm.amplifyapp.com",
+          "createTime": "2024-11-15T06:24:53.738000+01:00",
+          "updateTime": "2025-01-15T12:30:08.620000+01:00",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": false,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "TOKEN",
+          "productionBranch": {
+            "lastDeployTime": "2025-05-02T08:04:19.349000+02:00",
+            "status": "SUCCEED",
+            "branchName": "main"
+          },
+          "customRules": [
+            { "source": "/<*>", "target": "/index.html", "status": "404-200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED" },
+          "webhookCreateTime": "2024-11-15T06:24:53.508000+01:00"
+        },
+        {
+          "appId": "drz9yi5cw9kfv",
+          "appArn": "arn:aws:amplify:eu-central-1:299025166536:apps/drz9yi5cw9kfv",
+          "name": "aps-goldsport-analytics",
+          "repository": "https://github.com/jirihylmar/aps-goldsport-analytics",
+          "platform": "WEB",
+          "defaultDomain": "drz9yi5cw9kfv.amplifyapp.com",
+          "createTime": "2026-01-12T17:40:00.036000+01:00",
+          "updateTime": "2026-01-12T17:46:27.038000+01:00",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": true,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "TOKEN",
+          "productionBranch": {
+            "lastDeployTime": "2026-03-27T08:12:37.060000+01:00",
+            "status": "SUCCEED",
+            "branchName": "main"
+          },
+          "customRules": [
+            { "source": "https://analytics.classicskischool.cz", "target": "https://www.analytics.classicskischool.cz", "status": "302" },
+            { "source": "/<*>", "target": "/index.html", "status": "404-200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED_NO_COOKIES" },
+          "webhookCreateTime": "2026-01-12T17:39:59.817000+01:00",
+          "jobConfig": { "buildComputeType": "STANDARD_8GB" }
+        },
+        {
+          "appId": "dziu0wvy5r9bx",
+          "appArn": "arn:aws:amplify:eu-central-1:299025166536:apps/dziu0wvy5r9bx",
+          "name": "aps-digital-horizon-v0",
+          "repository": "https://github.com/jirihylmar/aps-digital-horizon-v0",
+          "platform": "WEB",
+          "defaultDomain": "dziu0wvy5r9bx.amplifyapp.com",
+          "createTime": "2024-11-27T18:09:54.602000+01:00",
+          "updateTime": "2025-04-08T13:57:28.367000+02:00",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": false,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "TOKEN",
+          "environmentVariables": {
+            "_NOTE": "env vars contain API keys - redacted from inventory"
+          },
+          "productionBranch": {
+            "lastDeployTime": "2026-01-08T09:45:18.934000+01:00",
+            "status": "SUCCEED",
+            "branchName": "main"
+          },
+          "customRules": [
+            { "source": "/<*>", "target": "/index.html", "status": "404-200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED" },
+          "webhookCreateTime": "2024-11-27T18:09:54.431000+01:00"
+        }
+      ]
+    },
+    {
+      "account": "JiHy__d4m__975",
+      "account_id": "975050190402",
+      "region": "eu-central-1",
+      "apps": [
+        {
+          "appId": "d13t8wmh7hbrzm",
+          "appArn": "arn:aws:amplify:eu-central-1:975050190402:apps/d13t8wmh7hbrzm",
+          "name": "brain-cdn-public",
+          "repository": "https://github.com/braindevcz/brain-cdn-public",
+          "platform": "WEB",
+          "defaultDomain": "d13t8wmh7hbrzm.amplifyapp.com",
+          "createTime": "2025-04-04T18:02:49.658000+02:00",
+          "updateTime": "2025-04-04T18:02:49.658000+02:00",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": false,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "TOKEN",
+          "productionBranch": {
+            "lastDeployTime": "2025-04-04T18:22:07.118000+02:00",
+            "status": "SUCCEED",
+            "branchName": "master"
+          },
+          "customRules": [
+            { "source": "/<*>", "target": "/index.html", "status": "404-200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED" },
+          "webhookCreateTime": "2025-04-04T18:02:49.432000+02:00"
+        },
+        {
+          "appId": "d1o3xtsxc9c6ds",
+          "appArn": "arn:aws:amplify:eu-central-1:975050190402:apps/d1o3xtsxc9c6ds",
+          "name": "brain-voucher",
+          "repository": "https://github.com/braindevcz/brain-voucher",
+          "platform": "WEB",
+          "defaultDomain": "d1o3xtsxc9c6ds.amplifyapp.com",
+          "createTime": "2024-11-18T23:57:30.824000+01:00",
+          "updateTime": "2024-11-19T00:18:22.922000+01:00",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": false,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "TOKEN",
+          "productionBranch": {
+            "lastDeployTime": "2024-11-19T23:14:16.557000+01:00",
+            "status": "SUCCEED",
+            "branchName": "prod"
+          },
+          "customRules": [
+            { "source": "/<*>", "target": "/index.htm", "status": "404-200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED" },
+          "webhookCreateTime": "2024-11-18T23:57:30.628000+01:00"
+        },
+        {
+          "appId": "d1o686q6wqthxo",
+          "appArn": "arn:aws:amplify:eu-central-1:975050190402:apps/d1o686q6wqthxo",
+          "name": "brain-delivery-note",
+          "repository": "https://github.com/braindevcz/brain-delivery-note",
+          "platform": "WEB",
+          "defaultDomain": "d1o686q6wqthxo.amplifyapp.com",
+          "createTime": "2024-12-14T21:28:15.016000+01:00",
+          "updateTime": "2024-12-17T23:08:41.179000+01:00",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": false,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "TOKEN",
+          "productionBranch": {
+            "lastDeployTime": "2025-03-20T11:14:04.340000+01:00",
+            "status": "SUCCEED",
+            "branchName": "master"
+          },
+          "customRules": [
+            { "source": "/<*>", "target": "/index.htm", "status": "404" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED" },
+          "webhookCreateTime": "2024-12-14T21:28:14.829000+01:00"
+        },
+        {
+          "appId": "d2s09gabt302s2",
+          "appArn": "arn:aws:amplify:eu-central-1:975050190402:apps/d2s09gabt302s2",
+          "name": "brain-scanner",
+          "repository": "https://github.com/braindevcz/brain-scanner",
+          "platform": "WEB",
+          "defaultDomain": "d2s09gabt302s2.amplifyapp.com",
+          "createTime": "2025-02-12T10:18:37.821000+01:00",
+          "updateTime": "2025-02-12T10:32:34.087000+01:00",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": false,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "TOKEN",
+          "productionBranch": {
+            "lastDeployTime": "2025-02-27T12:19:55.082000+01:00",
+            "status": "SUCCEED",
+            "branchName": "dev"
+          },
+          "customRules": [
+            { "source": "/<*>", "target": "/index.htm", "status": "404-200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED" },
+          "webhookCreateTime": "2025-02-12T10:18:37.637000+01:00"
+        },
+        {
+          "appId": "d7jkw4l585i71",
+          "appArn": "arn:aws:amplify:eu-central-1:975050190402:apps/d7jkw4l585i71",
+          "name": "brain-dispensing-places",
+          "repository": "https://github.com/braindevcz/brain-dispensing-places",
+          "platform": "WEB",
+          "defaultDomain": "d7jkw4l585i71.amplifyapp.com",
+          "createTime": "2024-08-22T23:56:50.691000+02:00",
+          "updateTime": "2024-08-23T00:09:33.867000+02:00",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": false,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "TOKEN",
+          "environmentVariables": {
+            "BUILD_ENV": "dev_cs"
+          },
+          "productionBranch": {
+            "lastDeployTime": "2024-08-23T09:39:40.528000+02:00",
+            "status": "SUCCEED",
+            "branchName": "dev"
+          },
+          "customRules": [
+            { "source": "/<*>", "target": "/index.html", "status": "404-200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED" },
+          "webhookCreateTime": "2024-08-23T00:09:33.853000+02:00"
+        },
+        {
+          "appId": "dnpncjn7smr2v",
+          "appArn": "arn:aws:amplify:eu-central-1:975050190402:apps/dnpncjn7smr2v",
+          "name": "brain-fibo-web",
+          "repository": "https://github.com/braindevcz/brain-fibo-web",
+          "platform": "WEB",
+          "defaultDomain": "dnpncjn7smr2v.amplifyapp.com",
+          "createTime": "2025-04-06T21:53:14.947000+02:00",
+          "updateTime": "2025-04-06T22:00:18.091000+02:00",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": false,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "TOKEN",
+          "productionBranch": {
+            "lastDeployTime": "2025-04-06T22:37:58.675000+02:00",
+            "status": "SUCCEED",
+            "branchName": "dev"
+          },
+          "customRules": [
+            { "source": "/<*>", "target": "/index.htm", "status": "404-200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED" },
+          "webhookCreateTime": "2025-04-06T21:53:14.720000+02:00"
+        },
+        {
+          "appId": "dzx5nm1pynwm7",
+          "appArn": "arn:aws:amplify:eu-central-1:975050190402:apps/dzx5nm1pynwm7",
+          "name": "app-brm-manufacturing-products",
+          "repository": "https://github.com/DigitalHorizonCz/app-brm-manufacturing-products",
+          "platform": "WEB",
+          "defaultDomain": "dzx5nm1pynwm7.amplifyapp.com",
+          "createTime": "2025-09-02T17:33:16.907000+02:00",
+          "updateTime": "2025-09-02T17:33:16.907000+02:00",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": false,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "TOKEN",
+          "productionBranch": {
+            "lastDeployTime": "2026-03-21T13:42:59.429000+01:00",
+            "status": "SUCCEED",
+            "branchName": "main"
+          },
+          "customRules": [
+            { "source": "/<*>", "target": "/index.html", "status": "404-200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED_NO_COOKIES" },
+          "webhookCreateTime": "2025-09-02T17:33:16.701000+02:00",
+          "jobConfig": { "buildComputeType": "STANDARD_8GB" }
+        }
+      ]
+    },
+    {
+      "account": "JiHy__vsb__030",
+      "account_id": null,
+      "region": "eu-west-1",
+      "apps": []
+    },
+    {
+      "account": "JiHy__brm__734",
+      "account_id": "734468801561",
+      "region": "eu-central-1",
+      "apps": [
+        {
+          "appId": "d9rhkf1w3oivc",
+          "appArn": "arn:aws:amplify:eu-central-1:734468801561:apps/d9rhkf1w3oivc",
+          "name": "nutritech-webapp",
+          "repository": "https://github.com/BM-Nutritech/nutritech-webapp",
+          "platform": "WEB",
+          "defaultDomain": "d9rhkf1w3oivc.amplifyapp.com",
+          "createTime": "2025-09-30T23:25:51.436000+02:00",
+          "updateTime": "2026-02-11T20:59:07.907000+01:00",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": false,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "TOKEN",
+          "environmentVariables": {
+            "VITE_APP_VERSION": "0.0.1",
+            "VITE_COGNITO_REGION": "eu-central-1",
+            "VITE_COGNITO_USER_POOL_ID": "eu-central-1_EfzkyHwNC",
+            "VITE_ENVIRONMENT": "development",
+            "VITE_GOOGLE_MAPS_MAP_ID": "ff45fe1529af114756c9527f"
+          },
+          "productionBranch": {
+            "lastDeployTime": "2026-02-12T15:09:40.987000+01:00",
+            "status": "SUCCEED",
+            "branchName": "dev"
+          },
+          "customRules": [
+            { "source": "/<*>", "target": "/index.html", "status": "404-200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED_NO_COOKIES" },
+          "webhookCreateTime": "2025-09-30T23:25:51.199000+02:00",
+          "jobConfig": { "buildComputeType": "STANDARD_8GB" }
+        },
+        {
+          "appId": "dn06gzj7dfyqu",
+          "appArn": "arn:aws:amplify:eu-central-1:734468801561:apps/dn06gzj7dfyqu",
+          "name": "nutritech-office",
+          "repository": "https://github.com/BM-Nutritech/nutritech-office",
+          "platform": "WEB",
+          "defaultDomain": "dn06gzj7dfyqu.amplifyapp.com",
+          "createTime": "2025-10-23T00:33:00.079000+02:00",
+          "updateTime": "2025-10-23T00:33:00.079000+02:00",
+          "enableBranchAutoBuild": false,
+          "enableBranchAutoDeletion": false,
+          "enableBasicAuth": false,
+          "enableAutoBranchCreation": false,
+          "repositoryCloneMethod": "TOKEN",
+          "productionBranch": {
+            "lastDeployTime": "2026-02-12T18:40:28.813000+01:00",
+            "status": "FAILED",
+            "branchName": "dev"
+          },
+          "customRules": [
+            { "source": "/<*>", "target": "/index.html", "status": "404-200" }
+          ],
+          "cacheConfig": { "type": "AMPLIFY_MANAGED_NO_COOKIES" },
+          "webhookCreateTime": "2025-10-23T00:32:59.862000+02:00",
+          "jobConfig": { "buildComputeType": "STANDARD_8GB" }
+        }
+      ]
+    }
+  ]
+}

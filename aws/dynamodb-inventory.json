@@ -1,0 +1,608 @@
+{
+  "generated_at": "2026-03-27",
+  "accounts": [
+    {
+      "account": "HylmarJ",
+      "account_id": "182059100462",
+      "region": "eu-west-1",
+      "tables": [
+        {
+          "tableName": "AppTableLab-5h5u5yaj3jffpbtcti7c7gslkq-dev",
+          "keySchema": [
+            { "attributeName": "id", "keyType": "HASH" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 28,
+          "tableSizeBytes": 24953
+        },
+        {
+          "tableName": "ComponentsTableLab-5h5u5yaj3jffpbtcti7c7gslkq-dev",
+          "keySchema": [
+            { "attributeName": "id", "keyType": "HASH" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 15,
+          "tableSizeBytes": 41454
+        },
+        {
+          "tableName": "bh6-com-regatt-cs-alf-dyn-dan",
+          "keySchema": [
+            { "attributeName": "nid", "keyType": "HASH" },
+            { "attributeName": "regKey", "keyType": "RANGE" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 26307,
+          "tableSizeBytes": 8103071
+        },
+        {
+          "tableName": "bh6-com-regatt-cs-alf-dyn-dan-axd5f4d",
+          "keySchema": [
+            { "attributeName": "nid", "keyType": "HASH" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 0,
+          "tableSizeBytes": 0
+        },
+        {
+          "tableName": "danter-cs-pro-dyn-dan",
+          "keySchema": [
+            { "attributeName": "nid", "keyType": "HASH" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 665,
+          "tableSizeBytes": 482356
+        },
+        {
+          "tableName": "danter-en-pro-dyn-dan",
+          "keySchema": [
+            { "attributeName": "nid", "keyType": "HASH" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 665,
+          "tableSizeBytes": 352536
+        },
+        {
+          "tableName": "quicksight-ApiDelivery",
+          "keySchema": [
+            { "attributeName": "pk", "keyType": "HASH" },
+            { "attributeName": "sk", "keyType": "RANGE" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 17,
+          "tableSizeBytes": 7342
+        }
+      ]
+    },
+    {
+      "account": "JiHy__vsb__565",
+      "account_id": "565393049593",
+      "region": "eu-central-1",
+      "tables": [
+        {
+          "tableName": "eurlex-data",
+          "keySchema": [
+            { "attributeName": "PK", "keyType": "HASH" },
+            { "attributeName": "SK", "keyType": "RANGE" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 455,
+          "tableSizeBytes": 5514815
+        },
+        {
+          "tableName": "goldsport-video-feedback-config",
+          "keySchema": [
+            { "attributeName": "PK", "keyType": "HASH" },
+            { "attributeName": "SK", "keyType": "RANGE" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 3,
+          "tableSizeBytes": 1411
+        },
+        {
+          "tableName": "goldsport-video-feedback-jobs",
+          "keySchema": [
+            { "attributeName": "PK", "keyType": "HASH" },
+            { "attributeName": "SK", "keyType": "RANGE" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 87,
+          "tableSizeBytes": 115174
+        },
+        {
+          "tableName": "goldsport-video-feedback-resources",
+          "keySchema": [
+            { "attributeName": "PK", "keyType": "HASH" },
+            { "attributeName": "SK", "keyType": "RANGE" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 304,
+          "tableSizeBytes": 98182
+        },
+        {
+          "tableName": "rmv-data-db1-dev-9593",
+          "keySchema": [
+            { "attributeName": "pk", "keyType": "HASH" },
+            { "attributeName": "sk", "keyType": "RANGE" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 1114,
+          "tableSizeBytes": 550699
+        },
+        {
+          "tableName": "useiot-iotsystems-intite-db1-infdev-565393049593",
+          "keySchema": [
+            { "attributeName": "pk", "keyType": "HASH" },
+            { "attributeName": "sk", "keyType": "RANGE" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 18,
+          "tableSizeBytes": 23139
+        }
+      ]
+    },
+    {
+      "account": "JiHy__vsb__299",
+      "account_id": "299025166536",
+      "region": "eu-central-1",
+      "tables": [
+        {
+          "tableName": "CustomLesson-k6uqug4dwje55l5xr7g3tse6wq-NONE",
+          "keySchema": [
+            { "attributeName": "lessonId", "keyType": "HASH" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 0,
+          "tableSizeBytes": 0
+        },
+        {
+          "tableName": "CustomLesson-lww35n6pvvhlviuetfqax5fyne-NONE",
+          "keySchema": [
+            { "attributeName": "lessonId", "keyType": "HASH" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 118,
+          "tableSizeBytes": 298663
+        },
+        {
+          "tableName": "CustomModule-k6uqug4dwje55l5xr7g3tse6wq-NONE",
+          "keySchema": [
+            { "attributeName": "moduleId", "keyType": "HASH" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 0,
+          "tableSizeBytes": 0
+        },
+        {
+          "tableName": "CustomModule-lww35n6pvvhlviuetfqax5fyne-NONE",
+          "keySchema": [
+            { "attributeName": "moduleId", "keyType": "HASH" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 46,
+          "tableSizeBytes": 76239
+        },
+        {
+          "tableName": "Group-k6uqug4dwje55l5xr7g3tse6wq-NONE",
+          "keySchema": [
+            { "attributeName": "groupId", "keyType": "HASH" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 0,
+          "tableSizeBytes": 0
+        },
+        {
+          "tableName": "Group-lww35n6pvvhlviuetfqax5fyne-NONE",
+          "keySchema": [
+            { "attributeName": "groupId", "keyType": "HASH" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 20,
+          "tableSizeBytes": 7335
+        },
+        {
+          "tableName": "KnowledgeGraphItem-g7elqzchivgt3g2i2zs6rfn64u-NONE",
+          "keySchema": [
+            { "attributeName": "id", "keyType": "HASH" },
+            { "attributeName": "entityType", "keyType": "RANGE" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 1600,
+          "tableSizeBytes": 572791
+        },
+        {
+          "tableName": "Lesson-k6uqug4dwje55l5xr7g3tse6wq-NONE",
+          "keySchema": [
+            { "attributeName": "lessonId", "keyType": "HASH" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 0,
+          "tableSizeBytes": 0
+        },
+        {
+          "tableName": "Lesson-lww35n6pvvhlviuetfqax5fyne-NONE",
+          "keySchema": [
+            { "attributeName": "lessonId", "keyType": "HASH" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 148,
+          "tableSizeBytes": 130398
+        },
+        {
+          "tableName": "Module-k6uqug4dwje55l5xr7g3tse6wq-NONE",
+          "keySchema": [
+            { "attributeName": "moduleId", "keyType": "HASH" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 0,
+          "tableSizeBytes": 0
+        },
+        {
+          "tableName": "Module-lww35n6pvvhlviuetfqax5fyne-NONE",
+          "keySchema": [
+            { "attributeName": "moduleId", "keyType": "HASH" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 30,
+          "tableSizeBytes": 49166
+        },
+        {
+          "tableName": "Organization-k6uqug4dwje55l5xr7g3tse6wq-NONE",
+          "keySchema": [
+            { "attributeName": "organizationId", "keyType": "HASH" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 0,
+          "tableSizeBytes": 0
+        },
+        {
+          "tableName": "Organization-lww35n6pvvhlviuetfqax5fyne-NONE",
+          "keySchema": [
+            { "attributeName": "organizationId", "keyType": "HASH" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 4,
+          "tableSizeBytes": 3096
+        },
+        {
+          "tableName": "Person-k6uqug4dwje55l5xr7g3tse6wq-NONE",
+          "keySchema": [
+            { "attributeName": "personId", "keyType": "HASH" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 0,
+          "tableSizeBytes": 0
+        },
+        {
+          "tableName": "Person-lww35n6pvvhlviuetfqax5fyne-NONE",
+          "keySchema": [
+            { "attributeName": "personId", "keyType": "HASH" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 57,
+          "tableSizeBytes": 36793
+        },
+        {
+          "tableName": "Project-k6uqug4dwje55l5xr7g3tse6wq-NONE",
+          "keySchema": [
+            { "attributeName": "projectId", "keyType": "HASH" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 0,
+          "tableSizeBytes": 0
+        },
+        {
+          "tableName": "Project-lww35n6pvvhlviuetfqax5fyne-NONE",
+          "keySchema": [
+            { "attributeName": "projectId", "keyType": "HASH" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 11,
+          "tableSizeBytes": 27952
+        },
+        {
+          "tableName": "Resource-k6uqug4dwje55l5xr7g3tse6wq-NONE",
+          "keySchema": [
+            { "attributeName": "resourceId", "keyType": "HASH" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 0,
+          "tableSizeBytes": 0
+        },
+        {
+          "tableName": "Resource-lww35n6pvvhlviuetfqax5fyne-NONE",
+          "keySchema": [
+            { "attributeName": "resourceId", "keyType": "HASH" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 155,
+          "tableSizeBytes": 86611
+        },
+        {
+          "tableName": "Role-k6uqug4dwje55l5xr7g3tse6wq-NONE",
+          "keySchema": [
+            { "attributeName": "roleId", "keyType": "HASH" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 0,
+          "tableSizeBytes": 0
+        },
+        {
+          "tableName": "Role-lww35n6pvvhlviuetfqax5fyne-NONE",
+          "keySchema": [
+            { "attributeName": "roleId", "keyType": "HASH" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 46,
+          "tableSizeBytes": 73514
+        },
+        {
+          "tableName": "Session-k6uqug4dwje55l5xr7g3tse6wq-NONE",
+          "keySchema": [
+            { "attributeName": "sessionId", "keyType": "HASH" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 0,
+          "tableSizeBytes": 0
+        },
+        {
+          "tableName": "Session-lww35n6pvvhlviuetfqax5fyne-NONE",
+          "keySchema": [
+            { "attributeName": "sessionId", "keyType": "HASH" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 49,
+          "tableSizeBytes": 144290
+        },
+        {
+          "tableName": "Team-k6uqug4dwje55l5xr7g3tse6wq-NONE",
+          "keySchema": [
+            { "attributeName": "teamId", "keyType": "HASH" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 0,
+          "tableSizeBytes": 0
+        },
+        {
+          "tableName": "Team-lww35n6pvvhlviuetfqax5fyne-NONE",
+          "keySchema": [
+            { "attributeName": "teamId", "keyType": "HASH" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 9,
+          "tableSizeBytes": 6852
+        },
+        {
+          "tableName": "booking-gsp",
+          "keySchema": [
+            { "attributeName": "PK", "keyType": "HASH" },
+            { "attributeName": "SK", "keyType": "RANGE" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 652,
+          "tableSizeBytes": 1565031
+        },
+        {
+          "tableName": "broadcast-config-db1-prod-299025166536",
+          "keySchema": [
+            { "attributeName": "PK", "keyType": "HASH" },
+            { "attributeName": "SK", "keyType": "RANGE" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 45,
+          "tableSizeBytes": 34257
+        },
+        {
+          "tableName": "configuration-digital-horizon",
+          "keySchema": [
+            { "attributeName": "PK", "keyType": "HASH" },
+            { "attributeName": "SK", "keyType": "RANGE" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 699,
+          "tableSizeBytes": 1014512
+        },
+        {
+          "tableName": "digital-horizon-metadata-repository",
+          "keySchema": [
+            { "attributeName": "PK", "keyType": "HASH" },
+            { "attributeName": "SK", "keyType": "RANGE" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 83,
+          "tableSizeBytes": 163222
+        },
+        {
+          "tableName": "goldsport-messaging-tracking-dev",
+          "keySchema": [
+            { "attributeName": "PK", "keyType": "HASH" },
+            { "attributeName": "SK", "keyType": "RANGE" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 5318,
+          "tableSizeBytes": 2052812
+        },
+        {
+          "tableName": "goldsport-scheduler-data-dev",
+          "keySchema": [
+            { "attributeName": "PK", "keyType": "HASH" },
+            { "attributeName": "SK", "keyType": "RANGE" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 4447858,
+          "tableSizeBytes": 1789490325
+        },
+        {
+          "tableName": "vouchers-gsp",
+          "keySchema": [
+            { "attributeName": "PK", "keyType": "HASH" },
+            { "attributeName": "SK", "keyType": "RANGE" }
+          ],
+          "billingMode": "PROVISIONED",
+          "itemCount": 1427,
+          "tableSizeBytes": 617260
+        }
+      ]
+    },
+    {
+      "account": "JiHy__d4m__975",
+      "account_id": "975050190402",
+      "region": "eu-central-1",
+      "tables": [
+        {
+          "tableName": "bpss-product-registry",
+          "keySchema": [
+            { "attributeName": "supplier", "keyType": "HASH" },
+            { "attributeName": "core_name", "keyType": "RANGE" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 145,
+          "tableSizeBytes": 137959
+        },
+        {
+          "tableName": "bpss-product-versions",
+          "keySchema": [
+            { "attributeName": "product_id", "keyType": "HASH" },
+            { "attributeName": "version_key", "keyType": "RANGE" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 1595,
+          "tableSizeBytes": 2493051
+        },
+        {
+          "tableName": "product-dev",
+          "keySchema": [
+            { "attributeName": "pk", "keyType": "HASH" },
+            { "attributeName": "sk", "keyType": "RANGE" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 2,
+          "tableSizeBytes": 14500
+        }
+      ]
+    },
+    {
+      "account": "JiHy__vsb__030",
+      "account_id": "030062527147",
+      "region": "eu-west-1",
+      "tables": [
+        {
+          "tableName": "syndicate-experts-db1-030062527147",
+          "keySchema": [
+            { "attributeName": "PK", "keyType": "HASH" },
+            { "attributeName": "SK", "keyType": "RANGE" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 274,
+          "tableSizeBytes": 224706
+        }
+      ]
+    },
+    {
+      "account": "JiHy__brm__734",
+      "account_id": "734468801561",
+      "region": "eu-central-1",
+      "tables": [
+        {
+          "tableName": "catalog-dev",
+          "keySchema": [
+            { "attributeName": "pk", "keyType": "HASH" },
+            { "attributeName": "sk", "keyType": "RANGE" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 11,
+          "tableSizeBytes": 6820
+        },
+        {
+          "tableName": "commerce-dev",
+          "keySchema": [
+            { "attributeName": "pk", "keyType": "HASH" },
+            { "attributeName": "sk", "keyType": "RANGE" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 7,
+          "tableSizeBytes": 5732
+        },
+        {
+          "tableName": "customer-dev",
+          "keySchema": [
+            { "attributeName": "pk", "keyType": "HASH" },
+            { "attributeName": "sk", "keyType": "RANGE" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 8,
+          "tableSizeBytes": 3637
+        },
+        {
+          "tableName": "employee-dev",
+          "keySchema": [
+            { "attributeName": "pk", "keyType": "HASH" },
+            { "attributeName": "sk", "keyType": "RANGE" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 33,
+          "tableSizeBytes": 10019
+        },
+        {
+          "tableName": "entitlements-dev",
+          "keySchema": [
+            { "attributeName": "pk", "keyType": "HASH" },
+            { "attributeName": "sk", "keyType": "RANGE" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 19,
+          "tableSizeBytes": 12665
+        },
+        {
+          "tableName": "labs-data-dev",
+          "keySchema": [
+            { "attributeName": "pk", "keyType": "HASH" },
+            { "attributeName": "sk", "keyType": "RANGE" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 6,
+          "tableSizeBytes": 16037
+        },
+        {
+          "tableName": "labs-registry-dev",
+          "keySchema": [
+            { "attributeName": "pk", "keyType": "HASH" },
+            { "attributeName": "sk", "keyType": "RANGE" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 7,
+          "tableSizeBytes": 5142
+        },
+        {
+          "tableName": "requests-dev",
+          "keySchema": [
+            { "attributeName": "pk", "keyType": "HASH" },
+            { "attributeName": "sk", "keyType": "RANGE" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 13,
+          "tableSizeBytes": 11722
+        },
+        {
+          "tableName": "results-dev",
+          "keySchema": [
+            { "attributeName": "pk", "keyType": "HASH" },
+            { "attributeName": "sk", "keyType": "RANGE" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 5,
+          "tableSizeBytes": 5411
+        },
+        {
+          "tableName": "ws-connections-dev",
+          "keySchema": [
+            { "attributeName": "customerId", "keyType": "HASH" },
+            { "attributeName": "connectionId", "keyType": "RANGE" }
+          ],
+          "billingMode": "PAY_PER_REQUEST",
+          "itemCount": 0,
+          "tableSizeBytes": 0
+        }
+      ]
+    }
+  ]
+}
