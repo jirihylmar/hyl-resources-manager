@@ -29,21 +29,35 @@ This file tracks session history for context continuity between Claude Code sess
 
 **Context**:
 - Phase: 2 - Service Organization & Cross-Account Documentation
-- Task: 2.1 - Create repo directory structure
-- Context used: ~20%
+- Completed: All of Phase 2 (2.1-2.7) + repo philosophy shift
+- Context used: ~50%
 
-**Work Added**:
-- Phase 2 created with 6 tasks (2.1-2.6)
-- Source: Discussion about organizing repo for AWS/GitHub/Google services
-- AWS data already collected: 3 orgs, 6 accounts, cross-account roles identified
-- Draft aws/README.md created from live MCP queries
+**Completed**:
+- Phase 2 (7 tasks): repo structure, AWS account docs, skill-based reorganization
+- Skill `aws-check-accounts` produced `aws/accounts.json` (23 accounts, 3 orgs, 6 MCP)
+- Discovered mcp-{account_id} IAM users + MCP-Service-Access policy on all 6 accounts
+- Repo philosophy: skill-based outputs, not static documentation
+- Phase 3 added: refresh stale skill outputs (amplify, dynamodb, github, google)
 
-**Data Collected**:
-- 3 AWS Organizations: o-j8lu4vyjwi (VSB), o-8i3fdvbxq7 (Hylmar), o-o4t4kfs7th (BrainMarket)
-- 6 connected accounts with MCP tools verified
-- Cross-account roles: OrganizationAccountAccessRole, BMPSS pipeline roles, Athena cross-account, CDK cross-org deploy
-- 3 org member accounts without MCP access (313426237404, 919765081653, 235542510807)
-- 2 org master accounts without MCP access (287773673380, 471112898889)
+**Artifacts Created**:
+- `aws/accounts.json` - 23 accounts, sorted (6 active MCP first), tags, status, cross-account roles
+- `aws/README.md` - skill output index
+- `google/README.md` - placeholder with known AWS integrations
+- `README.md` - central index organized by skills
+
+**Key Decisions**:
+- Repo organized by skills (verb), not by static docs (noun)
+- Each skill produces structured output (JSON preferred over markdown)
+- `accounts.json` is array (not object) for sorting: mcp-connected first
+- Tags: mcp-connected, org-master, governance, org-member, legacy
+- Status: active/passive
+
+**Pending Cleanup**:
+- hub440/ and aws-mcp-claude-code/ deletions not yet committed (in backlog)
+
+**Next Session**:
+- Phase 3: refresh stale outputs (3.1 aws-check-amplify, 3.2 aws-check-dynamodb)
+- Commit pending deletions
 
 ---
 

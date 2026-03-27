@@ -1,17 +1,19 @@
 {
   "version": "2.0",
   "project": "hyl-resources-manager",
-  "description": "Infrastructure and resource management for AWS accounts - Amplify apps, domains, DNS, and DynamoDB across multiple AWS accounts",
+  "description": "Resource management across AWS, GitHub, and Google services. Organized by skills producing structured output.",
   "created_at": "2026-03-27",
   "last_updated": "2026-03-27",
-  "last_session_summary": "Workflow injected into existing project",
+  "last_session_summary": "Session 1: Injected workflow, completed Phase 2 (repo organization), established skill-based approach. aws-check-accounts skill produced accounts.json (23 accounts, 3 orgs, 6 MCP connectors). Repo restructured: aws/, github/, google/ with skill outputs. Two stale outputs identified for re-run.",
 
   "context_hints": {
     "aws_accounts": {
       "hylmar": { "id": "182059100462", "region": "eu-west-1", "mcp_tool": "mcp__aws-hylmar__call_aws" },
       "vsb-565": { "id": "565393049593", "region": "eu-central-1", "mcp_tool": "mcp__aws-vsb-565__call_aws" },
       "vsb-299": { "id": "299025166536", "region": "eu-central-1", "mcp_tool": "mcp__aws-vsb-299__call_aws" },
-      "d4m-975": { "id": "975050190402", "region": "eu-central-1", "mcp_tool": "mcp__aws-d4m-975__call_aws" }
+      "d4m-975": { "id": "975050190402", "region": "eu-central-1", "mcp_tool": "mcp__aws-d4m-975__call_aws" },
+      "vsb-030": { "id": "030062527147", "region": "eu-west-1", "mcp_tool": "mcp__aws-vsb-030__call_aws" },
+      "brm-734": { "id": "734468801561", "region": "eu-central-1", "mcp_tool": "mcp__aws-brm-734__call_aws" }
     },
     "primary_domain": "hub440.cz"
   },
@@ -25,8 +27,9 @@
         {
           "id": "1.1",
           "name": "Audit and update Amplify apps inventory across all accounts",
-          "status": "pending",
-          "size": "medium"
+          "status": "superseded",
+          "superseded_by": "3.1",
+          "notes": "Moved to Phase 3 as skill: aws-check-amplify"
         }
       ]
     },
@@ -43,7 +46,7 @@
           "completed_at": "2026-03-27",
           "size": "small",
           "verify": "ls aws/ github/ google/",
-          "artifacts": ["aws/amplify.md", "aws/dynamodb-optimization.md", "aws/copy_workspaces.sh"]
+          "artifacts": ["aws/", "github/", "google/"]
         },
         {
           "id": "2.2",
@@ -51,8 +54,8 @@
           "status": "complete",
           "completed_at": "2026-03-27",
           "size": "small",
-          "verify": "aws/README.md has 3 orgs with all accounts listed",
-          "notes": "3 orgs documented: o-j8lu4vyjwi (VSB, 6 accounts), o-8i3fdvbxq7 (Hylmar, 2 accounts), o-o4t4kfs7th (BrainMarket, 3 accounts)"
+          "verify": "aws/accounts.json has 3 orgs with all accounts listed",
+          "notes": "3 orgs: o-j8lu4vyjwi (VSB, 6 accounts), o-8i3fdvbxq7 (Hylmar, 2), o-o4t4kfs7th (BrainMarket, 3)"
         },
         {
           "id": "2.3",
@@ -60,8 +63,8 @@
           "status": "complete",
           "completed_at": "2026-03-27",
           "size": "small",
-          "verify": "aws/README.md has cross-account roles section",
-          "notes": "6 cross-account methods documented: OrgAccessRole, SSO, BMPSS pipeline, data access roles, CDK cross-org, ConsoleAccess"
+          "verify": "aws/accounts.json has cross_account_roles section",
+          "notes": "6 methods: OrgAccessRole, SSO, BMPSS pipeline, data access, CDK cross-org, ConsoleAccess"
         },
         {
           "id": "2.4",
@@ -69,8 +72,8 @@
           "status": "complete",
           "completed_at": "2026-03-27",
           "size": "small",
-          "verify": "aws/README.md has MCP tools and IAM users mapped",
-          "notes": "6 IAM users mapped to MCP tools, usage examples included"
+          "verify": "aws/accounts.json has mcp_iam_user and iam_users per account",
+          "notes": "6 mcp-{account_id} users with MCP-Service-Access policy, all IAM users inventoried"
         },
         {
           "id": "2.5",
@@ -78,8 +81,8 @@
           "status": "complete",
           "completed_at": "2026-03-27",
           "size": "small",
-          "verify": "aws/README.md has SSO and CDK cross-org section",
-          "notes": "5 SSO roles documented, 4 CDK cross-org deploy roles (182->975) documented"
+          "verify": "aws/accounts.json has SSO and CDK cross-org in cross_account_roles",
+          "notes": "5 SSO roles, 4 CDK cross-org deploy roles (182->975)"
         },
         {
           "id": "2.6",
@@ -87,20 +90,67 @@
           "status": "complete",
           "completed_at": "2026-03-27",
           "size": "small",
-          "verify": "github/README.md and google/README.md exist",
-          "notes": "github/ already had comprehensive docs, google/README.md created with known integrations from AWS"
+          "verify": "github/README-git-repos.md and google/README.md exist"
+        },
+        {
+          "id": "2.7",
+          "name": "Reorganize repo around skill-based outputs",
+          "status": "complete",
+          "completed_at": "2026-03-27",
+          "size": "small",
+          "added_reason": "Discussion: repo philosophy should be skill-based, not static docs",
+          "artifacts": ["README.md", "aws/README.md", "aws/accounts.json"]
+        }
+      ]
+    },
+    "phase_3_skill_refresh": {
+      "name": "Refresh Stale Skill Outputs",
+      "status": "pending",
+      "tasks": [
+        {
+          "id": "3.1",
+          "name": "aws-check-amplify: re-run Amplify inventory as structured JSON across all 6 MCP accounts",
+          "status": "pending",
+          "size": "medium",
+          "verify": "aws/amplify-inventory.json exists with current data from all accounts"
+        },
+        {
+          "id": "3.2",
+          "name": "aws-check-dynamodb: re-run DynamoDB inventory as structured JSON across all 6 MCP accounts",
+          "status": "pending",
+          "size": "small",
+          "verify": "aws/dynamodb-inventory.json exists with current table data"
+        },
+        {
+          "id": "3.3",
+          "name": "github-check-repos: refresh workspace-repos.json via generate-clone-list.sh",
+          "status": "pending",
+          "size": "small",
+          "verify": "github/workspace-repos.json updated with current repo count"
+        },
+        {
+          "id": "3.4",
+          "name": "google-check-services: inventory Google integrations found in AWS Lambda configs",
+          "status": "pending",
+          "size": "small",
+          "verify": "google/services.json exists"
         }
       ]
     }
   },
 
-  "current_task": "2.6",
-  "current_phase": "phase_2_service_org",
+  "current_task": "3.1",
+  "current_phase": "phase_3_skill_refresh",
 
   "git_repos": {
-    "main": "https://github.com/jirihylmar/hyl-resources-manager.git"
+    "main": {
+      "url": "https://github.com/jirihylmar/hyl-resources-manager.git",
+      "status": "needs_push"
+    }
   },
 
   "blockers": [],
-  "backlog": []
+  "backlog": [
+    "Clean up pending deletions: hub440/, aws-mcp-claude-code/"
+  ]
 }
