@@ -233,12 +233,36 @@
   },
 
   "mcp_connectors": {
-    "aws-hylmar":  { "profile": "HylmarJ",          "account_id": "182059100462", "region": "eu-west-1",    "status": "connected" },
-    "aws-vsb-565": { "profile": "JiHy__vsb__565",   "account_id": "565393049593", "region": "eu-central-1", "status": "connected" },
-    "aws-vsb-299": { "profile": "JiHy__vsb__299",   "account_id": "299025166536", "region": "eu-central-1", "status": "connected" },
-    "aws-d4m-975": { "profile": "JiHy__d4m__975",   "account_id": "975050190402", "region": "eu-central-1", "status": "connected" },
-    "aws-vsb-030": { "profile": "JiHy__vsb__030",   "account_id": "030062527147", "region": "eu-west-1",    "status": "connected" },
-    "aws-brm-734": { "profile": "JiHy__brm__734",   "account_id": "734468801561", "region": "eu-central-1", "status": "connected" }
+    "aws-hylmar":  { "profile": "HylmarJ",          "account_id": "182059100462", "region": "eu-west-1",    "status": "connected", "mcp_iam_user": "mcp-182059100462" },
+    "aws-vsb-565": { "profile": "JiHy__vsb__565",   "account_id": "565393049593", "region": "eu-central-1", "status": "connected", "mcp_iam_user": "mcp-565393049593" },
+    "aws-vsb-299": { "profile": "JiHy__vsb__299",   "account_id": "299025166536", "region": "eu-central-1", "status": "connected", "mcp_iam_user": "mcp-299025166536" },
+    "aws-d4m-975": { "profile": "JiHy__d4m__975",   "account_id": "975050190402", "region": "eu-central-1", "status": "connected", "mcp_iam_user": "mcp-975050190402" },
+    "aws-vsb-030": { "profile": "JiHy__vsb__030",   "account_id": "030062527147", "region": "eu-west-1",    "status": "connected", "mcp_iam_user": "mcp-030062527147" },
+    "aws-brm-734": { "profile": "JiHy__brm__734",   "account_id": "734468801561", "region": "eu-central-1", "status": "connected", "mcp_iam_user": "mcp-734468801561" }
+  },
+
+  "mcp_service_access_policy": {
+    "description": "Identical MCP-Service-Access policy deployed to all 6 accounts, attached to mcp-{account_id} user",
+    "created": "2025-12-30",
+    "permissions": {
+      "AthenaAccess": ["athena:StartQueryExecution", "athena:GetQueryExecution", "athena:GetQueryResults", "athena:StopQueryExecution", "athena:GetWorkGroup", "athena:ListWorkGroups", "athena:ListDatabases", "athena:ListTableMetadata", "athena:GetTableMetadata"],
+      "GlueAccess": ["glue:GetDatabase", "glue:GetDatabases", "glue:GetTable", "glue:GetTables", "glue:GetPartitions"],
+      "DynamoDBAccess": ["dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem", "dynamodb:DeleteItem", "dynamodb:Query", "dynamodb:Scan", "dynamodb:DescribeTable", "dynamodb:ListTables"],
+      "S3Access": ["s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:ListBucket", "s3:GetBucketLocation", "s3:ListAllMyBuckets"],
+      "CloudWatchLogsAccess": ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents", "logs:DescribeLogGroups", "logs:DescribeLogStreams", "logs:GetLogEvents", "logs:FilterLogEvents"],
+      "CloudWatchMetricsAccess": ["cloudwatch:PutMetricData", "cloudwatch:GetMetricData", "cloudwatch:GetMetricStatistics", "cloudwatch:ListMetrics"],
+      "LambdaReadAccess": ["lambda:ListFunctions", "lambda:GetFunction", "lambda:InvokeFunction"],
+      "STSAccess": ["sts:GetCallerIdentity"]
+    }
+  },
+
+  "iam_users": {
+    "182059100462": ["HylmarJ", "mcp-182059100462", "amplify-cSpkq", "amplify-doJJK", "amplify-IxHho", "amplify-PBIf8", "amplify-UvV6Z", "amplify-zkMZQ", "BehanL", "executionApi", "githubActions", "Lorcik", "OrcikL", "RuzickaJ", "voznakM"],
+    "565393049593": ["JiHy__vsb__565", "mcp-565393049593"],
+    "299025166536": ["JiHy__vsb__299", "mcp-299025166536", "Admin", "amplify-2gYTH", "GH-workflow", "LuKa__vsb__299", "LuOr", "MaLy__vsb__299", "MaTo__vsb__299"],
+    "975050190402": ["JiHy__d4m__975", "mcp-975050190402", "brain-product-specification", "GH", "LukasO", "n8n-cred", "product-compliance"],
+    "030062527147": ["JiHy__vsb__030", "mcp-030062527147"],
+    "734468801561": ["JiHy__brm__734", "mcp-734468801561", "claude-code", "gh-actions"]
   },
 
   "cross_account_roles": {
