@@ -29,11 +29,60 @@
           "size": "medium"
         }
       ]
+    },
+    "phase_2_service_org": {
+      "name": "Service Organization & Cross-Account Documentation",
+      "status": "in_progress",
+      "started_at": "2026-03-27",
+      "tasks": [
+        {
+          "id": "2.1",
+          "name": "Create repo directory structure (aws/, github/, google/) and move existing AWS files",
+          "status": "pending",
+          "size": "small",
+          "verify": "ls aws/ github/ google/"
+        },
+        {
+          "id": "2.2",
+          "name": "Document AWS Organizations structure and member accounts",
+          "status": "pending",
+          "size": "small",
+          "verify": "aws/README.md has 3 orgs with all accounts listed"
+        },
+        {
+          "id": "2.3",
+          "name": "Document cross-account IAM roles and trust relationships",
+          "status": "pending",
+          "size": "small",
+          "verify": "aws/README.md has cross-account roles section"
+        },
+        {
+          "id": "2.4",
+          "name": "Document MCP connector access and IAM user inventory",
+          "status": "pending",
+          "size": "small",
+          "verify": "aws/README.md has MCP tools and IAM users mapped"
+        },
+        {
+          "id": "2.5",
+          "name": "Document AWS SSO and CDK cross-org deploy access",
+          "status": "pending",
+          "size": "small",
+          "verify": "aws/README.md has SSO and CDK cross-org section"
+        },
+        {
+          "id": "2.6",
+          "name": "Create placeholder docs for GitHub and Google services",
+          "status": "pending",
+          "size": "small",
+          "verify": "github/README.md and google/README.md exist"
+        }
+      ]
     }
   },
 
-  "current_task": "1.1",
-  "current_phase": "phase_1_setup",
+  "current_task": "2.1",
+  "current_phase": "phase_2_service_org",
 
   "git_repos": {
     "main": "https://github.com/jirihylmar/hyl-resources-manager.git"
