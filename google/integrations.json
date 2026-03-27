@@ -1,0 +1,118 @@
+[
+  {
+    "name": "goldsport-booking-to-sheets",
+    "google_side": {
+      "gcp_project": "goldsport-default-project",
+      "credential": "service@goldsport-default-project.iam.gserviceaccount.com",
+      "credential_type": "service_account",
+      "google_api": "Google Sheets API",
+      "google_account": "master@goldsport.cz"
+    },
+    "aws_side": {
+      "account": "JiHy__vsb__565",
+      "account_id": "565393049593",
+      "service": "Lambda",
+      "resource": "booking-dynamo-to-sheets",
+      "description": "DynamoDB booking data synced to Google Sheets"
+    },
+    "credential_path": "~/aps-goldsport-booking/lambda-functions/booking-dynamo-to-sheets/credentials/service-account-key.json",
+    "status": "active"
+  },
+  {
+    "name": "goldsport-video-feedback",
+    "google_side": {
+      "gcp_project": null,
+      "credential": null,
+      "credential_type": "unknown",
+      "google_api": "Google Drive",
+      "google_account": "master@goldsport.cz"
+    },
+    "aws_side": {
+      "account": "JiHy__vsb__565",
+      "account_id": "565393049593",
+      "service": "Lambda",
+      "resource": "goldsport-video-feedback",
+      "description": "Google Drive trigger for video feedback processing"
+    },
+    "credential_path": null,
+    "status": "needs_investigation",
+    "notes": "Known integration from AWS Lambda config; credential source not yet mapped"
+  },
+  {
+    "name": "bmpss-batch-filler-sheets",
+    "google_side": {
+      "gcp_project": null,
+      "credential": null,
+      "credential_type": "unknown",
+      "google_api": "Google Sheets API",
+      "google_account": null
+    },
+    "aws_side": {
+      "account": "JiHy__vsb__565",
+      "account_id": "565393049593",
+      "service": "Lambda",
+      "resource": "bmpss-batch-filler-sheets-updater",
+      "description": "BMPSS batch filler writes to Google Sheets"
+    },
+    "credential_path": null,
+    "status": "needs_investigation",
+    "notes": "Known integration from AWS Lambda config; credential source not yet mapped"
+  },
+  {
+    "name": "d4m-gdrive-automation",
+    "google_side": {
+      "gcp_project": "d4m-goo-master",
+      "credential": "jiri-hylmar@d4m-goo-master.iam.gserviceaccount.com",
+      "credential_type": "service_account",
+      "google_api": "Google Drive API",
+      "google_account": "service@d4m.tech"
+    },
+    "aws_side": {
+      "account": "JiHy__d4m__975",
+      "account_id": "975050190402",
+      "service": null,
+      "resource": null,
+      "description": "D4M Google Drive automation (may run locally or via Lambda)"
+    },
+    "credential_path": "~/iniaut/autrst/gdr/d4m/serviceaccount.json",
+    "status": "active"
+  },
+  {
+    "name": "vsb-gdrive-access",
+    "google_side": {
+      "gcp_project": "vsb-bh6-gdr",
+      "credential": "vsb-bh6-gdr@vsb-bh6-gdr.iam.gserviceaccount.com",
+      "credential_type": "service_account",
+      "google_api": "Google Drive API",
+      "google_account": "jiri.hylmar@g.vsb.cz"
+    },
+    "aws_side": {
+      "account": "JiHy__vsb__565",
+      "account_id": "565393049593",
+      "service": null,
+      "resource": null,
+      "description": "VSB Google Drive access (may run locally or via Lambda)"
+    },
+    "credential_path": "~/iniaut/autrst/gdr/vsb/serviceaccount.json",
+    "status": "active"
+  },
+  {
+    "name": "hub440-bills-processing",
+    "google_side": {
+      "gcp_project": "default-project-hub440",
+      "credential": "910626759818-9g6iljmea27hgqgaeg84bd9u9jd6lkub",
+      "credential_type": "oauth_client",
+      "google_api": "Google Drive / Gmail",
+      "google_account": "admin@hub440.cz"
+    },
+    "aws_side": {
+      "account": "HylmarJ",
+      "account_id": "182059100462",
+      "service": null,
+      "resource": "bills-hub440",
+      "description": "Bills processing app using Google OAuth for document access"
+    },
+    "credential_path": "~/bills-hub440/input/client_secret_910626759818-9g6iljmea27hgqgaeg84bd9u9jd6lkub.apps.googleusercontent.com.json",
+    "status": "active"
+  }
+]

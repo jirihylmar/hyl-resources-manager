@@ -1,25 +1,31 @@
 # Google Services Management
 
-## Status: Pending Setup
+## Skill Outputs
 
-This section will document Google service accounts, credentials, and API access.
+| Skill | Output | Description |
+|-------|--------|-------------|
+| `google-check-accounts` | `accounts.json` | 7 Google accounts with org, purpose, Chrome profile mapping |
+| `google-check-gcp-projects` | `gcp-projects.json` | 7 GCP projects with 4 SAs + 4 OAuth clients (all verified) |
+| `google-check-integrations` | `integrations.json` | 6 Google↔AWS integration points |
 
----
+## Summary
 
-## Planned Scope
+- **7 Google accounts** across 5 orgs (Hylmar, D4M, VSB, Goldsport, BrainMarket + Personal)
+- **7 GCP projects** with active credentials
+- **4 Service Accounts** (d4m-goo-master ×2, vsb-bh6-gdr, goldsport-default-project)
+- **4 OAuth Clients** (macro-griffin, red-formula, default-project-hub440, quickstart)
+- **All 8 credential files verified present** on local filesystem
 
-- Google Workspace / Gmail accounts
-- Google Cloud Platform projects (if any)
-- Google Drive API access (used by goldsport-video-feedback in AWS 565)
-- Google Sheets API access (used by BMPSS batch filler in AWS 565)
-- Service account credentials and OAuth tokens
+## Integration Status
 
-## Known Google Integrations (from AWS)
-
-| AWS Account | Service | Google Integration |
-|-------------|---------|-------------------|
-| 565393049593 | goldsport-video-feedback | Google Drive trigger |
-| 565393049593 | bmpss-batch-filler-sheets-updater | Google Sheets API |
+| Integration | Google API | AWS Account | Status |
+|-------------|-----------|-------------|--------|
+| goldsport-booking-to-sheets | Sheets | vsb-565 | active |
+| goldsport-video-feedback | Drive | vsb-565 | needs investigation |
+| bmpss-batch-filler-sheets | Sheets | vsb-565 | needs investigation |
+| d4m-gdrive-automation | Drive | d4m-975 | active |
+| vsb-gdrive-access | Drive | vsb-565 | active |
+| hub440-bills-processing | Drive/Gmail | hylmar | active |
 
 ---
 

@@ -139,7 +139,9 @@
     },
     "phase_4_google": {
       "name": "Google Services Inventory",
-      "status": "pending",
+      "status": "complete",
+      "started_at": "2026-03-27",
+      "completed_at": "2026-03-27",
       "tasks": [
         {
           "id": "4.1",
@@ -154,29 +156,36 @@
         {
           "id": "4.2",
           "name": "google-check-gcp-projects: Create google/gcp-projects.json — 7 GCP projects with service accounts and OAuth clients",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-03-27",
           "size": "small",
-          "verify": "google/gcp-projects.json exists with 7 projects, 4 SAs, 4 OAuth clients"
+          "verify": "google/gcp-projects.json exists with 7 projects, 4 SAs, 4 OAuth clients",
+          "artifacts": ["google/gcp-projects.json"]
         },
         {
           "id": "4.3",
           "name": "google-check-credentials: Verify credential files exist at listed paths, extract non-sensitive metadata",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-03-27",
           "size": "small",
-          "verify": "google/gcp-projects.json has verified: true/false per credential"
+          "verify": "google/gcp-projects.json has verified: true/false per credential",
+          "notes": "All 8 credential files verified present (4 SAs + 4 OAuth clients)"
         },
         {
           "id": "4.4",
           "name": "google-check-integrations: Map Google↔AWS integration points (which SA/OAuth feeds which Lambda/service)",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-03-27",
           "size": "small",
-          "verify": "google/integrations.json cross-references Google credentials to AWS accounts/services"
+          "verify": "google/integrations.json cross-references Google credentials to AWS accounts/services",
+          "artifacts": ["google/integrations.json"],
+          "notes": "6 integrations mapped: 3 active, 2 needs_investigation (credential source unknown), 1 active local"
         }
       ]
     }
   },
 
-  "current_task": "4.2",
+  "current_task": "4.3",
   "current_phase": "phase_4_google",
 
   "git_repos": {

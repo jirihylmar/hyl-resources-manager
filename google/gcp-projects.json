@@ -1,0 +1,122 @@
+[
+  {
+    "project_id": "d4m-goo-master",
+    "owner_account": "service@d4m.tech",
+    "org": "D4M",
+    "purpose": "D4M Google Drive automation",
+    "credentials": [
+      {
+        "type": "service_account",
+        "email": "jiri-hylmar@d4m-goo-master.iam.gserviceaccount.com",
+        "key_id": "d7e155530eef",
+        "path": "~/iniaut/autrst/gdr/d4m/serviceaccount.json",
+        "purpose": "D4M Google Drive - Personal SA",
+        "verified": true
+      },
+      {
+        "type": "service_account",
+        "email": "service-account@d4m-goo-master.iam.gserviceaccount.com",
+        "key_id": "c55754ed5f03",
+        "path": "~/iniaut/autrst/gdr/d4m/d4m-goo-master-c55754ed5f03.json",
+        "purpose": "D4M Google Drive - Master SA",
+        "verified": true
+      }
+    ]
+  },
+  {
+    "project_id": "vsb-bh6-gdr",
+    "owner_account": "jiri.hylmar@g.vsb.cz",
+    "org": "VSB",
+    "purpose": "VSB Google Drive access",
+    "credentials": [
+      {
+        "type": "service_account",
+        "email": "vsb-bh6-gdr@vsb-bh6-gdr.iam.gserviceaccount.com",
+        "key_id": "8d7f53b72b3f",
+        "path": "~/iniaut/autrst/gdr/vsb/serviceaccount.json",
+        "purpose": "VSB Google Drive SA",
+        "verified": true
+      }
+    ]
+  },
+  {
+    "project_id": "goldsport-default-project",
+    "owner_account": "master@goldsport.cz",
+    "org": "Goldsport",
+    "purpose": "Goldsport booking to Google Sheets sync",
+    "credentials": [
+      {
+        "type": "service_account",
+        "email": "service@goldsport-default-project.iam.gserviceaccount.com",
+        "key_id": "21b5b811f4b6",
+        "path": "~/aps-goldsport-booking/lambda-functions/booking-dynamo-to-sheets/credentials/service-account-key.json",
+        "purpose": "Goldsport Sheets Lambda SA",
+        "verified": true
+      }
+    ]
+  },
+  {
+    "project_id": "macro-griffin-441215-v4",
+    "owner_account": "service@d4m.tech",
+    "org": "D4M",
+    "purpose": "D4M Google web application",
+    "credentials": [
+      {
+        "type": "oauth_client",
+        "client_type": "web",
+        "client_id": "545321041870-k3ihrlt8eg87u7du3e6c0p1f4rhefjbi",
+        "path": "~/iniaut/autd4m/google/client_secret_545321041870-k3ihrlt8eg87u7du3e6c0p1f4rhefjbi.apps.googleusercontent.com.json",
+        "purpose": "D4M Google OAuth (Web)",
+        "verified": true
+      }
+    ]
+  },
+  {
+    "project_id": "red-formula-306011",
+    "owner_account": "jiri.hylmar@gmail.com",
+    "org": "Personal",
+    "purpose": "HYL Google Photos",
+    "credentials": [
+      {
+        "type": "oauth_client",
+        "client_type": "desktop",
+        "client_id": "704326293334-l8jl3andfj6vv3f38",
+        "path": "~/iniaut/autrst/pho/client_secret_hyl_google_photos.json",
+        "purpose": "HYL Google Photos OAuth (Desktop)",
+        "verified": true
+      }
+    ]
+  },
+  {
+    "project_id": "default-project-hub440",
+    "owner_account": "admin@hub440.cz",
+    "org": "Hylmar",
+    "purpose": "Bills processing",
+    "credentials": [
+      {
+        "type": "oauth_client",
+        "client_type": "desktop",
+        "client_id": "910626759818-9g6iljmea27hgqgaeg84bd9u9jd6lkub",
+        "path": "~/bills-hub440/input/client_secret_910626759818-9g6iljmea27hgqgaeg84bd9u9jd6lkub.apps.googleusercontent.com.json",
+        "purpose": "Bills Hub440 OAuth (Desktop)",
+        "verified": true
+      }
+    ]
+  },
+  {
+    "project_id": "quickstart-1583930073537",
+    "owner_account": "jiri.hylmar@gmail.com",
+    "org": "Personal",
+    "purpose": "D4M GDrive desktop client (legacy)",
+    "credentials": [
+      {
+        "type": "oauth_client",
+        "client_type": "desktop",
+        "client_id": "11287605388-49mq16t3jenv4q72pj",
+        "path": "~/iniaut/autpyt/d4m/d4m_goo-gdr_credentials.json",
+        "purpose": "D4M GDrive OAuth (Desktop)",
+        "verified": true
+      }
+    ]
+  }
+]
