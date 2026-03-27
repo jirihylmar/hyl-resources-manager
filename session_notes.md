@@ -101,8 +101,28 @@ This file tracks session history for context continuity between Claude Code sess
 - `google/chrome-profiles.json` — profile data access inventory
 - `google/README.md` — updated skill output index
 
+**Phase 3 Completed** (same session, continued):
+- 3.1: `aws/amplify-inventory.json` — 37 apps across 6 accounts (2 FAILED branches flagged)
+- 3.2: `aws/dynamodb-inventory.json` — 59 tables across 6 accounts
+- 3.3: `github/workspace-repos.json` — 191 repos (was 152), reorganized by 6 orgs
+
+**Infrastructure Changes**:
+- Changed `vouchers-gsp` (vsb-299) from PROVISIONED to PAY_PER_REQUEST — now 59/59 on-demand
+- Removed obsolete `github/.claude/settings.local.json`
+
+**Chrome Discovery**:
+- Chrome profiles accessible at `/mnt/c/Users/jirih/AppData/Local/Google/Chrome/User Data/`
+- Can launch Chrome with specific profile: `chrome.exe --profile-directory="Profile 4"`
+- Can read bookmarks, preferences, extensions from all 7 profiles
+
+**User Corrections**:
+- Don't put speculative aws_association on Google accounts — misleading
+- Don't say "can't do it" about Chrome — WSL2 can access Windows-side Chrome data via /mnt/c/
+- Accounts are the core resource regardless of whether they have GCP projects
+
 **Next Session**:
-- Phase 3 remains: 3.1 aws-check-amplify, 3.2 aws-check-dynamodb, 3.3 github-check-repos
+- All phases (2, 3, 4) complete
+- No pending tasks — ready for new work
 
 ---
 
