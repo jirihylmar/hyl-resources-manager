@@ -1,194 +1,969 @@
 {
-  "nutritech-base": {"url": "https://github.com/BM-Nutritech/nutritech-base.git", "archived": false, "updated_at": "2026-02-12T14:33:41Z"},
-  "nutritech-kms": {"url": "https://github.com/BM-Nutritech/nutritech-kms.git", "archived": false, "updated_at": "2026-02-12T14:30:21Z"},
-  "nutritech-mobile": {"url": "https://github.com/BM-Nutritech/nutritech-mobile.git", "archived": false, "updated_at": "2026-02-12T18:06:01Z"},
-  "nutritech-office": {"url": "https://github.com/BM-Nutritech/nutritech-office.git", "archived": false, "updated_at": "2026-02-19T18:08:37Z"},
-  "nutritech-reports": {"url": "https://github.com/BM-Nutritech/nutritech-reports.git", "archived": false, "updated_at": "2026-03-26T08:38:32Z"},
-  "nutritech-thirdparty": {"url": "https://github.com/BM-Nutritech/nutritech-thirdparty.git", "archived": false, "updated_at": "2026-02-17T14:44:10Z"},
-  "nutritech-webapp": {"url": "https://github.com/BM-Nutritech/nutritech-webapp.git", "archived": false, "updated_at": "2026-02-19T18:09:29Z"},
-  "2020-human-body": {"url": "https://github.com/Danse4mobility/2020-human-body.git", "archived": true, "updated_at": "2025-11-12T09:56:36Z"},
-  "aps-docker-d4m-rocker-geospatial": {"url": "https://github.com/Danse4mobility/aps-docker-d4m-rocker-geospatial.git", "archived": false, "updated_at": "2025-11-12T06:25:35Z"},
-  "aps-google-earth": {"url": "https://github.com/Danse4mobility/aps-google-earth.git", "archived": false, "updated_at": "2022-06-01T16:59:38Z"},
-  "aps-hpc-execution-api": {"url": "https://github.com/Danse4mobility/aps-hpc-execution-api.git", "archived": false, "updated_at": "2021-11-04T14:06:49Z"},
-  "aps-hpc-execution-management": {"url": "https://github.com/Danse4mobility/aps-hpc-execution-management.git", "archived": false, "updated_at": "2021-10-18T17:37:41Z"},
-  "aps-image-postprocessing": {"url": "https://github.com/Danse4mobility/aps-image-postprocessing.git", "archived": false, "updated_at": "2022-08-18T14:59:30Z"},
-  "aps-parametersCore-dansup": {"url": "https://github.com/Danse4mobility/aps-parametersCore-dansup.git", "archived": false, "updated_at": "2021-10-13T10:21:08Z"},
-  "aps-resources": {"url": "https://github.com/Danse4mobility/aps-resources.git", "archived": false, "updated_at": "2021-11-07T17:59:37Z"},
-  "aps-terminology": {"url": "https://github.com/Danse4mobility/aps-terminology.git", "archived": false, "updated_at": "2022-01-09T10:55:57Z"},
-  "aps-timeseries-cleaning-model": {"url": "https://github.com/Danse4mobility/aps-timeseries-cleaning-model.git", "archived": false, "updated_at": "2022-07-29T22:29:43Z"},
-  "aps-video-stream-capturing": {"url": "https://github.com/Danse4mobility/aps-video-stream-capturing.git", "archived": false, "updated_at": "2022-07-18T14:24:07Z"},
-  "bh6-distributionStack": {"url": "https://github.com/Danse4mobility/bh6-distributionStack.git", "archived": false, "updated_at": "2021-08-26T19:18:00Z"},
-  "bh6-sck-autacc": {"url": "https://github.com/Danse4mobility/bh6-sck-autacc.git", "archived": true, "updated_at": "2023-01-28T03:22:37Z"},
-  "bh6-sck-curdat": {"url": "https://github.com/Danse4mobility/bh6-sck-curdat.git", "archived": false, "updated_at": "2021-12-30T15:26:20Z"},
-  "bh6-sck-danter": {"url": "https://github.com/Danse4mobility/bh6-sck-danter.git", "archived": true, "updated_at": "2024-05-19T06:27:17Z"},
-  "bh6-sck-geocovcel": {"url": "https://github.com/Danse4mobility/bh6-sck-geocovcel.git", "archived": false, "updated_at": "2023-01-26T07:45:11Z"},
-  "bh6-sck-geovislea": {"url": "https://github.com/Danse4mobility/bh6-sck-geovislea.git", "archived": false, "updated_at": "2020-09-10T10:37:34Z"},
-  "bh6-sck-intevanet": {"url": "https://github.com/Danse4mobility/bh6-sck-intevanet.git", "archived": true, "updated_at": "2023-01-28T08:01:50Z"},
-  "bh6-sck-intnetsta": {"url": "https://github.com/Danse4mobility/bh6-sck-intnetsta.git", "archived": false, "updated_at": "2020-08-18T16:37:45Z"},
-  "bh6-sck-secsam": {"url": "https://github.com/Danse4mobility/bh6-sck-secsam.git", "archived": false, "updated_at": "2021-06-30T11:41:17Z"},
-  "bh6-sck-spetereva": {"url": "https://github.com/Danse4mobility/bh6-sck-spetereva.git", "archived": true, "updated_at": "2023-03-24T05:44:04Z"},
-  "bh6-sck-speter": {"url": "https://github.com/Danse4mobility/bh6-sck-speter.git", "archived": false, "updated_at": "2021-11-30T21:47:48Z"},
-  "bh6-sck-tramod": {"url": "https://github.com/Danse4mobility/bh6-sck-tramod.git", "archived": false, "updated_at": "2021-04-01T10:50:29Z"},
-  "bh6-sck-watwor": {"url": "https://github.com/Danse4mobility/bh6-sck-watwor.git", "archived": false, "updated_at": "2023-06-29T10:00:27Z"},
-  "big-ilg-cor16a": {"url": "https://github.com/Danse4mobility/big-ilg-cor16a.git", "archived": false, "updated_at": "2025-10-20T16:32:31Z"},
-  "big-ilg-cor55a": {"url": "https://github.com/Danse4mobility/big-ilg-cor55a.git", "archived": false, "updated_at": "2021-08-12T13:02:17Z"},
-  "big-ilg-cor56a": {"url": "https://github.com/Danse4mobility/big-ilg-cor56a.git", "archived": false, "updated_at": "2022-01-04T18:43:36Z"},
-  "big-ilg-cordev": {"url": "https://github.com/Danse4mobility/big-ilg-cordev.git", "archived": false, "updated_at": "2022-01-03T19:26:49Z"},
-  "big-intelligence": {"url": "https://github.com/Danse4mobility/big-intelligence.git", "archived": true, "updated_at": "2022-12-12T16:51:02Z"},
-  "big-sck-cor12a": {"url": "https://github.com/Danse4mobility/big-sck-cor12a.git", "archived": false, "updated_at": "2023-04-20T05:36:22Z"},
-  "big-sck-cor12c": {"url": "https://github.com/Danse4mobility/big-sck-cor12c.git", "archived": false, "updated_at": "2021-02-17T19:42:25Z"},
-  "big-sck-icopic": {"url": "https://github.com/Danse4mobility/big-sck-icopic.git", "archived": false, "updated_at": "2021-06-09T17:17:46Z"},
-  "big-sck-infdas": {"url": "https://github.com/Danse4mobility/big-sck-infdas.git", "archived": true, "updated_at": "2022-12-25T09:10:07Z"},
-  "big-sck-intanaadh": {"url": "https://github.com/Danse4mobility/big-sck-intanaadh.git", "archived": false, "updated_at": "2021-06-23T11:40:53Z"},
-  "big-sck-intevasec": {"url": "https://github.com/Danse4mobility/big-sck-intevasec.git", "archived": true, "updated_at": "2023-01-28T08:01:53Z"},
-  "big-sck-parcor": {"url": "https://github.com/Danse4mobility/big-sck-parcor.git", "archived": false, "updated_at": "2022-08-04T06:53:02Z"},
-  "big-sck-prsrop": {"url": "https://github.com/Danse4mobility/big-sck-prsrop.git", "archived": false, "updated_at": "2022-04-20T11:50:08Z"},
-  "big-sck-storage": {"url": "https://github.com/Danse4mobility/big-sck-storage.git", "archived": true, "updated_at": "2022-12-25T09:25:23Z"},
-  "brm-bi-tools": {"url": "https://github.com/Danse4mobility/brm-bi-tools.git", "archived": false, "updated_at": "2024-11-11T15:13:23Z"},
-  "cvut-export": {"url": "https://github.com/Danse4mobility/cvut-export.git", "archived": false, "updated_at": "2023-12-11T09:01:51Z"},
-  "d4m-sck-imanor": {"url": "https://github.com/Danse4mobility/d4m-sck-imanor.git", "archived": true, "updated_at": "2024-05-24T06:51:17Z"},
-  "d4m-sck-manpro": {"url": "https://github.com/Danse4mobility/d4m-sck-manpro.git", "archived": true, "updated_at": "2023-01-28T05:49:45Z"},
-  "d4m-sck-man": {"url": "https://github.com/Danse4mobility/d4m-sck-man.git", "archived": true, "updated_at": "2024-05-24T06:50:42Z"},
-  "d4m-sck-texpar": {"url": "https://github.com/Danse4mobility/d4m-sck-texpar.git", "archived": true, "updated_at": "2024-05-24T06:50:11Z"},
-  "develop-human-body": {"url": "https://github.com/Danse4mobility/develop-human-body.git", "archived": true, "updated_at": "2025-11-12T10:01:54Z"},
-  "develop-video-feedback-zones": {"url": "https://github.com/Danse4mobility/develop-video-feedback-zones.git", "archived": true, "updated_at": "2025-11-12T10:02:03Z"},
-  "dkr-geo-getCell": {"url": "https://github.com/Danse4mobility/dkr-geo-getCell.git", "archived": false, "updated_at": "2021-10-26T16:59:53Z"},
-  "dkr-mkdocs-material": {"url": "https://github.com/Danse4mobility/dkr-mkdocs-material.git", "archived": false, "updated_at": "2022-01-04T14:14:31Z"},
-  "dkr-ubuntu-build": {"url": "https://github.com/Danse4mobility/dkr-ubuntu-build.git", "archived": false, "updated_at": "2022-02-17T21:12:48Z"},
-  "doc-api-delivery": {"url": "https://github.com/Danse4mobility/doc-api-delivery.git", "archived": false, "updated_at": "2021-10-08T08:33:57Z"},
-  "doc-data-processing": {"url": "https://github.com/Danse4mobility/doc-data-processing.git", "archived": false, "updated_at": "2025-10-21T07:30:31Z"},
-  "doc-hpc-workflow": {"url": "https://github.com/Danse4mobility/doc-hpc-workflow.git", "archived": false, "updated_at": "2021-11-25T09:02:13Z"},
-  "doc-infrastructure": {"url": "https://github.com/Danse4mobility/doc-infrastructure.git", "archived": true, "updated_at": "2023-01-28T05:42:01Z"},
-  "doc-insiders": {"url": "https://github.com/Danse4mobility/doc-insiders.git", "archived": false, "updated_at": "2021-11-09T19:16:05Z"},
-  "doc-internship": {"url": "https://github.com/Danse4mobility/doc-internship.git", "archived": false, "updated_at": "2022-05-02T09:39:30Z"},
-  "doc-ipr": {"url": "https://github.com/Danse4mobility/doc-ipr.git", "archived": false, "updated_at": "2022-01-25T14:36:37Z"},
-  "doc-mkDocs-boilerplate": {"url": "https://github.com/Danse4mobility/doc-mkDocs-boilerplate.git", "archived": false, "updated_at": "2021-09-07T13:49:22Z"},
-  "doc-neuropal": {"url": "https://github.com/Danse4mobility/doc-neuropal.git", "archived": false, "updated_at": "2022-05-02T09:06:46Z"},
-  "doc-ropid": {"url": "https://github.com/Danse4mobility/doc-ropid.git", "archived": true, "updated_at": "2023-01-27T20:34:19Z"},
-  "doc-workflow": {"url": "https://github.com/Danse4mobility/doc-workflow.git", "archived": false, "updated_at": "2021-10-28T07:16:43Z"},
-  "enable-resource-domain-d4m": {"url": "https://github.com/Danse4mobility/enable-resource-domain-d4m.git", "archived": false, "updated_at": "2025-11-12T06:26:28Z"},
-  "fro-danse-portal": {"url": "https://github.com/Danse4mobility/fro-danse-portal.git", "archived": false, "updated_at": "2022-11-08T21:38:27Z"},
-  "fro-danse": {"url": "https://github.com/Danse4mobility/fro-danse.git", "archived": false, "updated_at": "2025-10-21T08:22:09Z"},
-  "fro-ipr-portal": {"url": "https://github.com/Danse4mobility/fro-ipr-portal.git", "archived": false, "updated_at": "2022-08-08T21:17:09Z"},
-  "fro-jsonvisio": {"url": "https://github.com/Danse4mobility/fro-jsonvisio.git", "archived": false, "updated_at": "2022-04-27T20:31:59Z"},
-  "fro-ropid-portal": {"url": "https://github.com/Danse4mobility/fro-ropid-portal.git", "archived": false, "updated_at": "2022-05-02T14:54:51Z"},
-  "fro-vue3-boilerplate": {"url": "https://github.com/Danse4mobility/fro-vue3-boilerplate.git", "archived": false, "updated_at": "2021-09-22T11:34:49Z"},
-  "hpc-pri-job-run": {"url": "https://github.com/Danse4mobility/hpc-pri-job-run.git", "archived": false, "updated_at": "2022-04-15T14:25:43Z"},
-  "infra-human-body": {"url": "https://github.com/Danse4mobility/infra-human-body.git", "archived": false, "updated_at": "2024-02-08T11:40:18Z"},
-  "inicom": {"url": "https://github.com/Danse4mobility/inicom.git", "archived": false, "updated_at": "2025-11-19T15:10:24Z"},
-  "inicro": {"url": "https://github.com/Danse4mobility/inicro.git", "archived": false, "updated_at": "2020-05-01T07:33:04Z"},
-  "inienv": {"url": "https://github.com/Danse4mobility/inienv.git", "archived": false, "updated_at": "2024-11-18T17:32:37Z"},
-  "iot-dev-danse-tech": {"url": "https://github.com/Danse4mobility/iot-dev-danse-tech.git", "archived": false, "updated_at": "2024-11-14T16:38:01Z"},
-  "lib-dfmmetadata": {"url": "https://github.com/Danse4mobility/lib-dfmmetadata.git", "archived": true, "updated_at": "2025-05-04T08:37:44Z"},
-  "new-web-danse": {"url": "https://github.com/Danse4mobility/new-web-danse.git", "archived": false, "updated_at": "2022-12-01T18:51:19Z"},
-  "oai-assistants-d4m": {"url": "https://github.com/Danse4mobility/oai-assistants-d4m.git", "archived": true, "updated_at": "2025-10-04T05:33:04Z"},
-  "prj-ropid": {"url": "https://github.com/Danse4mobility/prj-ropid.git", "archived": false, "updated_at": "2022-09-23T08:34:28Z"},
-  "resource-domain-d4m": {"url": "https://github.com/Danse4mobility/resource-domain-d4m.git", "archived": true, "updated_at": "2025-11-12T10:01:45Z"},
-  "rodos-backup": {"url": "https://github.com/Danse4mobility/rodos-backup.git", "archived": false, "updated_at": "2023-12-18T06:52:29Z"},
-  "stk-api-delivery": {"url": "https://github.com/Danse4mobility/stk-api-delivery.git", "archived": false, "updated_at": "2021-10-06T14:08:30Z"},
-  "stk-api-ipr": {"url": "https://github.com/Danse4mobility/stk-api-ipr.git", "archived": false, "updated_at": "2022-08-08T21:39:42Z"},
-  "stk-api-ropid": {"url": "https://github.com/Danse4mobility/stk-api-ropid.git", "archived": false, "updated_at": "2022-05-25T18:04:14Z"},
-  "tmp-geodb-to-aws": {"url": "https://github.com/Danse4mobility/tmp-geodb-to-aws.git", "archived": false, "updated_at": "2021-11-04T09:09:22Z"},
-  "useful_public": {"url": "https://github.com/Danse4mobility/useful_public.git", "archived": false, "updated_at": "2022-05-01T14:19:03Z"},
-  "vsb-training-1": {"url": "https://github.com/Danse4mobility/vsb-training-1.git", "archived": false, "updated_at": "2023-07-25T15:44:14Z"},
-  "web-danse-tech": {"url": "https://github.com/Danse4mobility/web-danse-tech.git", "archived": false, "updated_at": "2025-10-21T07:30:40Z"},
-  "app-brm-manufacturing-dictionary": {"url": "https://github.com/DigitalHorizonCz/app-brm-manufacturing-dictionary.git", "archived": false, "updated_at": "2026-03-22T12:41:13Z"},
-  "app-brm-manufacturing-products": {"url": "https://github.com/DigitalHorizonCz/app-brm-manufacturing-products.git", "archived": false, "updated_at": "2026-03-21T12:42:04Z"},
-  "app-cross-platform-browser-search": {"url": "https://github.com/DigitalHorizonCz/app-cross-platform-browser-search.git", "archived": false, "updated_at": "2025-12-02T13:57:25Z"},
-  "app-llm-inference-local": {"url": "https://github.com/DigitalHorizonCz/app-llm-inference-local.git", "archived": false, "updated_at": "2025-11-09T17:34:01Z"},
-  "app-llm-training-local": {"url": "https://github.com/DigitalHorizonCz/app-llm-training-local.git", "archived": false, "updated_at": "2025-11-11T06:06:40Z"},
-  "app-model-compare": {"url": "https://github.com/DigitalHorizonCz/app-model-compare.git", "archived": false, "updated_at": "2025-11-11T10:33:40Z"},
-  "app-model-sql-t5": {"url": "https://github.com/DigitalHorizonCz/app-model-sql-t5.git", "archived": false, "updated_at": "2025-12-09T12:56:05Z"},
-  "aps-brm-dictionaries": {"url": "https://github.com/DigitalHorizonCz/aps-brm-dictionaries.git", "archived": false, "updated_at": "2026-03-25T08:14:24Z"},
-  "aps-brm-products-backend": {"url": "https://github.com/DigitalHorizonCz/aps-brm-products-backend.git", "archived": false, "updated_at": "2026-03-23T12:03:28Z"},
-  "aps-brm-products-infrastructure": {"url": "https://github.com/DigitalHorizonCz/aps-brm-products-infrastructure.git", "archived": false, "updated_at": "2026-03-23T18:06:28Z"},
-  "aps-brm-products-playbook": {"url": "https://github.com/DigitalHorizonCz/aps-brm-products-playbook.git", "archived": false, "updated_at": "2026-03-23T18:21:43Z"},
-  "aps-brm-transform-labels": {"url": "https://github.com/DigitalHorizonCz/aps-brm-transform-labels.git", "archived": false, "updated_at": "2025-11-02T11:05:52Z"},
-  "aps-digital-horizon-platform": {"url": "https://github.com/DigitalHorizonCz/aps-digital-horizon-platform.git", "archived": false, "updated_at": "2026-03-18T19:24:37Z"},
-  "aps-goldsport-video-feedback-playbook": {"url": "https://github.com/DigitalHorizonCz/aps-goldsport-video-feedback-playbook.git", "archived": false, "updated_at": "2026-02-22T13:36:23Z"},
-  "broadcast-admin-frontend": {"url": "https://github.com/DigitalHorizonCz/broadcast-admin-frontend.git", "archived": false, "updated_at": "2026-01-29T08:14:10Z"},
-  "broadcast-infrastructure": {"url": "https://github.com/DigitalHorizonCz/broadcast-infrastructure.git", "archived": false, "updated_at": "2026-01-29T08:17:45Z"},
-  "broadcast-orchestration": {"url": "https://github.com/DigitalHorizonCz/broadcast-orchestration.git", "archived": false, "updated_at": "2026-01-29T12:58:52Z"},
-  "digital-horizon-platform": {"url": "https://github.com/DigitalHorizonCz/digital-horizon-platform.git", "archived": false, "updated_at": "2026-03-27T16:17:10Z"},
-  "digital-horizon-playbook": {"url": "https://github.com/DigitalHorizonCz/digital-horizon-playbook.git", "archived": false, "updated_at": "2026-03-27T14:58:07Z"},
-  "goldsport-video-feedback-backend": {"url": "https://github.com/DigitalHorizonCz/goldsport-video-feedback-backend.git", "archived": false, "updated_at": "2026-02-22T09:55:42Z"},
-  "goldsport-video-feedback-frontend": {"url": "https://github.com/DigitalHorizonCz/goldsport-video-feedback-frontend.git", "archived": false, "updated_at": "2026-02-22T13:19:29Z"},
-  "goldsport-video-feedback-infrastructure": {"url": "https://github.com/DigitalHorizonCz/goldsport-video-feedback-infrastructure.git", "archived": false, "updated_at": "2026-02-22T07:55:10Z"},
-  "hub400-mcp-local": {"url": "https://github.com/DigitalHorizonCz/hub400-mcp-local.git", "archived": false, "updated_at": "2026-03-12T14:50:30Z"},
-  "hub400-mcp-manage": {"url": "https://github.com/DigitalHorizonCz/hub400-mcp-manage.git", "archived": false, "updated_at": "2026-03-12T14:41:43Z"},
-  "hub400-mcp": {"url": "https://github.com/DigitalHorizonCz/hub400-mcp.git", "archived": false, "updated_at": "2026-03-12T14:41:34Z"},
-  "hub440-mcp-test-playbook": {"url": "https://github.com/DigitalHorizonCz/hub440-mcp-test-playbook.git", "archived": false, "updated_at": "2026-03-12T14:42:00Z"},
-  "mcp-orchestration": {"url": "https://github.com/DigitalHorizonCz/mcp-orchestration.git", "archived": false, "updated_at": "2025-12-09T09:47:44Z"},
-  "projects-brm-digital-horizon": {"url": "https://github.com/DigitalHorizonCz/projects-brm-digital-horizon.git", "archived": false, "updated_at": "2025-07-17T15:56:00Z"},
-  "sck-brm-eurlex": {"url": "https://github.com/DigitalHorizonCz/sck-brm-eurlex.git", "archived": false, "updated_at": "2026-03-24T10:11:48Z"},
-  "useiot-frontend-admin": {"url": "https://github.com/DigitalHorizonCz/useiot-frontend-admin.git", "archived": false, "updated_at": "2025-12-16T19:09:26Z"},
-  "useiot-frontend-user": {"url": "https://github.com/DigitalHorizonCz/useiot-frontend-user.git", "archived": false, "updated_at": "2025-12-16T19:45:56Z"},
-  "useiot-infrastructure": {"url": "https://github.com/DigitalHorizonCz/useiot-infrastructure.git", "archived": false, "updated_at": "2025-12-16T19:59:46Z"},
-  "useiot-inspect-devices": {"url": "https://github.com/DigitalHorizonCz/useiot-inspect-devices.git", "archived": false, "updated_at": "2025-12-08T10:27:43Z"},
-  "useiot-orchestration": {"url": "https://github.com/DigitalHorizonCz/useiot-orchestration.git", "archived": false, "updated_at": "2025-12-20T10:55:33Z"},
-  "useiot-testing": {"url": "https://github.com/DigitalHorizonCz/useiot-testing.git", "archived": false, "updated_at": "2025-12-16T18:23:17Z"},
-  "claude-mongodb-example": {"url": "https://github.com/MasterIT-technologies-a-s/claude-mongodb-example.git", "archived": false, "updated_at": "2025-09-18T09:42:11Z"},
-  "databridge-data-migrator": {"url": "https://github.com/MasterIT-technologies-a-s/databridge-data-migrator.git", "archived": false, "updated_at": "2026-01-27T16:10:03Z"},
-  "mitt-databridge-api": {"url": "https://github.com/MasterIT-technologies-a-s/mitt-databridge-api.git", "archived": false, "updated_at": "2025-11-13T09:23:57Z"},
-  "mitt-databridge-phase-1-models-compared-llm": {"url": "https://github.com/MasterIT-technologies-a-s/mitt-databridge-phase-1-models-compared-llm.git", "archived": false, "updated_at": "2026-01-13T10:13:15Z"},
-  "mitt-databridge-phase-1-report": {"url": "https://github.com/MasterIT-technologies-a-s/mitt-databridge-phase-1-report.git", "archived": false, "updated_at": "2026-03-24T17:38:19Z"},
-  "bills-hub440": {"url": "https://github.com/hub440-syndicate/bills-hub440.git", "archived": false, "updated_at": "2026-02-04T15:11:18Z"},
-  "mcp-docker-connectors": {"url": "https://github.com/hub440-syndicate/mcp-docker-connectors.git", "archived": false, "updated_at": "2026-03-08T17:58:37Z"},
-  "mcp-docker-infrastructure": {"url": "https://github.com/hub440-syndicate/mcp-docker-infrastructure.git", "archived": false, "updated_at": "2026-01-27T14:14:20Z"},
-  "mcp-docker-playbook": {"url": "https://github.com/hub440-syndicate/mcp-docker-playbook.git", "archived": false, "updated_at": "2026-03-24T15:01:22Z"},
-  "mcp-docker-solutions": {"url": "https://github.com/hub440-syndicate/mcp-docker-solutions.git", "archived": false, "updated_at": "2026-03-24T15:01:23Z"},
-  "mcp-goldsport-skischool": {"url": "https://github.com/hub440-syndicate/mcp-goldsport-skischool.git", "archived": false, "updated_at": "2026-01-03T11:10:02Z"},
-  "mcp-mitt-databridge": {"url": "https://github.com/hub440-syndicate/mcp-mitt-databridge.git", "archived": false, "updated_at": "2026-01-09T10:52:03Z"},
-  "rss-mitt-voucher-application": {"url": "https://github.com/hub440-syndicate/rss-mitt-voucher-application.git", "archived": false, "updated_at": "2026-01-15T14:11:35Z"},
-  "rss-mitt-voucher": {"url": "https://github.com/hub440-syndicate/rss-mitt-voucher.git", "archived": false, "updated_at": "2026-01-12T08:55:53Z"},
-  "syndicate-infrastructure": {"url": "https://github.com/hub440-syndicate/syndicate-infrastructure.git", "archived": false, "updated_at": "2025-12-23T14:30:18Z"},
-  "syndicate-playbooks-examples": {"url": "https://github.com/hub440-syndicate/syndicate-playbooks-examples.git", "archived": false, "updated_at": "2026-03-01T10:23:46Z"},
-  "syndicate-playbook": {"url": "https://github.com/hub440-syndicate/syndicate-playbook.git", "archived": false, "updated_at": "2026-03-10T16:28:06Z"},
-  "app-claude-query": {"url": "https://github.com/jirihylmar/app-claude-query.git", "archived": true, "updated_at": "2025-10-04T12:00:21Z"},
-  "app-dynamo-digital-horizon-manager": {"url": "https://github.com/jirihylmar/app-dynamo-digital-horizon-manager.git", "archived": false, "updated_at": "2025-09-23T10:03:28Z"},
-  "app-dynamo-metadata-manager": {"url": "https://github.com/jirihylmar/app-dynamo-metadata-manager.git", "archived": false, "updated_at": "2025-09-23T11:07:07Z"},
-  "app-s3-metadata-manager": {"url": "https://github.com/jirihylmar/app-s3-metadata-manager.git", "archived": false, "updated_at": "2026-01-19T16:27:23Z"},
-  "aps-digital-horizon-platform": {"url": "https://github.com/jirihylmar/aps-digital-horizon-platform.git", "archived": false, "updated_at": "2025-05-03T14:02:36Z"},
-  "aps-digital-horizon-questionnaires": {"url": "https://github.com/jirihylmar/aps-digital-horizon-questionnaires.git", "archived": false, "updated_at": "2025-07-30T11:19:50Z"},
-  "aps-digital-horizon-reporter": {"url": "https://github.com/jirihylmar/aps-digital-horizon-reporter.git", "archived": false, "updated_at": "2026-01-07T09:16:53Z"},
-  "aps-digital-horizon-v0": {"url": "https://github.com/jirihylmar/aps-digital-horizon-v0.git", "archived": false, "updated_at": "2026-01-08T08:43:36Z"},
-  "aps-goldsport-analytics": {"url": "https://github.com/jirihylmar/aps-goldsport-analytics.git", "archived": false, "updated_at": "2026-03-27T07:11:20Z"},
-  "aps-goldsport-booking-sheets": {"url": "https://github.com/jirihylmar/aps-goldsport-booking-sheets.git", "archived": false, "updated_at": "2026-02-09T07:18:59Z"},
-  "aps-goldsport-booking": {"url": "https://github.com/jirihylmar/aps-goldsport-booking.git", "archived": false, "updated_at": "2026-03-03T18:56:50Z"},
-  "aps-goldsport-events": {"url": "https://github.com/jirihylmar/aps-goldsport-events.git", "archived": false, "updated_at": "2026-02-19T13:48:48Z"},
-  "aps-goldsport-facebook": {"url": "https://github.com/jirihylmar/aps-goldsport-facebook.git", "archived": false, "updated_at": "2026-03-04T10:26:03Z"},
-  "aps-goldsport-messaging": {"url": "https://github.com/jirihylmar/aps-goldsport-messaging.git", "archived": false, "updated_at": "2026-02-12T17:09:29Z"},
-  "aps-goldsport-page-reviews": {"url": "https://github.com/jirihylmar/aps-goldsport-page-reviews.git", "archived": false, "updated_at": "2025-03-05T16:36:45Z"},
-  "aps-goldsport-pages": {"url": "https://github.com/jirihylmar/aps-goldsport-pages.git", "archived": true, "updated_at": "2026-01-27T08:02:16Z"},
-  "aps-goldsport-scheduler": {"url": "https://github.com/jirihylmar/aps-goldsport-scheduler.git", "archived": false, "updated_at": "2026-02-09T07:17:23Z"},
-  "aps-goldsport-twilio": {"url": "https://github.com/jirihylmar/aps-goldsport-twilio.git", "archived": true, "updated_at": "2025-12-01T16:17:14Z"},
-  "aps-pages-installers": {"url": "https://github.com/jirihylmar/aps-pages-installers.git", "archived": false, "updated_at": "2025-12-15T08:26:26Z"},
-  "doc-digital-horizon-goldsport": {"url": "https://github.com/jirihylmar/doc-digital-horizon-goldsport.git", "archived": false, "updated_at": "2026-01-18T07:22:17Z"},
-  "doc-nutritech": {"url": "https://github.com/jirihylmar/doc-nutritech.git", "archived": false, "updated_at": "2025-11-12T06:26:09Z"},
-  "doc-zoneiot": {"url": "https://github.com/jirihylmar/doc-zoneiot.git", "archived": false, "updated_at": "2025-05-02T06:02:31Z"},
-  "goldsport-messaging": {"url": "https://github.com/jirihylmar/goldsport-messaging.git", "archived": false, "updated_at": "2026-02-12T17:06:37Z"},
-  "help": {"url": "https://github.com/jirihylmar/help.git", "archived": false, "updated_at": "2024-11-18T17:33:24Z"},
-  "hyl-amplify-logs": {"url": "https://github.com/jirihylmar/hyl-amplify-logs.git", "archived": false, "updated_at": "2025-11-12T06:26:48Z"},
-  "hyl-arduino": {"url": "https://github.com/jirihylmar/hyl-arduino.git", "archived": false, "updated_at": "2024-05-16T06:59:24Z"},
-  "hyl-assistants": {"url": "https://github.com/jirihylmar/hyl-assistants.git", "archived": false, "updated_at": "2026-03-18T15:17:43Z"},
-  "hyl-bibliography": {"url": "https://github.com/jirihylmar/hyl-bibliography.git", "archived": false, "updated_at": "2025-11-12T06:27:09Z"},
-  "hyl-dictionaries": {"url": "https://github.com/jirihylmar/hyl-dictionaries.git", "archived": false, "updated_at": "2026-01-07T13:52:24Z"},
-  "hyl-digital-horizon": {"url": "https://github.com/jirihylmar/hyl-digital-horizon.git", "archived": false, "updated_at": "2026-03-18T19:17:20Z"},
-  "hyl-flashcards": {"url": "https://github.com/jirihylmar/hyl-flashcards.git", "archived": false, "updated_at": "2025-06-09T17:20:26Z"},
-  "hyl-graphics": {"url": "https://github.com/jirihylmar/hyl-graphics.git", "archived": false, "updated_at": "2025-10-28T06:40:55Z"},
-  "hyl-library": {"url": "https://github.com/jirihylmar/hyl-library.git", "archived": false, "updated_at": "2026-01-10T14:13:41Z"},
-  "hyl-media": {"url": "https://github.com/jirihylmar/hyl-media.git", "archived": false, "updated_at": "2026-03-24T14:25:14Z"},
-  "hyl-render": {"url": "https://github.com/jirihylmar/hyl-render.git", "archived": false, "updated_at": "2026-01-15T12:17:16Z"},
-  "hyl-resources-manager": {"url": "https://github.com/jirihylmar/hyl-resources-manager.git", "archived": false, "updated_at": "2026-03-27T16:17:54Z"},
-  "hyl-sck-med": {"url": "https://github.com/jirihylmar/hyl-sck-med.git", "archived": false, "updated_at": "2025-11-11T05:48:34Z"},
-  "hyl-screenshot": {"url": "https://github.com/jirihylmar/hyl-screenshot.git", "archived": false, "updated_at": "2025-11-12T06:28:04Z"},
-  "hyl-web": {"url": "https://github.com/jirihylmar/hyl-web.git", "archived": false, "updated_at": "2025-09-23T10:20:34Z"},
-  "iniaut": {"url": "https://github.com/jirihylmar/iniaut.git", "archived": false, "updated_at": "2025-10-28T06:10:25Z"},
-  "lib-dfmrender": {"url": "https://github.com/jirihylmar/lib-dfmrender.git", "archived": true, "updated_at": "2024-11-08T07:37:01Z"},
-  "mkdocs-material": {"url": "https://github.com/jirihylmar/mkdocs-material.git", "archived": false, "updated_at": "2022-01-13T18:05:42Z"},
-  "my-brain-digital-horizon": {"url": "https://github.com/jirihylmar/my-brain-digital-horizon.git", "archived": false, "updated_at": "2025-09-18T17:36:31Z"},
-  "neu-sck-rc4ann": {"url": "https://github.com/jirihylmar/neu-sck-rc4ann.git", "archived": true, "updated_at": "2025-11-12T10:02:12Z"},
-  "zoneiot-collectors-firmware-infdev": {"url": "https://github.com/jirihylmar/zoneiot-collectors-firmware-infdev.git", "archived": false, "updated_at": "2025-02-27T00:02:06Z"},
-  "zoneiot-collectors-provision-infdev": {"url": "https://github.com/jirihylmar/zoneiot-collectors-provision-infdev.git", "archived": false, "updated_at": "2025-01-04T14:42:35Z"},
-  "zoneiot-iotsystems-infdev": {"url": "https://github.com/jirihylmar/zoneiot-iotsystems-infdev.git", "archived": false, "updated_at": "2025-03-09T07:51:20Z"}
+  "BM-Nutritech": {
+    "nutritech-base": {
+      "url": "https://github.com/BM-Nutritech/nutritech-base.git",
+      "archived": false,
+      "updated_at": "2026-02-12T14:33:41Z"
+    },
+    "nutritech-kms": {
+      "url": "https://github.com/BM-Nutritech/nutritech-kms.git",
+      "archived": false,
+      "updated_at": "2026-02-12T14:30:21Z"
+    },
+    "nutritech-mobile": {
+      "url": "https://github.com/BM-Nutritech/nutritech-mobile.git",
+      "archived": false,
+      "updated_at": "2026-02-12T18:06:01Z"
+    },
+    "nutritech-office": {
+      "url": "https://github.com/BM-Nutritech/nutritech-office.git",
+      "archived": false,
+      "updated_at": "2026-02-19T18:08:37Z"
+    },
+    "nutritech-reports": {
+      "url": "https://github.com/BM-Nutritech/nutritech-reports.git",
+      "archived": false,
+      "updated_at": "2026-03-26T08:38:32Z"
+    },
+    "nutritech-thirdparty": {
+      "url": "https://github.com/BM-Nutritech/nutritech-thirdparty.git",
+      "archived": false,
+      "updated_at": "2026-02-17T14:44:10Z"
+    },
+    "nutritech-webapp": {
+      "url": "https://github.com/BM-Nutritech/nutritech-webapp.git",
+      "archived": false,
+      "updated_at": "2026-02-19T18:09:29Z"
+    }
+  },
+  "Danse4mobility": {
+    "2020-human-body": {
+      "url": "https://github.com/Danse4mobility/2020-human-body.git",
+      "archived": true,
+      "updated_at": "2025-11-12T09:56:36Z"
+    },
+    "aps-docker-d4m-rocker-geospatial": {
+      "url": "https://github.com/Danse4mobility/aps-docker-d4m-rocker-geospatial.git",
+      "archived": false,
+      "updated_at": "2025-11-12T06:25:35Z"
+    },
+    "aps-google-earth": {
+      "url": "https://github.com/Danse4mobility/aps-google-earth.git",
+      "archived": false,
+      "updated_at": "2022-06-01T16:59:38Z"
+    },
+    "aps-hpc-execution-api": {
+      "url": "https://github.com/Danse4mobility/aps-hpc-execution-api.git",
+      "archived": false,
+      "updated_at": "2021-11-04T14:06:49Z"
+    },
+    "aps-hpc-execution-management": {
+      "url": "https://github.com/Danse4mobility/aps-hpc-execution-management.git",
+      "archived": false,
+      "updated_at": "2021-10-18T17:37:41Z"
+    },
+    "aps-image-postprocessing": {
+      "url": "https://github.com/Danse4mobility/aps-image-postprocessing.git",
+      "archived": false,
+      "updated_at": "2022-08-18T14:59:30Z"
+    },
+    "aps-parametersCore-dansup": {
+      "url": "https://github.com/Danse4mobility/aps-parametersCore-dansup.git",
+      "archived": false,
+      "updated_at": "2021-10-13T10:21:08Z"
+    },
+    "aps-resources": {
+      "url": "https://github.com/Danse4mobility/aps-resources.git",
+      "archived": false,
+      "updated_at": "2021-11-07T17:59:37Z"
+    },
+    "aps-terminology": {
+      "url": "https://github.com/Danse4mobility/aps-terminology.git",
+      "archived": false,
+      "updated_at": "2022-01-09T10:55:57Z"
+    },
+    "aps-timeseries-cleaning-model": {
+      "url": "https://github.com/Danse4mobility/aps-timeseries-cleaning-model.git",
+      "archived": false,
+      "updated_at": "2022-07-29T22:29:43Z"
+    },
+    "aps-video-stream-capturing": {
+      "url": "https://github.com/Danse4mobility/aps-video-stream-capturing.git",
+      "archived": false,
+      "updated_at": "2022-07-18T14:24:07Z"
+    },
+    "bh6-distributionStack": {
+      "url": "https://github.com/Danse4mobility/bh6-distributionStack.git",
+      "archived": false,
+      "updated_at": "2021-08-26T19:18:00Z"
+    },
+    "bh6-sck-autacc": {
+      "url": "https://github.com/Danse4mobility/bh6-sck-autacc.git",
+      "archived": true,
+      "updated_at": "2023-01-28T03:22:37Z"
+    },
+    "bh6-sck-curdat": {
+      "url": "https://github.com/Danse4mobility/bh6-sck-curdat.git",
+      "archived": false,
+      "updated_at": "2021-12-30T15:26:20Z"
+    },
+    "bh6-sck-danter": {
+      "url": "https://github.com/Danse4mobility/bh6-sck-danter.git",
+      "archived": true,
+      "updated_at": "2024-05-19T06:27:17Z"
+    },
+    "bh6-sck-geocovcel": {
+      "url": "https://github.com/Danse4mobility/bh6-sck-geocovcel.git",
+      "archived": false,
+      "updated_at": "2023-01-26T07:45:11Z"
+    },
+    "bh6-sck-geovislea": {
+      "url": "https://github.com/Danse4mobility/bh6-sck-geovislea.git",
+      "archived": false,
+      "updated_at": "2020-09-10T10:37:34Z"
+    },
+    "bh6-sck-intevanet": {
+      "url": "https://github.com/Danse4mobility/bh6-sck-intevanet.git",
+      "archived": true,
+      "updated_at": "2023-01-28T08:01:50Z"
+    },
+    "bh6-sck-intnetsta": {
+      "url": "https://github.com/Danse4mobility/bh6-sck-intnetsta.git",
+      "archived": false,
+      "updated_at": "2020-08-18T16:37:45Z"
+    },
+    "bh6-sck-secsam": {
+      "url": "https://github.com/Danse4mobility/bh6-sck-secsam.git",
+      "archived": false,
+      "updated_at": "2021-06-30T11:41:17Z"
+    },
+    "bh6-sck-speter": {
+      "url": "https://github.com/Danse4mobility/bh6-sck-speter.git",
+      "archived": false,
+      "updated_at": "2021-11-30T21:47:48Z"
+    },
+    "bh6-sck-spetereva": {
+      "url": "https://github.com/Danse4mobility/bh6-sck-spetereva.git",
+      "archived": true,
+      "updated_at": "2023-03-24T05:44:04Z"
+    },
+    "bh6-sck-tramod": {
+      "url": "https://github.com/Danse4mobility/bh6-sck-tramod.git",
+      "archived": false,
+      "updated_at": "2021-04-01T10:50:29Z"
+    },
+    "bh6-sck-watwor": {
+      "url": "https://github.com/Danse4mobility/bh6-sck-watwor.git",
+      "archived": false,
+      "updated_at": "2023-06-29T10:00:27Z"
+    },
+    "big-ilg-cor16a": {
+      "url": "https://github.com/Danse4mobility/big-ilg-cor16a.git",
+      "archived": false,
+      "updated_at": "2025-10-20T16:32:31Z"
+    },
+    "big-ilg-cor55a": {
+      "url": "https://github.com/Danse4mobility/big-ilg-cor55a.git",
+      "archived": false,
+      "updated_at": "2021-08-12T13:02:17Z"
+    },
+    "big-ilg-cor56a": {
+      "url": "https://github.com/Danse4mobility/big-ilg-cor56a.git",
+      "archived": false,
+      "updated_at": "2022-01-04T18:43:36Z"
+    },
+    "big-ilg-cordev": {
+      "url": "https://github.com/Danse4mobility/big-ilg-cordev.git",
+      "archived": false,
+      "updated_at": "2022-01-03T19:26:49Z"
+    },
+    "big-intelligence": {
+      "url": "https://github.com/Danse4mobility/big-intelligence.git",
+      "archived": true,
+      "updated_at": "2022-12-12T16:51:02Z"
+    },
+    "big-sck-cor12a": {
+      "url": "https://github.com/Danse4mobility/big-sck-cor12a.git",
+      "archived": false,
+      "updated_at": "2023-04-20T05:36:22Z"
+    },
+    "big-sck-cor12c": {
+      "url": "https://github.com/Danse4mobility/big-sck-cor12c.git",
+      "archived": false,
+      "updated_at": "2021-02-17T19:42:25Z"
+    },
+    "big-sck-icopic": {
+      "url": "https://github.com/Danse4mobility/big-sck-icopic.git",
+      "archived": false,
+      "updated_at": "2021-06-09T17:17:46Z"
+    },
+    "big-sck-infdas": {
+      "url": "https://github.com/Danse4mobility/big-sck-infdas.git",
+      "archived": true,
+      "updated_at": "2022-12-25T09:10:07Z"
+    },
+    "big-sck-intanaadh": {
+      "url": "https://github.com/Danse4mobility/big-sck-intanaadh.git",
+      "archived": false,
+      "updated_at": "2021-06-23T11:40:53Z"
+    },
+    "big-sck-intevasec": {
+      "url": "https://github.com/Danse4mobility/big-sck-intevasec.git",
+      "archived": true,
+      "updated_at": "2023-01-28T08:01:53Z"
+    },
+    "big-sck-parcor": {
+      "url": "https://github.com/Danse4mobility/big-sck-parcor.git",
+      "archived": false,
+      "updated_at": "2022-08-04T06:53:02Z"
+    },
+    "big-sck-prsrop": {
+      "url": "https://github.com/Danse4mobility/big-sck-prsrop.git",
+      "archived": false,
+      "updated_at": "2022-04-20T11:50:08Z"
+    },
+    "big-sck-storage": {
+      "url": "https://github.com/Danse4mobility/big-sck-storage.git",
+      "archived": true,
+      "updated_at": "2022-12-25T09:25:23Z"
+    },
+    "brm-bi-tools": {
+      "url": "https://github.com/Danse4mobility/brm-bi-tools.git",
+      "archived": false,
+      "updated_at": "2024-11-11T15:13:23Z"
+    },
+    "cvut-export": {
+      "url": "https://github.com/Danse4mobility/cvut-export.git",
+      "archived": false,
+      "updated_at": "2023-12-11T09:01:51Z"
+    },
+    "d4m-sck-imanor": {
+      "url": "https://github.com/Danse4mobility/d4m-sck-imanor.git",
+      "archived": true,
+      "updated_at": "2024-05-24T06:51:17Z"
+    },
+    "d4m-sck-man": {
+      "url": "https://github.com/Danse4mobility/d4m-sck-man.git",
+      "archived": true,
+      "updated_at": "2024-05-24T06:50:42Z"
+    },
+    "d4m-sck-manpro": {
+      "url": "https://github.com/Danse4mobility/d4m-sck-manpro.git",
+      "archived": true,
+      "updated_at": "2023-01-28T05:49:45Z"
+    },
+    "d4m-sck-texpar": {
+      "url": "https://github.com/Danse4mobility/d4m-sck-texpar.git",
+      "archived": true,
+      "updated_at": "2024-05-24T06:50:11Z"
+    },
+    "develop-human-body": {
+      "url": "https://github.com/Danse4mobility/develop-human-body.git",
+      "archived": true,
+      "updated_at": "2025-11-12T10:01:54Z"
+    },
+    "develop-video-feedback-zones": {
+      "url": "https://github.com/Danse4mobility/develop-video-feedback-zones.git",
+      "archived": true,
+      "updated_at": "2025-11-12T10:02:03Z"
+    },
+    "dkr-geo-getCell": {
+      "url": "https://github.com/Danse4mobility/dkr-geo-getCell.git",
+      "archived": false,
+      "updated_at": "2021-10-26T16:59:53Z"
+    },
+    "dkr-mkdocs-material": {
+      "url": "https://github.com/Danse4mobility/dkr-mkdocs-material.git",
+      "archived": false,
+      "updated_at": "2022-01-04T14:14:31Z"
+    },
+    "dkr-ubuntu-build": {
+      "url": "https://github.com/Danse4mobility/dkr-ubuntu-build.git",
+      "archived": false,
+      "updated_at": "2022-02-17T21:12:48Z"
+    },
+    "doc-api-delivery": {
+      "url": "https://github.com/Danse4mobility/doc-api-delivery.git",
+      "archived": false,
+      "updated_at": "2021-10-08T08:33:57Z"
+    },
+    "doc-data-processing": {
+      "url": "https://github.com/Danse4mobility/doc-data-processing.git",
+      "archived": false,
+      "updated_at": "2025-10-21T07:30:31Z"
+    },
+    "doc-hpc-workflow": {
+      "url": "https://github.com/Danse4mobility/doc-hpc-workflow.git",
+      "archived": false,
+      "updated_at": "2021-11-25T09:02:13Z"
+    },
+    "doc-infrastructure": {
+      "url": "https://github.com/Danse4mobility/doc-infrastructure.git",
+      "archived": true,
+      "updated_at": "2023-01-28T05:42:01Z"
+    },
+    "doc-insiders": {
+      "url": "https://github.com/Danse4mobility/doc-insiders.git",
+      "archived": false,
+      "updated_at": "2021-11-09T19:16:05Z"
+    },
+    "doc-internship": {
+      "url": "https://github.com/Danse4mobility/doc-internship.git",
+      "archived": false,
+      "updated_at": "2022-05-02T09:39:30Z"
+    },
+    "doc-ipr": {
+      "url": "https://github.com/Danse4mobility/doc-ipr.git",
+      "archived": false,
+      "updated_at": "2022-01-25T14:36:37Z"
+    },
+    "doc-mkDocs-boilerplate": {
+      "url": "https://github.com/Danse4mobility/doc-mkDocs-boilerplate.git",
+      "archived": false,
+      "updated_at": "2021-09-07T13:49:22Z"
+    },
+    "doc-neuropal": {
+      "url": "https://github.com/Danse4mobility/doc-neuropal.git",
+      "archived": false,
+      "updated_at": "2022-05-02T09:06:46Z"
+    },
+    "doc-ropid": {
+      "url": "https://github.com/Danse4mobility/doc-ropid.git",
+      "archived": true,
+      "updated_at": "2023-01-27T20:34:19Z"
+    },
+    "doc-workflow": {
+      "url": "https://github.com/Danse4mobility/doc-workflow.git",
+      "archived": false,
+      "updated_at": "2021-10-28T07:16:43Z"
+    },
+    "enable-resource-domain-d4m": {
+      "url": "https://github.com/Danse4mobility/enable-resource-domain-d4m.git",
+      "archived": false,
+      "updated_at": "2025-11-12T06:26:28Z"
+    },
+    "fro-danse": {
+      "url": "https://github.com/Danse4mobility/fro-danse.git",
+      "archived": false,
+      "updated_at": "2025-10-21T08:22:09Z"
+    },
+    "fro-danse-portal": {
+      "url": "https://github.com/Danse4mobility/fro-danse-portal.git",
+      "archived": false,
+      "updated_at": "2022-11-08T21:38:27Z"
+    },
+    "fro-ipr-portal": {
+      "url": "https://github.com/Danse4mobility/fro-ipr-portal.git",
+      "archived": false,
+      "updated_at": "2022-08-08T21:17:09Z"
+    },
+    "fro-jsonvisio": {
+      "url": "https://github.com/Danse4mobility/fro-jsonvisio.git",
+      "archived": false,
+      "updated_at": "2022-04-27T20:31:59Z"
+    },
+    "fro-ropid-portal": {
+      "url": "https://github.com/Danse4mobility/fro-ropid-portal.git",
+      "archived": false,
+      "updated_at": "2022-05-02T14:54:51Z"
+    },
+    "fro-vue3-boilerplate": {
+      "url": "https://github.com/Danse4mobility/fro-vue3-boilerplate.git",
+      "archived": false,
+      "updated_at": "2021-09-22T11:34:49Z"
+    },
+    "hpc-pri-job-run": {
+      "url": "https://github.com/Danse4mobility/hpc-pri-job-run.git",
+      "archived": false,
+      "updated_at": "2022-04-15T14:25:43Z"
+    },
+    "infra-human-body": {
+      "url": "https://github.com/Danse4mobility/infra-human-body.git",
+      "archived": false,
+      "updated_at": "2024-02-08T11:40:18Z"
+    },
+    "inicom": {
+      "url": "https://github.com/Danse4mobility/inicom.git",
+      "archived": false,
+      "updated_at": "2025-11-19T15:10:24Z"
+    },
+    "inicro": {
+      "url": "https://github.com/Danse4mobility/inicro.git",
+      "archived": false,
+      "updated_at": "2020-05-01T07:33:04Z"
+    },
+    "inienv": {
+      "url": "https://github.com/Danse4mobility/inienv.git",
+      "archived": false,
+      "updated_at": "2024-11-18T17:32:37Z"
+    },
+    "iot-dev-danse-tech": {
+      "url": "https://github.com/Danse4mobility/iot-dev-danse-tech.git",
+      "archived": false,
+      "updated_at": "2024-11-14T16:38:01Z"
+    },
+    "lib-dfmmetadata": {
+      "url": "https://github.com/Danse4mobility/lib-dfmmetadata.git",
+      "archived": true,
+      "updated_at": "2025-05-04T08:37:44Z"
+    },
+    "new-web-danse": {
+      "url": "https://github.com/Danse4mobility/new-web-danse.git",
+      "archived": false,
+      "updated_at": "2022-12-01T18:51:19Z"
+    },
+    "oai-assistants-d4m": {
+      "url": "https://github.com/Danse4mobility/oai-assistants-d4m.git",
+      "archived": true,
+      "updated_at": "2025-10-04T05:33:04Z"
+    },
+    "prj-ropid": {
+      "url": "https://github.com/Danse4mobility/prj-ropid.git",
+      "archived": false,
+      "updated_at": "2022-09-23T08:34:28Z"
+    },
+    "resource-domain-d4m": {
+      "url": "https://github.com/Danse4mobility/resource-domain-d4m.git",
+      "archived": true,
+      "updated_at": "2025-11-12T10:01:45Z"
+    },
+    "rodos-backup": {
+      "url": "https://github.com/Danse4mobility/rodos-backup.git",
+      "archived": false,
+      "updated_at": "2023-12-18T06:52:29Z"
+    },
+    "stk-api-delivery": {
+      "url": "https://github.com/Danse4mobility/stk-api-delivery.git",
+      "archived": false,
+      "updated_at": "2021-10-06T14:08:30Z"
+    },
+    "stk-api-ipr": {
+      "url": "https://github.com/Danse4mobility/stk-api-ipr.git",
+      "archived": false,
+      "updated_at": "2022-08-08T21:39:42Z"
+    },
+    "stk-api-ropid": {
+      "url": "https://github.com/Danse4mobility/stk-api-ropid.git",
+      "archived": false,
+      "updated_at": "2022-05-25T18:04:14Z"
+    },
+    "tmp-geodb-to-aws": {
+      "url": "https://github.com/Danse4mobility/tmp-geodb-to-aws.git",
+      "archived": false,
+      "updated_at": "2021-11-04T09:09:22Z"
+    },
+    "useful_public": {
+      "url": "https://github.com/Danse4mobility/useful_public.git",
+      "archived": false,
+      "updated_at": "2022-05-01T14:19:03Z"
+    },
+    "vsb-training-1": {
+      "url": "https://github.com/Danse4mobility/vsb-training-1.git",
+      "archived": false,
+      "updated_at": "2023-07-25T15:44:14Z"
+    },
+    "web-danse-tech": {
+      "url": "https://github.com/Danse4mobility/web-danse-tech.git",
+      "archived": false,
+      "updated_at": "2025-10-21T07:30:40Z"
+    }
+  },
+  "DigitalHorizonCz": {
+    "app-brm-manufacturing-dictionary": {
+      "url": "https://github.com/DigitalHorizonCz/app-brm-manufacturing-dictionary.git",
+      "archived": false,
+      "updated_at": "2026-03-22T12:41:13Z"
+    },
+    "app-brm-manufacturing-products": {
+      "url": "https://github.com/DigitalHorizonCz/app-brm-manufacturing-products.git",
+      "archived": false,
+      "updated_at": "2026-03-21T12:42:04Z"
+    },
+    "app-cross-platform-browser-search": {
+      "url": "https://github.com/DigitalHorizonCz/app-cross-platform-browser-search.git",
+      "archived": false,
+      "updated_at": "2025-12-02T13:57:25Z"
+    },
+    "app-llm-inference-local": {
+      "url": "https://github.com/DigitalHorizonCz/app-llm-inference-local.git",
+      "archived": false,
+      "updated_at": "2025-11-09T17:34:01Z"
+    },
+    "app-llm-training-local": {
+      "url": "https://github.com/DigitalHorizonCz/app-llm-training-local.git",
+      "archived": false,
+      "updated_at": "2025-11-11T06:06:40Z"
+    },
+    "app-model-compare": {
+      "url": "https://github.com/DigitalHorizonCz/app-model-compare.git",
+      "archived": false,
+      "updated_at": "2025-11-11T10:33:40Z"
+    },
+    "app-model-sql-t5": {
+      "url": "https://github.com/DigitalHorizonCz/app-model-sql-t5.git",
+      "archived": false,
+      "updated_at": "2025-12-09T12:56:05Z"
+    },
+    "aps-brm-dictionaries": {
+      "url": "https://github.com/DigitalHorizonCz/aps-brm-dictionaries.git",
+      "archived": false,
+      "updated_at": "2026-03-25T08:14:24Z"
+    },
+    "aps-brm-products-backend": {
+      "url": "https://github.com/DigitalHorizonCz/aps-brm-products-backend.git",
+      "archived": false,
+      "updated_at": "2026-03-23T12:03:28Z"
+    },
+    "aps-brm-products-infrastructure": {
+      "url": "https://github.com/DigitalHorizonCz/aps-brm-products-infrastructure.git",
+      "archived": false,
+      "updated_at": "2026-03-23T18:06:28Z"
+    },
+    "aps-brm-products-playbook": {
+      "url": "https://github.com/DigitalHorizonCz/aps-brm-products-playbook.git",
+      "archived": false,
+      "updated_at": "2026-03-23T18:21:43Z"
+    },
+    "aps-brm-transform-labels": {
+      "url": "https://github.com/DigitalHorizonCz/aps-brm-transform-labels.git",
+      "archived": false,
+      "updated_at": "2025-11-02T11:05:52Z"
+    },
+    "aps-goldsport-video-feedback-playbook": {
+      "url": "https://github.com/DigitalHorizonCz/aps-goldsport-video-feedback-playbook.git",
+      "archived": false,
+      "updated_at": "2026-02-22T13:36:23Z"
+    },
+    "broadcast-admin-frontend": {
+      "url": "https://github.com/DigitalHorizonCz/broadcast-admin-frontend.git",
+      "archived": false,
+      "updated_at": "2026-01-29T08:14:10Z"
+    },
+    "broadcast-infrastructure": {
+      "url": "https://github.com/DigitalHorizonCz/broadcast-infrastructure.git",
+      "archived": false,
+      "updated_at": "2026-01-29T08:17:45Z"
+    },
+    "broadcast-orchestration": {
+      "url": "https://github.com/DigitalHorizonCz/broadcast-orchestration.git",
+      "archived": false,
+      "updated_at": "2026-01-29T12:58:52Z"
+    },
+    "digital-horizon-platform": {
+      "url": "https://github.com/DigitalHorizonCz/digital-horizon-platform.git",
+      "archived": false,
+      "updated_at": "2026-03-27T16:17:10Z"
+    },
+    "digital-horizon-playbook": {
+      "url": "https://github.com/DigitalHorizonCz/digital-horizon-playbook.git",
+      "archived": false,
+      "updated_at": "2026-03-27T14:58:07Z"
+    },
+    "goldsport-video-feedback-backend": {
+      "url": "https://github.com/DigitalHorizonCz/goldsport-video-feedback-backend.git",
+      "archived": false,
+      "updated_at": "2026-02-22T09:55:42Z"
+    },
+    "goldsport-video-feedback-frontend": {
+      "url": "https://github.com/DigitalHorizonCz/goldsport-video-feedback-frontend.git",
+      "archived": false,
+      "updated_at": "2026-02-22T13:19:29Z"
+    },
+    "goldsport-video-feedback-infrastructure": {
+      "url": "https://github.com/DigitalHorizonCz/goldsport-video-feedback-infrastructure.git",
+      "archived": false,
+      "updated_at": "2026-02-22T07:55:10Z"
+    },
+    "hub400-mcp": {
+      "url": "https://github.com/DigitalHorizonCz/hub400-mcp.git",
+      "archived": false,
+      "updated_at": "2026-03-12T14:41:34Z"
+    },
+    "hub400-mcp-local": {
+      "url": "https://github.com/DigitalHorizonCz/hub400-mcp-local.git",
+      "archived": false,
+      "updated_at": "2026-03-12T14:50:30Z"
+    },
+    "hub400-mcp-manage": {
+      "url": "https://github.com/DigitalHorizonCz/hub400-mcp-manage.git",
+      "archived": false,
+      "updated_at": "2026-03-12T14:41:43Z"
+    },
+    "hub440-mcp-test-playbook": {
+      "url": "https://github.com/DigitalHorizonCz/hub440-mcp-test-playbook.git",
+      "archived": false,
+      "updated_at": "2026-03-12T14:42:00Z"
+    },
+    "mcp-orchestration": {
+      "url": "https://github.com/DigitalHorizonCz/mcp-orchestration.git",
+      "archived": false,
+      "updated_at": "2025-12-09T09:47:44Z"
+    },
+    "projects-brm-digital-horizon": {
+      "url": "https://github.com/DigitalHorizonCz/projects-brm-digital-horizon.git",
+      "archived": false,
+      "updated_at": "2025-07-17T15:56:00Z"
+    },
+    "sck-brm-eurlex": {
+      "url": "https://github.com/DigitalHorizonCz/sck-brm-eurlex.git",
+      "archived": false,
+      "updated_at": "2026-03-24T10:11:48Z"
+    },
+    "useiot-frontend-admin": {
+      "url": "https://github.com/DigitalHorizonCz/useiot-frontend-admin.git",
+      "archived": false,
+      "updated_at": "2025-12-16T19:09:26Z"
+    },
+    "useiot-frontend-user": {
+      "url": "https://github.com/DigitalHorizonCz/useiot-frontend-user.git",
+      "archived": false,
+      "updated_at": "2025-12-16T19:45:56Z"
+    },
+    "useiot-infrastructure": {
+      "url": "https://github.com/DigitalHorizonCz/useiot-infrastructure.git",
+      "archived": false,
+      "updated_at": "2025-12-16T19:59:46Z"
+    },
+    "useiot-inspect-devices": {
+      "url": "https://github.com/DigitalHorizonCz/useiot-inspect-devices.git",
+      "archived": false,
+      "updated_at": "2025-12-08T10:27:43Z"
+    },
+    "useiot-orchestration": {
+      "url": "https://github.com/DigitalHorizonCz/useiot-orchestration.git",
+      "archived": false,
+      "updated_at": "2025-12-20T10:55:33Z"
+    },
+    "useiot-testing": {
+      "url": "https://github.com/DigitalHorizonCz/useiot-testing.git",
+      "archived": false,
+      "updated_at": "2025-12-16T18:23:17Z"
+    }
+  },
+  "MasterIT-technologies-a-s": {
+    "claude-mongodb-example": {
+      "url": "https://github.com/MasterIT-technologies-a-s/claude-mongodb-example.git",
+      "archived": false,
+      "updated_at": "2025-09-18T09:42:11Z"
+    },
+    "databridge-data-migrator": {
+      "url": "https://github.com/MasterIT-technologies-a-s/databridge-data-migrator.git",
+      "archived": false,
+      "updated_at": "2026-01-27T16:10:03Z"
+    },
+    "mitt-databridge-api": {
+      "url": "https://github.com/MasterIT-technologies-a-s/mitt-databridge-api.git",
+      "archived": false,
+      "updated_at": "2025-11-13T09:23:57Z"
+    },
+    "mitt-databridge-phase-1-models-compared-llm": {
+      "url": "https://github.com/MasterIT-technologies-a-s/mitt-databridge-phase-1-models-compared-llm.git",
+      "archived": false,
+      "updated_at": "2026-01-13T10:13:15Z"
+    },
+    "mitt-databridge-phase-1-report": {
+      "url": "https://github.com/MasterIT-technologies-a-s/mitt-databridge-phase-1-report.git",
+      "archived": false,
+      "updated_at": "2026-03-24T17:38:19Z"
+    }
+  },
+  "hub440-syndicate": {
+    "bills-hub440": {
+      "url": "https://github.com/hub440-syndicate/bills-hub440.git",
+      "archived": false,
+      "updated_at": "2026-02-04T15:11:18Z"
+    },
+    "mcp-docker-connectors": {
+      "url": "https://github.com/hub440-syndicate/mcp-docker-connectors.git",
+      "archived": false,
+      "updated_at": "2026-03-08T17:58:37Z"
+    },
+    "mcp-docker-infrastructure": {
+      "url": "https://github.com/hub440-syndicate/mcp-docker-infrastructure.git",
+      "archived": false,
+      "updated_at": "2026-01-27T14:14:20Z"
+    },
+    "mcp-docker-playbook": {
+      "url": "https://github.com/hub440-syndicate/mcp-docker-playbook.git",
+      "archived": false,
+      "updated_at": "2026-03-24T15:01:22Z"
+    },
+    "mcp-docker-solutions": {
+      "url": "https://github.com/hub440-syndicate/mcp-docker-solutions.git",
+      "archived": false,
+      "updated_at": "2026-03-24T15:01:23Z"
+    },
+    "mcp-goldsport-skischool": {
+      "url": "https://github.com/hub440-syndicate/mcp-goldsport-skischool.git",
+      "archived": false,
+      "updated_at": "2026-01-03T11:10:02Z"
+    },
+    "mcp-mitt-databridge": {
+      "url": "https://github.com/hub440-syndicate/mcp-mitt-databridge.git",
+      "archived": false,
+      "updated_at": "2026-01-09T10:52:03Z"
+    },
+    "rss-mitt-voucher": {
+      "url": "https://github.com/hub440-syndicate/rss-mitt-voucher.git",
+      "archived": false,
+      "updated_at": "2026-01-12T08:55:53Z"
+    },
+    "rss-mitt-voucher-application": {
+      "url": "https://github.com/hub440-syndicate/rss-mitt-voucher-application.git",
+      "archived": false,
+      "updated_at": "2026-01-15T14:11:35Z"
+    },
+    "syndicate-infrastructure": {
+      "url": "https://github.com/hub440-syndicate/syndicate-infrastructure.git",
+      "archived": false,
+      "updated_at": "2025-12-23T14:30:18Z"
+    },
+    "syndicate-playbook": {
+      "url": "https://github.com/hub440-syndicate/syndicate-playbook.git",
+      "archived": false,
+      "updated_at": "2026-03-10T16:28:06Z"
+    },
+    "syndicate-playbooks-examples": {
+      "url": "https://github.com/hub440-syndicate/syndicate-playbooks-examples.git",
+      "archived": false,
+      "updated_at": "2026-03-01T10:23:46Z"
+    }
+  },
+  "jirihylmar": {
+    "app-claude-query": {
+      "url": "https://github.com/jirihylmar/app-claude-query.git",
+      "archived": true,
+      "updated_at": "2025-10-04T12:00:21Z"
+    },
+    "app-dynamo-digital-horizon-manager": {
+      "url": "https://github.com/jirihylmar/app-dynamo-digital-horizon-manager.git",
+      "archived": false,
+      "updated_at": "2025-09-23T10:03:28Z"
+    },
+    "app-dynamo-metadata-manager": {
+      "url": "https://github.com/jirihylmar/app-dynamo-metadata-manager.git",
+      "archived": false,
+      "updated_at": "2025-09-23T11:07:07Z"
+    },
+    "app-s3-metadata-manager": {
+      "url": "https://github.com/jirihylmar/app-s3-metadata-manager.git",
+      "archived": false,
+      "updated_at": "2026-01-19T16:27:23Z"
+    },
+    "aps-digital-horizon-platform": {
+      "url": "https://github.com/jirihylmar/aps-digital-horizon-platform.git",
+      "archived": false,
+      "updated_at": "2025-05-03T14:02:36Z"
+    },
+    "aps-digital-horizon-questionnaires": {
+      "url": "https://github.com/jirihylmar/aps-digital-horizon-questionnaires.git",
+      "archived": false,
+      "updated_at": "2025-07-30T11:19:50Z"
+    },
+    "aps-digital-horizon-reporter": {
+      "url": "https://github.com/jirihylmar/aps-digital-horizon-reporter.git",
+      "archived": false,
+      "updated_at": "2026-01-07T09:16:53Z"
+    },
+    "aps-digital-horizon-v0": {
+      "url": "https://github.com/jirihylmar/aps-digital-horizon-v0.git",
+      "archived": false,
+      "updated_at": "2026-01-08T08:43:36Z"
+    },
+    "aps-goldsport-analytics": {
+      "url": "https://github.com/jirihylmar/aps-goldsport-analytics.git",
+      "archived": false,
+      "updated_at": "2026-03-27T07:11:20Z"
+    },
+    "aps-goldsport-booking": {
+      "url": "https://github.com/jirihylmar/aps-goldsport-booking.git",
+      "archived": false,
+      "updated_at": "2026-03-03T18:56:50Z"
+    },
+    "aps-goldsport-booking-sheets": {
+      "url": "https://github.com/jirihylmar/aps-goldsport-booking-sheets.git",
+      "archived": false,
+      "updated_at": "2026-02-09T07:18:59Z"
+    },
+    "aps-goldsport-events": {
+      "url": "https://github.com/jirihylmar/aps-goldsport-events.git",
+      "archived": false,
+      "updated_at": "2026-02-19T13:48:48Z"
+    },
+    "aps-goldsport-facebook": {
+      "url": "https://github.com/jirihylmar/aps-goldsport-facebook.git",
+      "archived": false,
+      "updated_at": "2026-03-04T10:26:03Z"
+    },
+    "aps-goldsport-messaging": {
+      "url": "https://github.com/jirihylmar/aps-goldsport-messaging.git",
+      "archived": false,
+      "updated_at": "2026-02-12T17:09:29Z"
+    },
+    "aps-goldsport-page-reviews": {
+      "url": "https://github.com/jirihylmar/aps-goldsport-page-reviews.git",
+      "archived": false,
+      "updated_at": "2025-03-05T16:36:45Z"
+    },
+    "aps-goldsport-pages": {
+      "url": "https://github.com/jirihylmar/aps-goldsport-pages.git",
+      "archived": true,
+      "updated_at": "2026-01-27T08:02:16Z"
+    },
+    "aps-goldsport-scheduler": {
+      "url": "https://github.com/jirihylmar/aps-goldsport-scheduler.git",
+      "archived": false,
+      "updated_at": "2026-02-09T07:17:23Z"
+    },
+    "aps-goldsport-twilio": {
+      "url": "https://github.com/jirihylmar/aps-goldsport-twilio.git",
+      "archived": true,
+      "updated_at": "2025-12-01T16:17:14Z"
+    },
+    "aps-pages-installers": {
+      "url": "https://github.com/jirihylmar/aps-pages-installers.git",
+      "archived": false,
+      "updated_at": "2025-12-15T08:26:26Z"
+    },
+    "doc-digital-horizon-goldsport": {
+      "url": "https://github.com/jirihylmar/doc-digital-horizon-goldsport.git",
+      "archived": false,
+      "updated_at": "2026-01-18T07:22:17Z"
+    },
+    "doc-nutritech": {
+      "url": "https://github.com/jirihylmar/doc-nutritech.git",
+      "archived": false,
+      "updated_at": "2025-11-12T06:26:09Z"
+    },
+    "doc-zoneiot": {
+      "url": "https://github.com/jirihylmar/doc-zoneiot.git",
+      "archived": false,
+      "updated_at": "2025-05-02T06:02:31Z"
+    },
+    "goldsport-messaging": {
+      "url": "https://github.com/jirihylmar/goldsport-messaging.git",
+      "archived": false,
+      "updated_at": "2026-02-12T17:06:37Z"
+    },
+    "help": {
+      "url": "https://github.com/jirihylmar/help.git",
+      "archived": false,
+      "updated_at": "2024-11-18T17:33:24Z"
+    },
+    "hyl-amplify-logs": {
+      "url": "https://github.com/jirihylmar/hyl-amplify-logs.git",
+      "archived": false,
+      "updated_at": "2025-11-12T06:26:48Z"
+    },
+    "hyl-arduino": {
+      "url": "https://github.com/jirihylmar/hyl-arduino.git",
+      "archived": false,
+      "updated_at": "2024-05-16T06:59:24Z"
+    },
+    "hyl-assistants": {
+      "url": "https://github.com/jirihylmar/hyl-assistants.git",
+      "archived": false,
+      "updated_at": "2026-03-18T15:17:43Z"
+    },
+    "hyl-bibliography": {
+      "url": "https://github.com/jirihylmar/hyl-bibliography.git",
+      "archived": false,
+      "updated_at": "2025-11-12T06:27:09Z"
+    },
+    "hyl-dictionaries": {
+      "url": "https://github.com/jirihylmar/hyl-dictionaries.git",
+      "archived": false,
+      "updated_at": "2026-01-07T13:52:24Z"
+    },
+    "hyl-digital-horizon": {
+      "url": "https://github.com/jirihylmar/hyl-digital-horizon.git",
+      "archived": false,
+      "updated_at": "2026-03-18T19:17:20Z"
+    },
+    "hyl-flashcards": {
+      "url": "https://github.com/jirihylmar/hyl-flashcards.git",
+      "archived": false,
+      "updated_at": "2025-06-09T17:20:26Z"
+    },
+    "hyl-graphics": {
+      "url": "https://github.com/jirihylmar/hyl-graphics.git",
+      "archived": false,
+      "updated_at": "2025-10-28T06:40:55Z"
+    },
+    "hyl-library": {
+      "url": "https://github.com/jirihylmar/hyl-library.git",
+      "archived": false,
+      "updated_at": "2026-01-10T14:13:41Z"
+    },
+    "hyl-media": {
+      "url": "https://github.com/jirihylmar/hyl-media.git",
+      "archived": false,
+      "updated_at": "2026-03-24T14:25:14Z"
+    },
+    "hyl-render": {
+      "url": "https://github.com/jirihylmar/hyl-render.git",
+      "archived": false,
+      "updated_at": "2026-01-15T12:17:16Z"
+    },
+    "hyl-resources-manager": {
+      "url": "https://github.com/jirihylmar/hyl-resources-manager.git",
+      "archived": false,
+      "updated_at": "2026-03-27T16:17:54Z"
+    },
+    "hyl-sck-med": {
+      "url": "https://github.com/jirihylmar/hyl-sck-med.git",
+      "archived": false,
+      "updated_at": "2025-11-11T05:48:34Z"
+    },
+    "hyl-screenshot": {
+      "url": "https://github.com/jirihylmar/hyl-screenshot.git",
+      "archived": false,
+      "updated_at": "2025-11-12T06:28:04Z"
+    },
+    "hyl-web": {
+      "url": "https://github.com/jirihylmar/hyl-web.git",
+      "archived": false,
+      "updated_at": "2025-09-23T10:20:34Z"
+    },
+    "iniaut": {
+      "url": "https://github.com/jirihylmar/iniaut.git",
+      "archived": false,
+      "updated_at": "2025-10-28T06:10:25Z"
+    },
+    "lib-dfmrender": {
+      "url": "https://github.com/jirihylmar/lib-dfmrender.git",
+      "archived": true,
+      "updated_at": "2024-11-08T07:37:01Z"
+    },
+    "mkdocs-material": {
+      "url": "https://github.com/jirihylmar/mkdocs-material.git",
+      "archived": false,
+      "updated_at": "2022-01-13T18:05:42Z"
+    },
+    "my-brain-digital-horizon": {
+      "url": "https://github.com/jirihylmar/my-brain-digital-horizon.git",
+      "archived": false,
+      "updated_at": "2025-09-18T17:36:31Z"
+    },
+    "neu-sck-rc4ann": {
+      "url": "https://github.com/jirihylmar/neu-sck-rc4ann.git",
+      "archived": true,
+      "updated_at": "2025-11-12T10:02:12Z"
+    },
+    "zoneiot-collectors-firmware-infdev": {
+      "url": "https://github.com/jirihylmar/zoneiot-collectors-firmware-infdev.git",
+      "archived": false,
+      "updated_at": "2025-02-27T00:02:06Z"
+    },
+    "zoneiot-collectors-provision-infdev": {
+      "url": "https://github.com/jirihylmar/zoneiot-collectors-provision-infdev.git",
+      "archived": false,
+      "updated_at": "2025-01-04T14:42:35Z"
+    },
+    "zoneiot-iotsystems-infdev": {
+      "url": "https://github.com/jirihylmar/zoneiot-iotsystems-infdev.git",
+      "archived": false,
+      "updated_at": "2025-03-09T07:51:20Z"
+    }
+  }
 }

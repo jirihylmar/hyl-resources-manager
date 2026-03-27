@@ -437,7 +437,7 @@
             { "attributeName": "PK", "keyType": "HASH" },
             { "attributeName": "SK", "keyType": "RANGE" }
           ],
-          "billingMode": "PROVISIONED",
+          "billingMode": "PAY_PER_REQUEST",
           "itemCount": 1427,
           "tableSizeBytes": 617260
         }
