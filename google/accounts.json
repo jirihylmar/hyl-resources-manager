@@ -1,0 +1,97 @@
+[
+  {
+    "email": "admin@hub440.cz",
+    "domain": "hub440.cz",
+    "org": "Hylmar",
+    "purpose": "Primary admin account, hub440.cz domain management",
+    "chrome_profile": true,
+    "api_access": true,
+    "gcp_projects": ["default-project-hub440"],
+    "aws_association": {
+      "account": "HylmarJ",
+      "account_id": "182059100462"
+    },
+    "tags": ["primary", "admin", "domain-owner"]
+  },
+  {
+    "email": "info@hylmar.eu",
+    "domain": "hylmar.eu",
+    "org": "Hylmar",
+    "purpose": "Hylmar business account",
+    "chrome_profile": true,
+    "api_access": true,
+    "gcp_projects": [],
+    "aws_association": {
+      "account": "HylmarJ",
+      "account_id": "182059100462"
+    },
+    "tags": ["business"]
+  },
+  {
+    "email": "service@d4m.tech",
+    "domain": "d4m.tech",
+    "org": "D4M",
+    "purpose": "D4M service account, Google Drive automation",
+    "chrome_profile": true,
+    "api_access": true,
+    "gcp_projects": ["d4m-goo-master", "macro-griffin-441215-v4"],
+    "aws_association": {
+      "account": "JiHy__d4m__975",
+      "account_id": "975050190402"
+    },
+    "tags": ["service", "automation"]
+  },
+  {
+    "email": "master@goldsport.cz",
+    "domain": "goldsport.cz",
+    "org": "Goldsport",
+    "purpose": "Goldsport master account, booking-to-sheets integration",
+    "chrome_profile": true,
+    "api_access": true,
+    "gcp_projects": ["goldsport-default-project"],
+    "aws_association": {
+      "account": "JiHy__vsb__565",
+      "account_id": "565393049593"
+    },
+    "tags": ["business", "automation"]
+  },
+  {
+    "email": "jiri.hylmar@gmail.com",
+    "domain": "gmail.com",
+    "org": "Personal",
+    "purpose": "Personal Gmail, Google Photos, legacy GDrive desktop clients",
+    "chrome_profile": true,
+    "api_access": true,
+    "gcp_projects": ["red-formula-306011", "quickstart-1583930073537"],
+    "aws_association": null,
+    "tags": ["personal", "legacy"]
+  },
+  {
+    "email": "jiri.hylmar@g.vsb.cz",
+    "domain": "g.vsb.cz",
+    "org": "VSB",
+    "purpose": "VSB university account, Google Drive access",
+    "chrome_profile": true,
+    "api_access": true,
+    "gcp_projects": ["vsb-bh6-gdr"],
+    "aws_association": {
+      "account": "JiHy__vsb__565",
+      "account_id": "565393049593"
+    },
+    "tags": ["university"]
+  },
+  {
+    "email": "hylmar@brainmarket.cz",
+    "domain": "brainmarket.cz",
+    "org": "BrainMarket",
+    "purpose": "BrainMarket business account",
+    "chrome_profile": true,
+    "api_access": true,
+    "gcp_projects": [],
+    "aws_association": {
+      "account": "JiHy__brm__734",
+      "account_id": "734468801561"
+    },
+    "tags": ["business"]
+  }
+]

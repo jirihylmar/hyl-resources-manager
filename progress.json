@@ -144,9 +144,11 @@
         {
           "id": "4.1",
           "name": "google-check-accounts: Create google/accounts.json — 7 Google accounts with purpose, org association, Chrome profile mapping",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-03-27",
           "size": "small",
           "verify": "google/accounts.json exists with 7 accounts",
+          "artifacts": ["google/accounts.json"],
           "added_reason": "User provided Chrome profile list and credential overview"
         },
         {
@@ -174,7 +176,7 @@
     }
   },
 
-  "current_task": "4.1",
+  "current_task": "4.2",
   "current_phase": "phase_4_google",
 
   "git_repos": {
