@@ -38,9 +38,11 @@
         {
           "id": "2.1",
           "name": "Create repo directory structure (aws/, github/, google/) and move existing AWS files",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-03-27",
           "size": "small",
-          "verify": "ls aws/ github/ google/"
+          "verify": "ls aws/ github/ google/",
+          "artifacts": ["aws/amplify.md", "aws/dynamodb-optimization.md", "aws/copy_workspaces.sh"]
         },
         {
           "id": "2.2",
@@ -81,7 +83,7 @@
     }
   },
 
-  "current_task": "2.1",
+  "current_task": "2.2",
   "current_phase": "phase_2_service_org",
 
   "git_repos": {
