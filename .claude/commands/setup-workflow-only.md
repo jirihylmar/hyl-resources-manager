@@ -10,6 +10,13 @@ allowed-tools:
   - AskUserQuestion
 ---
 
+<!--
+  Centrally distributed by /distribute-defaults from syndicate-playbooks-examples.
+  Project-specific additions go in .claude/local-overlays/<this-filename> as
+  splice fragments (see /distribute-defaults for the overlay format).
+  Direct edits to this file will be flagged on the next distribution.
+-->
+
 # Setup Workflow Only
 
 Inject the playbook workflow system into an existing project that wasn't created with `/setup`.

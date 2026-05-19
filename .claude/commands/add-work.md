@@ -9,6 +9,13 @@ allowed-tools:
   - AskUserQuestion
 ---
 
+<!--
+  Centrally distributed by /distribute-defaults from syndicate-playbooks-examples.
+  Project-specific additions go in .claude/local-overlays/<this-filename> as
+  splice fragments (see /distribute-defaults for the overlay format).
+  Direct edits to this file will be flagged on the next distribution.
+-->
+
 # Add Work
 
 Add new work to the project - either a new phase or tasks within an existing phase.

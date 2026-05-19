@@ -9,9 +9,39 @@ allowed-tools:
   - mcp__aws-*__call_aws
 ---
 
+<!--
+  Centrally distributed by /distribute-defaults from syndicate-playbooks-examples.
+  Project-specific additions go in .claude/local-overlays/<this-filename> as
+  splice fragments (see /distribute-defaults for the overlay format).
+  Direct edits to this file will be flagged on the next distribution.
+-->
+
 # Start Session
 
 Initialize context and verify previous work before starting new tasks.
+
+---
+
+## Multi-Agent Discipline
+
+When multiple agents work in the same repo simultaneously, each agent is assigned a specific task by the user/orchestrator. Follow these rules to avoid conflicts.
+
+### Task Assignment
+
+- **Your task comes from the user, not from `current_task` in progress.json** — in multi-agent setups, `current_task` may belong to another agent
+- If the user specifies a task (e.g., "work on 2.3"), that is YOUR task for this session
+- If no task is specified and you are the only agent, use `current_task` as normal
+
+### Reading Shared State
+
+- **Re-read `progress.json` before presenting session handoff** — another agent may have updated it since the file was last cached
+- **Do not modify `current_task` or `current_phase`** — in multi-agent setups, the orchestrator manages these fields
+- **Check for in-progress tasks by other agents** — if another task shows `in_progress`, note it but don't interfere
+
+### Commit Discipline
+
+- **Include your task ID in all commit messages** — e.g., `progress: complete task 2.3 - [description]`
+- **Commit only files related to your task** — don't stage changes from another agent's work
 
 ---
 

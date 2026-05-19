@@ -5,6 +5,13 @@ allowed-tools:
   - mcp__aws-*__call_aws
 ---
 
+<!--
+  Centrally distributed by /distribute-defaults from syndicate-playbooks-examples.
+  Project-specific additions go in .claude/local-overlays/<this-filename> as
+  splice fragments (see /distribute-defaults for the overlay format).
+  Direct edits to this file will be flagged on the next distribution.
+-->
+
 # Check AWS Resources
 
 Verify all project AWS resources are properly configured.

@@ -8,6 +8,13 @@ allowed-tools:
   - mcp__aws-*__call_aws
 ---
 
+<!--
+  Centrally distributed by /distribute-defaults from syndicate-playbooks-examples.
+  Project-specific additions go in .claude/local-overlays/<this-filename> as
+  splice fragments (see /distribute-defaults for the overlay format).
+  Direct edits to this file will be flagged on the next distribution.
+-->
+
 # Update Progress
 
 Update progress tracking after completing tasks. Follow conservative rules strictly.
@@ -48,6 +55,32 @@ Update progress tracking after completing tasks. Follow conservative rules stric
 // Add with sub-ID to maintain logical order
 {"id": "2.3a", "name": "New task found during 2.3", "status": "pending", "added_reason": "Discovered during implementation of 2.3"}
 ```
+
+---
+
+## Multi-Agent Discipline
+
+When multiple agents work in the same repo simultaneously, shared files (`progress.json`, `session_notes.md`) become collision points. Follow these rules to prevent agents from overwriting each other's work.
+
+### progress.json: Surgical Edits Only
+
+- **ALWAYS use the Edit tool** (find-and-replace) to modify progress.json — **NEVER use Write** (full file overwrite)
+- **Re-read progress.json immediately before each edit** — don't rely on what you read at session start
+- **Only modify YOUR task entry** — never touch another task's fields
+- **Never modify `current_task` or `current_phase`** unless you are the only agent working — in multi-agent setups, that's the orchestrator's responsibility
+- **One Edit call per field change** — smaller edits reduce the collision window
+
+### session_notes.md: Append-Only
+
+- **Re-read the top of the file before appending** — another agent may have added an entry since you last read it
+- **Insert your entry after the `---` below the title** — use unique header: `## Session: YYYY-MM-DD - Task X.Y`
+- **Never rewrite, reorder, or edit existing entries** — treat other agents' entries as immutable
+
+### Task-Scoped Identity
+
+- **Your task is what the user assigned you** — not whatever `current_task` says in progress.json
+- **Only report on and modify your assigned task** — leave other tasks untouched
+- **Include task ID in commit messages** — so concurrent commits are traceable: `progress: complete task X.Y - [description]`
 
 ---
 
@@ -201,7 +234,50 @@ _No documents registered yet. Add paths here as project docs are created._
 2. Add its path to this section with "Update when" trigger
 3. Commit this command file with the addition
 
-### 8. Check All Git Repos
+### 8. Maintain Project-Specific Skills
+
+**Purpose**: Continuously improve project-specific skills based on session experience.
+
+**Scope**: Only project-specific skills — everything in `.claude/commands/` EXCEPT the 9 defaults:
+`add-work.md, check-aws.md, generate-architecture.md, generate-phases.md, refresh-remote.md, setup-workflow-only.md, setup.md, start-session.md, update-progress.md`
+
+If there are no project-specific skills, skip this step.
+
+**8a. Fix mistakes in skills**
+
+If you made mistakes during this session that a project-specific skill could have prevented or guided better:
+- Update that skill with corrective guidance
+- Add a note explaining what went wrong and the fix
+- This prevents the same mistake in future sessions
+
+**8b. Cross-reference skills**
+
+Ensure each project-specific skill references related skills so Claude knows what's available and when to suggest each one:
+```markdown
+## Related Skills
+- `/composition-editor` - Use when editing product compositions
+- `/process-handoff` - Use after completing a batch to hand off
+```
+
+**8c. Document skills in project CLAUDE.md**
+
+Ensure the project's `CLAUDE.md` has a section listing all project-specific skills with:
+- Skill name
+- When to use it
+- What it does
+
+Example:
+```markdown
+## Project Skills
+| Skill | When to Use | Purpose |
+|-------|------------|---------|
+| /composition-editor | Editing product compositions | Guides through composition fields and validation |
+| /process-handoff | After completing a processing batch | Documents results and prepares next batch |
+```
+
+If skills were added, removed, or renamed this session, update this table.
+
+### 9. Check All Git Repos
 ```bash
 # Orchestration
 git status
@@ -215,7 +291,7 @@ for dir in infrastructure backend frontend testing; do
 done
 ```
 
-### 9. Commit Orchestration Changes
+### 10. Commit Orchestration Changes
 ```bash
 git add progress.json session_notes.md
 git commit -m "progress: complete task X.Y - [brief description]
@@ -229,7 +305,7 @@ Next: Task X.Z
 git push
 ```
 
-### 10. Extract Session Knowledge
+### 11. Extract Session Knowledge
 
 **Purpose**: Capture learnings from this session for future use.
 
@@ -352,7 +428,7 @@ git push
    - All changes project-specific (config values, paths)
    - No corrections or learnings this session
 
-### 11. Report Summary
+### 12. Report Summary
 
 ```
 ## Progress Summary
