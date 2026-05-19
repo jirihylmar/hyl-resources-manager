@@ -9,9 +9,9 @@ description: Interactively sync git repos between local WSL and a configured rem
   Direct edits to this file will be flagged on the next distribution.
 -->
 
-# /refresh-remote
+# /syndicate-refresh-remote
 
-Bidirectional git-based sync between your local repos and a single configured remote box (the **syndicate-remote box** by default). **Interactive by design** — invoke `/refresh-remote` with no arguments and the skill asks you what to do.
+Bidirectional git-based sync between your local repos and a single configured remote box (the **syndicate-remote box** by default). **Interactive by design** — invoke `/syndicate-refresh-remote` with no arguments and the skill asks you what to do.
 
 **Run from:** local WSL only. The skill refuses if invoked on the box itself.
 
@@ -19,9 +19,9 @@ Bidirectional git-based sync between your local repos and a single configured re
 
 ## How this skill is wired (canonical home + companion runtime)
 
-This skill is a **playbook default** distributed by `/distribute-defaults` from `~/syndicate-playbooks-examples/_project-template/.claude/commands/refresh-remote.md` to every playbook project (i.e. any directory with both `progress.json` and `.claude/commands/`). Edits to the skill happen in the `_project-template/` canonical and then `/distribute-defaults` propagates them.
+This skill is a **playbook default** distributed by `/distribute-defaults` from `~/syndicate-playbooks-examples/_project-template/.claude/commands/syndicate-refresh-remote.md` to every playbook project (i.e. any directory with both `progress.json` and `.claude/commands/`). Edits to the skill happen in the `_project-template/` canonical and then `/distribute-defaults` propagates them.
 
-The skill itself is markdown-only. The deterministic backend is a CLI binary `syndicate-refresh-remote`, installed from `~/syndicate-remote/scripts/refresh-remote.sh` via `~/syndicate-remote/scripts/install.sh` (one install per machine; binary lands in `~/.local/bin/`). The binary is configured per-machine by `~/.syndicate-remote-secrets/box.json` (host, user, workspace, ssh_key).
+The skill itself is markdown-only. The deterministic backend is a CLI binary `syndicate-refresh-remote`, installed from `~/syndicate-remote/scripts/syndicate-refresh-remote.sh` via `~/syndicate-remote/scripts/install.sh` (one install per machine; binary lands in `~/.local/bin/`). The binary is configured per-machine by `~/.syndicate-remote-secrets/box.json` (host, user, workspace, ssh_key).
 
 So:
 - **`syndicate-playbooks-examples`** owns the skill `.md` (the conversational front-end). Distributed to all projects.
@@ -36,11 +36,11 @@ If you ever read this skill markdown in any project and the binary isn't install
 
 | You type | What happens |
 |---|---|
-| `/refresh-remote` | Skill asks: which repos? (offers a multi-select of all top-level repos under `~/`); then asks about env-file sync + conflict policy + dry-run. |
-| `/refresh-remote syndicate-remote` | Uses that one repo; still asks about options if relevant. |
-| `/refresh-remote broadcasting-orchestration aps-brm-products-playbook` | Uses both repos. Skips the "which repos" prompt. |
-| `/refresh-remote all` | Sync **every** top-level repo under `~/` (confirms count first — typically ~60–70 repos). |
-| `/refresh-remote hyl-*` | Glob match; lists candidates and asks to confirm. |
+| `/syndicate-refresh-remote` | Skill asks: which repos? (offers a multi-select of all top-level repos under `~/`); then asks about env-file sync + conflict policy + dry-run. |
+| `/syndicate-refresh-remote syndicate-remote` | Uses that one repo; still asks about options if relevant. |
+| `/syndicate-refresh-remote broadcasting-orchestration aps-brm-products-playbook` | Uses both repos. Skips the "which repos" prompt. |
+| `/syndicate-refresh-remote all` | Sync **every** top-level repo under `~/` (confirms count first — typically ~60–70 repos). |
+| `/syndicate-refresh-remote hyl-*` | Glob match; lists candidates and asks to confirm. |
 
 When user input is ambiguous or incomplete, the skill **asks** rather than assumes.
 
@@ -50,7 +50,7 @@ When user input is ambiguous or incomplete, the skill **asks** rather than assum
 
 ### Step 1 — Pre-flight (always run, never skipped)
 
-1. **Hostname check.** If `hostname -s` matches the box's pattern (typically `ip-172-31-*` for AWS-launched boxes), abort with "this is the box; refresh-remote is local-only". The box-side hostname is one of the few things hardcoded.
+1. **Hostname check.** If `hostname -s` matches the box's pattern (typically `ip-172-31-*` for AWS-launched boxes), abort with "this is the box; syndicate-refresh-remote is local-only". The box-side hostname is one of the few things hardcoded.
 2. **Binary check.** `command -v syndicate-refresh-remote` must succeed. If not, surface:
    > "syndicate-refresh-remote not installed. Run `~/syndicate-remote/scripts/install.sh` once on this machine, then retry."
 3. **Config check.** `~/.syndicate-remote-secrets/box.json` must exist and have non-empty `host`, `user`, `workspace`, `ssh_key`. If missing fields, surface:
@@ -108,7 +108,7 @@ If the binary exits 2 (HALT — conflict) and `--keep-side` wasn't pre-set:
 After all repos process, the binary prints:
 
 ```
-=== refresh-remote summary ===
+=== syndicate-refresh-remote summary ===
 repos:   N total, M synced cleanly, K had conflicts (resolved: ..., skipped: ...)
 env:     E files transferred
 host:    <ip> (saved to ~/.syndicate-remote-secrets/box.json)
@@ -145,7 +145,7 @@ Always confirm before executing if interpretation is non-obvious.
 
 ## Companion runtime — `syndicate-refresh-remote` binary
 
-Lives in `~/.local/bin/syndicate-refresh-remote` after running `~/syndicate-remote/scripts/install.sh` once per machine. Source: `~/syndicate-remote/scripts/refresh-remote.sh`. Implements the per-repo loop (pre-flight, push, clone-or-pull, env-file scp, summary).
+Lives in `~/.local/bin/syndicate-refresh-remote` after running `~/syndicate-remote/scripts/install.sh` once per machine. Source: `~/syndicate-remote/scripts/syndicate-refresh-remote.sh`. Implements the per-repo loop (pre-flight, push, clone-or-pull, env-file scp, summary).
 
 The skill above is the conversational front-end that:
 
@@ -153,9 +153,9 @@ The skill above is the conversational front-end that:
 2. Invokes the binary with the right flags.
 3. Handles conflict-resolution prompts when the binary halts.
 
-**To update the binary:** edit `~/syndicate-remote/scripts/refresh-remote.sh`, commit there, re-run `~/syndicate-remote/scripts/install.sh` (idempotent — just re-installs the latest).
+**To update the binary:** edit `~/syndicate-remote/scripts/syndicate-refresh-remote.sh`, commit there, re-run `~/syndicate-remote/scripts/install.sh` (idempotent — just re-installs the latest).
 
-**To update this skill markdown:** edit the canonical at `~/syndicate-playbooks-examples/_project-template/.claude/commands/refresh-remote.md`, commit, then run `/distribute-defaults` from `syndicate-playbooks-examples`.
+**To update this skill markdown:** edit the canonical at `~/syndicate-playbooks-examples/_project-template/.claude/commands/syndicate-refresh-remote.md`, commit, then run `/distribute-defaults` from `syndicate-playbooks-examples`.
 
 ---
 
@@ -176,9 +176,9 @@ The skill above is the conversational front-end that:
 
 ## Cross-references
 
-- **Skill canonical:** `~/syndicate-playbooks-examples/_project-template/.claude/commands/refresh-remote.md`
+- **Skill canonical:** `~/syndicate-playbooks-examples/_project-template/.claude/commands/syndicate-refresh-remote.md`
 - **Distribution:** `~/syndicate-playbooks-examples/.claude/commands/distribute-defaults.md` (run `/distribute-defaults` to propagate)
-- **Binary source:** `~/syndicate-remote/scripts/refresh-remote.sh`
+- **Binary source:** `~/syndicate-remote/scripts/syndicate-refresh-remote.sh`
 - **Binary installer:** `~/syndicate-remote/scripts/install.sh`
 - **Binary installed at:** `~/.local/bin/syndicate-refresh-remote`
 - **Per-machine config:** `~/.syndicate-remote-secrets/box.json` (mode 0600, never in any git repo)
