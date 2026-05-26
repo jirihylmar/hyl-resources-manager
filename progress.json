@@ -3,8 +3,8 @@
   "project": "hyl-resources-manager",
   "description": "Resource management across AWS, GitHub, and Google services. Organized by skills producing structured output.",
   "created_at": "2026-03-27",
-  "last_updated": "2026-03-27",
-  "last_session_summary": "Session 2: Completed Phase 3 (skill refresh: 37 Amplify apps, 59 DynamoDB tables, 191 GitHub repos) and Phase 4 (Google: 7 accounts, 7 GCP projects, Chrome profiles). Changed vouchers-gsp to PAY_PER_REQUEST. Repos organized by org. All phases complete.",
+  "last_updated": "2026-05-26",
+  "last_session_summary": "Session 3: Incident response on vsb-299 recordings-enricher recursive Lambda loop (~898k invocations, 2026-05-20). Diagnosed root cause (S3→Lambda self-feedback), wrote incident report, verified external fix (no trigger, new metadata-repository table, idempotent on rerun). Created monthly cost budget on vsb-299 ($100 limit, alerts at $20/$50/$100 actual + $100 forecast → info@hylmar.eu); $20 alert confirmed received.",
 
   "context_hints": {
     "aws_accounts": {
@@ -213,6 +213,38 @@
           "verify": "google/chrome-profiles.json exists with profile mapping and data type inventory",
           "artifacts": ["google/chrome-profiles.json"],
           "notes": "7 profiles, 49 extensions total, documented readable formats (JSON vs SQLite)"
+        }
+      ]
+    },
+    "phase_5_incident_and_cost_controls": {
+      "name": "Incident Response & Cost Controls",
+      "status": "complete",
+      "started_at": "2026-05-25",
+      "completed_at": "2026-05-26",
+      "tasks": [
+        {
+          "id": "5.1",
+          "name": "vsb-299 recordings-enricher recursive loop: diagnose, document, verify external fix",
+          "status": "complete",
+          "completed_at": "2026-05-25",
+          "size": "medium",
+          "verify": "aws/incidents/2026-05-20-vsb-299-recordings-enricher-recursive-loop.md exists; RecursiveInvocationsDropped = 0 since 2026-05-21",
+          "verify_result": "PASSED — 0 recursive drops since 2026-05-21; healthy 1-4 invocations/hr",
+          "artifacts": ["aws/incidents/2026-05-20-vsb-299-recordings-enricher-recursive-loop.md"],
+          "added_reason": "Reactive: AWS Health event a01ks3h6ekfjgzyjqq1vvm2dskr",
+          "notes": "Root cause: S3 PutObject → Lambda → S3 PutObject self-feedback. ~898k invocations charged on 2026-05-20 17-19 UTC before Lambda guard tripped. External team fix verified 2026-05-25 20:22 UTC: no resource-based trigger (invoked via orchestrator), new digital-horizon-metadata-repository DynamoDB table, idempotent on rerun (preserves operator edits)."
+        },
+        {
+          "id": "5.2",
+          "name": "vsb-299 monthly cost budget with email alerts at $20/$50/$100",
+          "status": "complete",
+          "completed_at": "2026-05-26",
+          "size": "small",
+          "verify": "aws budgets describe-budget --account-id 299025166536 --budget-name monthly-cost-alerts returns 4 notifications",
+          "verify_result": "PASSED — $20 alarm email confirmed received by info@hylmar.eu",
+          "artifacts": ["arn:aws:budgets::299025166536:budget/monthly-cost-alerts"],
+          "added_reason": "Cost control follow-up to incident 5.1",
+          "notes": "Budget $100/month, 4 notifications: ACTUAL at 20%/50%/100% + FORECASTED at 100%, subscriber info@hylmar.eu. May 2026 spend at creation: $42.68 (post-incident)."
         }
       ]
     }

@@ -126,4 +126,66 @@ This file tracks session history for context continuity between Claude Code sess
 
 ---
 
+### Session: 2026-05-25 / 2026-05-26 (Session 3)
+
+**Context**:
+- All prior phases complete; reactive session triggered by AWS Health notification
+- Account: vsb-299 (299025166536), region eu-central-1
+
+**Trigger**:
+- AWS Health event `a01ks3h6ekfjgzyjqq1vvm2dskr` — Lambda recursive loop detected and stopped
+
+**Completed**:
+- Phase 5 (2 tasks) added retroactively:
+  - 5.1: Diagnosed `amplify-d2thadu8jkg00-mai-recordingsenricherlambda-7hdomPr9REk9` recursive loop, wrote incident report, verified external team's fix
+  - 5.2: Created monthly cost budget on vsb-299 ($100/mo, alerts at $20/$50/$100 ACTUAL + $100 FORECASTED → info@hylmar.eu)
+
+**Incident Timeline**:
+- 2026-05-20 09:24 UTC — recordings bucket reference parameter created
+- 2026-05-20 17:00–18:00 UTC — ~898k invocations charged (loop active)
+- 2026-05-20 19:00 UTC — Lambda guard tripped, loop neutralised
+- 2026-05-21 10:01 UTC — initial post-incident redeploy
+- 2026-05-25 20:22 UTC — external team's fix deployed (verified)
+- 2026-05-26 — budget created, $20 email alert confirmed received
+
+**Root Cause**:
+- S3 bucket notification on `amplify-d2thadu8jkg00-mai-recordingsbucket304ae6cd-wec5ccmzzyi2` triggered Lambda on any PutObject
+- Lambda wrote 4 sidecar objects back to the same bucket → unbounded self-recursion
+
+**External Fix Verified**:
+- No resource-based trigger (no S3 notification, no EventBridge rule, no Lambda policy)
+- Invocation is now via direct `lambda:Invoke` from an orchestrator (AppSync resolver or upstream Lambda) — structurally cannot self-loop
+- New env var `METADATA_REPOSITORY_TABLE_NAME=digital-horizon-metadata-repository`
+- Timeout increased 60s → 180s
+- Idempotent: rerun logs "notes already exist … preserving operator edits"
+- `RecursiveInvocationsDropped` = 0 since 2026-05-21; healthy 1-4 invocations/hr
+
+**Cost Controls Added (vsb-299)**:
+| Threshold | Type | State |
+|---|---|---|
+| $20 (20%) | ACTUAL | ALARM (already past, email confirmed) |
+| $50 (50%) | ACTUAL | OK |
+| $100 (100%) | ACTUAL | OK |
+| $100 (100%) | FORECASTED | OK (forecast $46.73) |
+
+**Artifacts Created**:
+- `aws/incidents/2026-05-20-vsb-299-recordings-enricher-recursive-loop.md` — incident handoff for external team
+- `arn:aws:budgets::299025166536:budget/monthly-cost-alerts`
+
+**Key Decisions**:
+- Created new `aws/incidents/` directory for incident handoff documents
+- Scope of budget: vsb-299 only (per user choice) — other 5 MCP accounts not covered yet
+- Notification posture: AWS-managed Health configurations are sufficient for "you got told", but added Budgets for cost-specific early warning
+- Did NOT add notification hub or CloudWatch Lambda runaway alarm (user deemed measures sufficient)
+
+**Outstanding (not actioned)**:
+- Owner needs to acknowledge AWS Health event in console for 299025166536
+- Other 5 MCP accounts have no cost budgets configured
+- No CloudWatch alarm on `RecursiveInvocationsDropped` (could catch future loops faster than Health)
+
+**Next Session**:
+- No pending tasks; project back to maintenance state
+
+---
+
 <!-- Sessions are prepended above this line -->
