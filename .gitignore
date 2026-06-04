@@ -1,1 +1,11 @@
+# Secrets — never commit. OAuth client secrets, keystores, service-account keys.
+client_secret*.json
+*-client_secret*.json
+*.keystore
+*.jks
+*.p12
+*service-account*.json
+*-key.json
 
+# Local input drop zone may contain downloaded secrets
+input/client_secret*.json

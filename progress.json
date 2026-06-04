@@ -294,11 +294,14 @@
         {
           "id": "6.4",
           "name": "Part A: OAuth consent screen (External; openid/email/profile; test user) + Web OAuth client 'audory-cognito-dev' with Cognito idpresponse redirect URI; record Client ID (secret out-of-band)",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-06-04",
           "size": "medium",
           "verify": "google/provisioning/audory/oauth.json has client_id, redirect_uri https://audory-dev-030062527147.auth.eu-west-1.amazoncognito.com/oauth2/idpresponse, consent screen status",
+          "verify_result": "PASSED — client_id 360321714436-mcpgco121lh857lcmo38jiveeoure945.apps.googleusercontent.com; downloaded JSON config exact match (web type, project android-auto-audory, idpresponse redirect, hosted-UI origin); live GET to accounts.google.com/o/oauth2/v2/auth returned HTTP 302 to sign-in flow with no invalid_client/redirect_uri_mismatch",
+          "artifacts": ["OAuth Web client android-auto-cognito-dev (client_id 360321714436-mcpgco121lh857lcmo38jiveeoure945)", "google/provisioning/audory/oauth.json", "google/provisioning/audory/PART-A-console-steps.md"],
           "added_reason": "Part A core — unblocks Audory task 9.0b (Cognito Google IdP)",
-          "notes": "gcloud/API support for general Web OAuth clients is limited; consent screen + Web client likely done in console under info@hylmar.eu, gcloud used for project + API enablement, result recorded here. Authorized domain amazoncognito.com. Build client so more redirect URIs (staging/prod) can be added later. Client SECRET must NOT be committed — out-of-band to AWS Secrets Manager."
+          "notes": "Console-only (IAP OAuth Admin APIs shut down 2026-03-19 — confirmed via Google docs + live probe). Owner created consent screen + Web client in Console under info@hylmar.eu; client_id recorded + verified live. Secret out-of-band (gitignored local file, dest AWS Secrets Manager vsb-030). NOT auto-verifiable: consent-screen publishing status / test users (no read API) — owner to confirm projekt1@hub440.cz is a test user OR app Published else Testing logins access_denied. Added .gitignore to block client_secret*.json/keystores."
         },
         {
           "id": "6.5",
@@ -331,7 +334,7 @@
     }
   },
 
-  "current_task": "6.4",
+  "current_task": "6.5",
   "current_phase": "phase_6_google_provisioning",
 
   "git_repos": {

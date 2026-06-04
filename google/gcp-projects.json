@@ -127,6 +127,16 @@
     "parent_org_id": "259828723728",
     "created": "2026-06-04",
     "purpose": "Google OAuth for Audory (android-auto-* family) — Sign in with Google via AWS Cognito federation (consumes Audory task 9.0b). Provisioning tracked in google/provisioning/audory/.",
-    "credentials": []
+    "credentials": [
+      {
+        "type": "oauth_client",
+        "client_type": "web",
+        "name": "android-auto-cognito-dev",
+        "client_id": "360321714436-mcpgco121lh857lcmo38jiveeoure945.apps.googleusercontent.com",
+        "purpose": "AWS Cognito Google IdP federation (Audory dev) — verified live 2026-06-04",
+        "secret_handling": "out-of-band → AWS Secrets Manager (vsb-030); local download gitignored, not in repo history",
+        "verified": true
+      }
+    ]
   }
 ]

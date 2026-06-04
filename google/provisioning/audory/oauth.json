@@ -19,9 +19,10 @@
   "web_client": {
     "name": "android-auto-cognito-dev",
     "application_type": "web",
-    "client_id": null,
+    "client_id": "360321714436-mcpgco121lh857lcmo38jiveeoure945.apps.googleusercontent.com",
     "client_secret": "OUT_OF_BAND — never stored in git",
     "secret_destination": "AWS Secrets Manager on vsb-030 (030062527147), eu-west-1 — stored by backend agent during 9.0b",
+    "secret_local_file": "input/client_secret_360321714436-mcpgco121lh857lcmo38jiveeoure945.apps.googleusercontent.com.json (gitignored; relocate to Secrets Manager then remove from repo tree)",
     "javascript_origins": [
       "https://audory-dev-030062527147.auth.eu-west-1.amazoncognito.com"
     ],
@@ -31,6 +32,13 @@
     "future_redirect_uris_note": "staging/prod Cognito domains share the .../oauth2/idpresponse shape; append them to this same client later without recreating it."
   },
   "creation_path": "console-only (IAP OAuth Admin APIs shut down 2026-03-19; no CLI path)",
-  "status": "in_progress",
-  "notes": "Created project + decisions via CLI; consent screen + Web client must be created in Google Cloud Console under info@hylmar.eu (Chrome Profile 6). Steps: google/provisioning/audory/PART-A-console-steps.md. Fill client_id from console; secret delivered out-of-band."
+  "verification": {
+    "method": "downloaded client JSON inspected + live GET to accounts.google.com/o/oauth2/v2/auth",
+    "config_match": "project android-auto-audory; type web; redirect_uri == .../oauth2/idpresponse; js_origin == hosted UI domain — all exact",
+    "live_authorize_result": "HTTP 302 to Google sign-in/consent flow; no invalid_client / redirect_uri_mismatch",
+    "verified_at": "2026-06-04",
+    "not_auto_verifiable": "consent screen publishing status + test users (no read API) — owner must confirm projekt1@hub440.cz is a test user OR app is Published, else Testing-mode logins return access_denied"
+  },
+  "status": "delivered",
+  "notes": "Client created in Console under info@hylmar.eu and verified live. client_id recorded; secret stays out-of-band (gitignored local file pending Secrets Manager). Steps used: google/provisioning/audory/PART-A-console-steps.md."
 }
