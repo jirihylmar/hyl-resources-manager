@@ -313,7 +313,7 @@
           "size": "small",
           "verify": "google/provisioning/audory/decisions.json has D1, D2, D3, D4 answered",
           "added_reason": "Request requires owner decisions before Play setup can finalize",
-          "notes": "D1 (cz.audory.app vs com.audory.app) must be answered before 6.5 creates immutable package name. D2 languages, D3 manual vs Play Developer API, D4 organization vs individual account."
+          "notes": "D1 RESOLVED 2026-06-04 → package eu.hylmar.audory.app (reverse-DNS of owner-controlled audory.hylmar.eu; AGP 8.4.2 decouples applicationId from cz.audory.* namespaces so no source churn; custom-scheme callback eu.hylmar.audory.app://oauth/callback). Recorded in google/provisioning/audory/decisions.json with research + change surface. D2 languages, D3 manual vs Play Developer API, D4 org vs individual still pending. Part A (6.4) unaffected by D1."
         },
         {
           "id": "6.7",

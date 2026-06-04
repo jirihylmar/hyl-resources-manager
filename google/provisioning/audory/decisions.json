@@ -1,0 +1,63 @@
+{
+  "product": "Audory",
+  "owner_google_account": "info@hylmar.eu",
+  "request_source": "input/external-google-cloud-and-play-setup.md",
+  "decisions": [
+    {
+      "id": "D1",
+      "question": "Canonical Android package name (immutable once published on Play). Handoff doc flagged a mismatch: applicationId cz.audory.app vs OAuth redirect scheme com.audory.app://.",
+      "answer": "eu.hylmar.audory.app",
+      "answered": true,
+      "answered_at": "2026-06-04",
+      "native_oauth_callback": "eu.hylmar.audory.app://oauth/callback",
+      "callback_style": "custom_scheme",
+      "rationale": [
+        "Reverse-DNS of audory.hylmar.eu, a domain the owner controls (info@hylmar.eu / hylmar.eu resolves 81.2.196.19; audory.hylmar.eu resolves same). com.audory.* would reverse-map to audory.com, registered to a third party via GoDaddy since 2014-12-27. cz.audory.* maps to audory.cz which is unregistered (not owned).",
+        "AGP 8.4.2 decouples applicationId from namespace, so Play identity can be eu.hylmar.audory.app while Kotlin namespaces stay cz.audory.* unchanged — no source-tree churn.",
+        "Custom scheme chosen for now (simplest, unblocks). Can upgrade to verifiable Android App Links https://audory.hylmar.eu/oauth/callback later, once Play App Signing SHA-256 (task 6.5) is available to publish assetlinks.json."
+      ],
+      "research": {
+        "applicationId_current": "cz.audory.app (app/build.gradle.kts:12)",
+        "namespaces_current": ["cz.audory.app", "cz.audory.core", "cz.audory.data", "cz.audory.sync", "cz.audory.auto", "cz.audory.player"],
+        "com_audory_occurrences": [
+          "app/build.gradle.kts:18 manifestPlaceholders[appAuthRedirectScheme]=com.audory.app",
+          "app/src/main/kotlin/cz/audory/app/auth/AuthManager.kt:103 REDIRECT_URI=com.audory.app://oauth/callback",
+          "app/src/main/AndroidManifest.xml:25-27 (comment)",
+          ".claude/skills/orchestrate-app-backend/SKILL.md (note)"
+        ],
+        "domain_rdap": {
+          "audory.com": "registered 2014-12-27, GoDaddy, parked (DomainControl NS), expires 2026-12-27 — third party",
+          "audory.cz": "not registered (nic.cz RDAP 404)",
+          "hylmar.eu": "owned by owner (info@hylmar.eu); audory.hylmar.eu reachable"
+        },
+        "part_a_impact": "NONE — Google→Cognito federation redirect is the HTTPS .../oauth2/idpresponse URL, not the custom scheme. D1 gates only Play package (6.5) and the native app's own redirect."
+      },
+      "change_surface": [
+        {"ref": "android-auto-app app/build.gradle.kts:12", "change": "applicationId = \"eu.hylmar.audory.app\"", "owner": "app agent"},
+        {"ref": "android-auto-app app/build.gradle.kts:18", "change": "appAuthRedirectScheme = \"eu.hylmar.audory.app\"", "owner": "app agent"},
+        {"ref": "android-auto-app AuthManager.kt:103", "change": "REDIRECT_URI = \"eu.hylmar.audory.app://oauth/callback\"", "owner": "app agent"},
+        {"ref": "android-auto-app AndroidManifest.xml:25-27", "change": "update comment to new scheme", "owner": "app agent"},
+        {"ref": "Cognito consumer-app client 7lt16dfjsgejceu60s5nqtqrrg (AWS vsb-030, pool eu-west-1_RJzbzo83A)", "change": "whitelist eu.hylmar.audory.app://oauth/callback (replace com.audory.app://oauth/callback)", "owner": "backend agent"},
+        {"ref": "optional/later", "change": "host assetlinks.json at audory.hylmar.eu/.well-known/ for App Links upgrade (needs 6.5 SHA-256)", "owner": "owner/app agent"}
+      ]
+    },
+    {
+      "id": "D2",
+      "question": "Store listing languages — primary (Czech vs English) + additional.",
+      "answer": null,
+      "answered": false
+    },
+    {
+      "id": "D3",
+      "question": "Publishing pipeline — manual .aab upload vs CI/CD via Google Play Developer API (needs Play service account).",
+      "answer": null,
+      "answered": false
+    },
+    {
+      "id": "D4",
+      "question": "Play developer account type — organization vs individual.",
+      "answer": null,
+      "answered": false
+    }
+  ]
+}
