@@ -258,11 +258,14 @@
         {
           "id": "6.1",
           "name": "Install & configure gcloud CLI; authenticate info@hylmar.eu (+ ADC); document the auth pattern (reusable for any owner account)",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-06-04",
           "size": "small",
           "verify": "gcloud auth list shows info@hylmar.eu ACTIVE; gcloud config get-value account == info@hylmar.eu",
+          "verify_result": "PASSED — gcloud 571.0.0 at ~/google-cloud-sdk/bin/gcloud; info@hylmar.eu ACTIVE; ADC token OK; projects list = 0 (greenfield)",
+          "artifacts": ["~/google-cloud-sdk (gcloud 571.0.0)", "google/provisioning/gcloud-auth.md"],
           "added_reason": "No gcloud installed and no auth at session start; required base for all other Phase 6 tasks",
-          "notes": "Document install + `gcloud auth login` + `gcloud auth application-default login` flow generically so any owner account can be used for future requests."
+          "notes": "No-root tarball install (sudo not passwordless). Auth via `gcloud auth login info@hylmar.eu --no-launch-browser --update-adc` (user creds + ADC in one). Reusable pattern documented in google/provisioning/gcloud-auth.md."
         },
         {
           "id": "6.2",
@@ -322,7 +325,7 @@
     }
   },
 
-  "current_task": "6.1",
+  "current_task": "6.2",
   "current_phase": "phase_6_google_provisioning",
 
   "git_repos": {
