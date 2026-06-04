@@ -6,7 +6,8 @@
   "consumes": "android-auto-orchestrator task 9.0b (AWS Cognito Google IdP, account vsb-030 / 030062527147)",
   "consent_screen": {
     "user_type": "external",
-    "status": "testing",
+    "status": "in_production",
+    "status_source": "owner-confirmed 2026-06-04 (publishing status has no read API; console badge is source of truth). Non-sensitive scopes → no Google verification required to be in production.",
     "app_name": "Audory",
     "support_email": "projekt1@hub440.cz",
     "developer_contact_email": "projekt1@hub440.cz",

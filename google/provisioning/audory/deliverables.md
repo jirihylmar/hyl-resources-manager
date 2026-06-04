@@ -19,7 +19,7 @@
 | Google Cloud Project number | `360321714436` |
 | Owner Google account / org | `info@hylmar.eu` / Workspace org `hylmar.eu` (259828723728) |
 | OAuth consent screen | **External**, scopes `openid` `email` `profile` (non-sensitive → no Google review) |
-| OAuth consent screen status | ⚠️ **Testing** — owner publishing to Production (confirm before relying on non-test-user logins) |
+| OAuth consent screen status | ✅ **In production** (owner-confirmed 2026-06-04) — any Google user can sign in; no test-user limit |
 | OAuth Client ID (Web application) | `360321714436-mcpgco121lh857lcmo38jiveeoure945.apps.googleusercontent.com` |
 | OAuth client label | `android-auto-cognito-dev` |
 | OAuth Client secret | **In AWS Secrets Manager (see below)** — not written here |
@@ -47,10 +47,8 @@ and pull `client_id` / `client_secret` fields.
 2. Attribute mapping: `email` → email, `name` → name, `picture` → picture.
 3. Enable **Google** as a supported IdP on the Hosted UI app client; ensure callback/scopes set.
 4. Test "Sign in with Google" on the Hosted UI end-to-end.
-   - ⚠️ If the **consent screen is still in Testing**, only consent-screen *test users* can
-     complete sign-in (others get `access_denied`). Owner is publishing to Production to remove
-     this limit; confirm status at
-     https://console.cloud.google.com/auth/audience?project=android-auto-audory
+   - ✅ Consent screen is **In production** (owner-confirmed 2026-06-04) — any Google user can sign
+     in; no test-user restriction.
 
 ---
 
@@ -106,7 +104,7 @@ sort out Cloud Billing before any paid API / Play Developer API (D3) work.
 | Item | Status |
 |------|--------|
 | GCP project `android-auto-audory` | ✅ created (under hylmar.eu org) |
-| OAuth consent screen | ✅ configured · ⚠️ publish to Production pending owner confirm |
+| OAuth consent screen | ✅ configured · ✅ In production (owner-confirmed) |
 | OAuth Web client + redirect URI | ✅ created & verified live |
 | Client secret → Secrets Manager (vsb-030) | ✅ staged (`audory/dev/google-oauth`) |
 | D1 package name | ✅ resolved (`eu.hylmar.audory.app`) |
