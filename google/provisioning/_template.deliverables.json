@@ -1,0 +1,66 @@
+{
+  "product": null,
+  "owner_google_account": null,
+  "request_source": null,
+  "parts_requested": ["A"],
+  "input": {
+    "gcp_project": { "name": null, "id": null },
+    "environments": [
+      {
+        "env": "dev",
+        "cognito_hosted_ui_domain": null,
+        "redirect_uri": null,
+        "user_pool_id": null,
+        "aws_account_id": null,
+        "region": null
+      }
+    ],
+    "oauth": { "scopes": ["openid", "email", "profile"] },
+    "consent": {
+      "user_type": "external",
+      "support_email": null,
+      "authorized_domains": []
+    },
+    "android": { "package_name": null }
+  },
+  "oauth": {
+    "gcp_project_id": null,
+    "consent_screen": {
+      "user_type": "external",
+      "status": null,
+      "app_name": null,
+      "support_email": null,
+      "authorized_domains": [],
+      "scopes": ["openid", "email", "profile"],
+      "test_users": []
+    },
+    "web_client": {
+      "name": null,
+      "client_id": null,
+      "client_secret": "OUT_OF_BAND — never stored in git",
+      "secret_destination": null,
+      "javascript_origins": [],
+      "redirect_uris": []
+    },
+    "status": "pending",
+    "notes": null
+  },
+  "play": {
+    "developer_account": "none",
+    "account_type": null,
+    "app": {
+      "name": null,
+      "package_name": null,
+      "default_language": null,
+      "additional_languages": [],
+      "free_or_paid": "free"
+    },
+    "app_signing": { "play_app_signing": true, "sha1": null, "sha256": null },
+    "android_auto": { "declared": false, "notes": null },
+    "tracks": { "internal_testing": false, "testers": [] },
+    "data_safety": { "collects": [], "sells_data": false },
+    "status": "pending",
+    "notes": null
+  },
+  "decisions": []
+}

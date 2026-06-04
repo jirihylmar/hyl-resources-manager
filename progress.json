@@ -270,11 +270,14 @@
         {
           "id": "6.2",
           "name": "Define reusable provisioning schema — input-request format + output deliverables JSON template, parameterized by product/account/redirect URIs",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-06-04",
           "size": "small",
           "verify": "google/provisioning/schema.md and google/provisioning/_template.deliverables.json exist",
+          "verify_result": "PASSED — schema.md (folder convention, request fields, oauth/play/decisions output schemas, secret-handling rule, capability notes) + _template.deliverables.json blank structure",
+          "artifacts": ["google/provisioning/schema.md", "google/provisioning/_template.deliverables.json"],
           "added_reason": "Reusability backbone so future external Google requests drop in with minimal change",
-          "notes": "Generalize from input/external-google-cloud-and-play-setup.md: product/brand, owner Google account, Cognito redirect URIs (dev/staging/prod), scopes, Android package name, Part A (OAuth) + Part B (Play) deliverables."
+          "notes": "Generalized from input/external-google-cloud-and-play-setup.md. Parts A/B optional per request; environments[] array supports adding staging/prod redirect URIs later without recreating the client."
         },
         {
           "id": "6.3",
@@ -325,7 +328,7 @@
     }
   },
 
-  "current_task": "6.2",
+  "current_task": "6.3",
   "current_phase": "phase_6_google_provisioning",
 
   "git_repos": {
