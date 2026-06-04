@@ -1,0 +1,36 @@
+{
+  "product": "Audory",
+  "owner_google_account": "info@hylmar.eu",
+  "gcp_project_id": "android-auto-audory",
+  "gcp_project_number": "360321714436",
+  "consumes": "android-auto-orchestrator task 9.0b (AWS Cognito Google IdP, account vsb-030 / 030062527147)",
+  "consent_screen": {
+    "user_type": "external",
+    "status": "testing",
+    "app_name": "Audory",
+    "support_email": "projekt1@hub440.cz",
+    "developer_contact_email": "projekt1@hub440.cz",
+    "authorized_domains": ["amazoncognito.com"],
+    "scopes": ["openid", "email", "profile"],
+    "test_users": ["projekt1@hub440.cz"],
+    "verification_required": false,
+    "verification_note": "All scopes are non-sensitive (openid/email/profile) -> no Google review needed to publish."
+  },
+  "web_client": {
+    "name": "android-auto-cognito-dev",
+    "application_type": "web",
+    "client_id": null,
+    "client_secret": "OUT_OF_BAND — never stored in git",
+    "secret_destination": "AWS Secrets Manager on vsb-030 (030062527147), eu-west-1 — stored by backend agent during 9.0b",
+    "javascript_origins": [
+      "https://audory-dev-030062527147.auth.eu-west-1.amazoncognito.com"
+    ],
+    "redirect_uris": [
+      "https://audory-dev-030062527147.auth.eu-west-1.amazoncognito.com/oauth2/idpresponse"
+    ],
+    "future_redirect_uris_note": "staging/prod Cognito domains share the .../oauth2/idpresponse shape; append them to this same client later without recreating it."
+  },
+  "creation_path": "console-only (IAP OAuth Admin APIs shut down 2026-03-19; no CLI path)",
+  "status": "in_progress",
+  "notes": "Created project + decisions via CLI; consent screen + Web client must be created in Google Cloud Console under info@hylmar.eu (Chrome Profile 6). Steps: google/provisioning/audory/PART-A-console-steps.md. Fill client_id from console; secret delivered out-of-band."
+}

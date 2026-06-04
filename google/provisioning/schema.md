@@ -132,8 +132,11 @@ client so more environments can be appended later without recreating it.
 ## Execution capability notes (from Task 6.1 reality check)
 
 - `gcloud` reliably handles: project create, billing link, **API enablement**, service accounts.
-- Creating a **general "Web application" OAuth client** + the **OAuth consent screen** is largely
-  **console-only** (gcloud/IAP APIs cover IAP-specific clients, not generic web clients). Plan for
-  console steps under the owner Chrome profile; record the resulting `client_id` here.
+- Creating a **general "Web application" OAuth client** + the **OAuth consent screen** is
+  **console-only** under the owner Chrome profile; record the resulting `client_id` here.
+  NOTE (confirmed 2026-06-04): the **IAP OAuth Admin APIs** — the only programmatic path that ever
+  existed — were **permanently shut down 2026-03-19**, and new projects were blocked from them after
+  2026-01-19. So `gcloud alpha iap oauth-brands/oauth-clients` is dead for any project created now.
+  There is no CLI fallback; Part A is always Console work going forward.
 - **Google Play Console** has **no CLI** for account/app setup; the Play Developer API only covers
   release management *after* the account + app exist. Part B is manual; this repo tracks deliverables.
