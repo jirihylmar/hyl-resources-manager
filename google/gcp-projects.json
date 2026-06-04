@@ -118,5 +118,15 @@
         "verified": true
       }
     ]
+  },
+  {
+    "project_id": "android-auto-audory",
+    "project_number": "360321714436",
+    "owner_account": "info@hylmar.eu",
+    "org": "Hylmar",
+    "parent_org_id": "259828723728",
+    "created": "2026-06-04",
+    "purpose": "Google OAuth for Audory (android-auto-* family) — Sign in with Google via AWS Cognito federation (consumes Audory task 9.0b). Provisioning tracked in google/provisioning/audory/.",
+    "credentials": []
   }
 ]

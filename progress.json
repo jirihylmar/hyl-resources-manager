@@ -282,11 +282,14 @@
         {
           "id": "6.3",
           "name": "Create 'audory' GCP project under info@hylmar.eu + enable required APIs; record in gcp-projects.json & accounts.json",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-06-04",
           "size": "small",
           "verify": "gcloud projects describe <audory-project-id> returns lifecycleState ACTIVE; info@hylmar.eu gcp_projects updated in google/accounts.json",
+          "verify_result": "PASSED — project android-auto-audory (number 360321714436) ACTIVE under org hylmar.eu (259828723728); recorded in gcp-projects.json + accounts.json",
+          "artifacts": ["GCP project android-auto-audory (360321714436)", "google/gcp-projects.json", "google/accounts.json", "google/provisioning/audory/request.md"],
           "added_reason": "Part A1 of the request — base project for the OAuth client",
-          "notes": "Project name 'audory'. Record Project ID. Append project to gcp-projects.json and to info@hylmar.eu account in accounts.json (currently gcp_projects: [])."
+          "notes": "Project ID android-auto-audory (per android-auto-* grouping convention; 'audory'/'google'-in-id avoided — GCP forbids 'google' in IDs). Created in Console (CLI hit shared-pool 429 because account had zero projects; bypassed). Quota project set on ADC so 429 won't recur. NO extra APIs required for OIDC federation (Cognito uses Google's standard OAuth endpoints). Billing: gcloud sees 0 billing accounts for info@hylmar.eu — not needed for Part A; flag for Part B Play Developer API."
         },
         {
           "id": "6.4",
@@ -328,7 +331,7 @@
     }
   },
 
-  "current_task": "6.3",
+  "current_task": "6.4",
   "current_phase": "phase_6_google_provisioning",
 
   "git_repos": {

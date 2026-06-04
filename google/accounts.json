@@ -26,7 +26,8 @@
     "gaia_name": "Info Hylmar",
     "gaia_id": "103055621359770728088",
     "chrome_profile_dir": "Profile 6",
-    "gcp_projects": [],
+    "google_workspace_org_id": "259828723728",
+    "gcp_projects": ["android-auto-audory"],
     "tags": ["business"]
   },
   {
