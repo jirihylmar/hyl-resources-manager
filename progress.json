@@ -3,8 +3,8 @@
   "project": "hyl-resources-manager",
   "description": "Resource management across AWS, GitHub, and Google services. Organized by skills producing structured output.",
   "created_at": "2026-03-27",
-  "last_updated": "2026-05-26",
-  "last_session_summary": "Session 3: Incident response on vsb-299 recordings-enricher recursive Lambda loop (~898k invocations, 2026-05-20). Diagnosed root cause (S3→Lambda self-feedback), wrote incident report, verified external fix (no trigger, new metadata-repository table, idempotent on rerun). Created monthly cost budget on vsb-299 ($100 limit, alerts at $20/$50/$100 actual + $100 forecast → info@hylmar.eu); $20 alert confirmed received.",
+  "last_updated": "2026-06-04",
+  "last_session_summary": "Session 4: Added Phase 6 (reusable Google Cloud + Play provisioning) for product 'Audory' under info@hylmar.eu. Completed 6.1 (gcloud install+auth), 6.2 (reusable schema), 6.3 (GCP project android-auto-audory under hylmar.eu org), 6.4 (OAuth Web client android-auto-cognito-dev, verified live), 6.7 (hand-back doc). Resolved D1 package name = eu.hylmar.audory.app (reverse-DNS of owner domain audory.hylmar.eu; AGP 8.4.2 decouples applicationId from cz.audory.* namespaces). Pre-staged client secret in vsb-030 Secrets Manager (audory/dev/google-oauth, eu-west-1). Part A delivered → unblocks Audory 9.0b. Part B (Play, 6.5) deferred ($25 acct + ID verification + D2-D4). Note: IAP OAuth Admin APIs shut down 2026-03-19 → OAuth client creation is console-only; gcloud projects.create hit shared-pool 429 on zero-project account (created in console).",
 
   "context_hints": {
     "aws_accounts": {
@@ -306,7 +306,8 @@
         {
           "id": "6.5",
           "name": "Part B: Play Console — dev account check, create app cz.audory.app (per D1), Play App Signing, internal-testing track; record SHA-1/SHA-256",
-          "status": "pending",
+          "status": "deferred",
+          "deferred_reason": "Owner deferred 2026-06-04: needs one-time $25 Play developer account + identity verification (days) + decisions D2-D4. Does NOT block auth. Package name settled (D1=eu.hylmar.audory.app). Resume when owner registers the developer account; also resolve billing (0 billing accounts visible to info@hylmar.eu).",
           "size": "medium",
           "verify": "google/provisioning/audory/play.json populated (or status pending_verification) with package_name, signing SHA-1/SHA-256, internal_testing_track",
           "added_reason": "Part B core — Android Auto app publishing setup",
@@ -315,7 +316,7 @@
         {
           "id": "6.6",
           "name": "Resolve owner decisions D1-D4 (package name, store languages, publishing pipeline, account type)",
-          "status": "pending",
+          "status": "in_progress",
           "size": "small",
           "verify": "google/provisioning/audory/decisions.json has D1, D2, D3, D4 answered",
           "added_reason": "Request requires owner decisions before Play setup can finalize",
@@ -324,11 +325,14 @@
         {
           "id": "6.7",
           "name": "Produce filled 'Deliverables to return' hand-back doc (unblocks Audory 9.0b); secret-handling note",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-06-04",
           "size": "small",
           "verify": "google/provisioning/audory/deliverables.md complete with Part A + Part B + decisions tables filled (no secrets in git)",
+          "verify_result": "PASSED — deliverables.md filled (Part A delivered, Part B deferred, D1 resolved, D2-D4 pending). Client secret pre-staged in AWS Secrets Manager (NOT in doc/git).",
+          "artifacts": ["google/provisioning/audory/deliverables.md", "arn:aws:secretsmanager:eu-west-1:030062527147:secret:audory/dev/google-oauth-pisEJK"],
           "added_reason": "Closes the loop with the requesting Audory backend agent",
-          "notes": "Mirror the 'Deliverables to return' tables from the input doc. Client ID + Project ID + SHA fingerprints in doc; client secret delivered out-of-band only."
+          "notes": "Secret staged by owner authorization in vsb-030 Secrets Manager (audory/dev/google-oauth, eu-west-1), payload {client_id,client_secret}, tagged. Verified via describe-secret. Temp payload shredded. Hand-back includes Part A (client_id, redirect verified, secret ARN), D1 change surface, 9.0b TODOs, Part B deferred + billing flag."
         }
       ]
     }

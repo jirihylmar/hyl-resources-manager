@@ -20,9 +20,12 @@
     "name": "android-auto-cognito-dev",
     "application_type": "web",
     "client_id": "360321714436-mcpgco121lh857lcmo38jiveeoure945.apps.googleusercontent.com",
-    "client_secret": "OUT_OF_BAND — never stored in git",
-    "secret_destination": "AWS Secrets Manager on vsb-030 (030062527147), eu-west-1 — stored by backend agent during 9.0b",
-    "secret_local_file": "input/client_secret_360321714436-mcpgco121lh857lcmo38jiveeoure945.apps.googleusercontent.com.json (gitignored; relocate to Secrets Manager then remove from repo tree)",
+    "client_secret": "OUT_OF_BAND — stored in AWS Secrets Manager, never in git",
+    "secret_destination": "arn:aws:secretsmanager:eu-west-1:030062527147:secret:audory/dev/google-oauth-pisEJK",
+    "secret_name": "audory/dev/google-oauth",
+    "secret_payload_shape": "{ \"client_id\": \"...\", \"client_secret\": \"...\" }",
+    "secret_staged": true,
+    "secret_local_file": "input/client_secret_...json (gitignored; now redundant — secret is in Secrets Manager; safe to delete from repo tree)",
     "javascript_origins": [
       "https://audory-dev-030062527147.auth.eu-west-1.amazoncognito.com"
     ],

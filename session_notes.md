@@ -188,6 +188,47 @@ This file tracks session history for context continuity between Claude Code sess
 
 ---
 
+### Session: 2026-06-04 (Session 4 — Part A delivered)
+
+**Context**:
+- Phase 6 Google provisioning for product **Audory** under **info@hylmar.eu**
+- Goal: deliver Part A (Google OAuth for Cognito federation) so the Audory coordinating agent can run task 9.0b
+
+**Completed this session**:
+- 6.1 gcloud installed (~/google-cloud-sdk, no-root) + info@hylmar.eu authed (user creds + ADC)
+- 6.2 reusable schema (google/provisioning/schema.md + _template.deliverables.json)
+- 6.3 GCP project **android-auto-audory** (number 360321714436) under hylmar.eu org (259828723728)
+- 6.4 OAuth Web client **android-auto-cognito-dev** (client_id 360321714436-mcpgco121lh857lcmo38jiveeoure945) — verified live (authorize endpoint → HTTP 302, no errors)
+- 6.7 hand-back doc (google/provisioning/audory/deliverables.md)
+- D1 resolved → **eu.hylmar.audory.app** (decisions.json + research)
+
+**Secret handling**:
+- Client secret pre-staged in **vsb-030 Secrets Manager**: `audory/dev/google-oauth`
+  ARN `arn:aws:secretsmanager:eu-west-1:030062527147:secret:audory/dev/google-oauth-pisEJK`, eu-west-1, payload {client_id,client_secret}, tagged
+- Added `.gitignore` (client_secret*.json, keystores). Downloaded secret file gitignored; now redundant (in Secrets Manager) — offer to shred.
+
+**Key findings**:
+- IAP OAuth Admin APIs permanently shut down 2026-03-19 → OAuth consent/client creation is **console-only**, no CLI path (confirmed via Google docs + live probe). Owner did the console clicks.
+- `gcloud projects create` 429s on zero-project accounts (shared CLI quota pool); created project in console, then set ADC quota project → fixed.
+- GCP project IDs can't contain 'google'/'ssl'.
+- Domains (RDAP): audory.com = third-party GoDaddy since 2014; audory.cz unregistered; **audory.hylmar.eu owned** → chosen.
+- AGP 8.4.2 decouples applicationId from namespace → D1 rename is ~3 lines, no source churn.
+- ⚠️ gcloud sees 0 billing accounts for info@hylmar.eu (flag for Part B / paid APIs).
+
+**Open / handed to coordinating agent (9.0b)**:
+- Add UserPoolIdentityProviderGoogle to pool eu-west-1_RJzbzo83A using the secret ARN; map email/name/picture; enable Google on hosted UI; test login.
+- ⚠️ Consent screen still **Testing** — owner to **Publish to Production** (guided) so non-test users can sign in.
+- D1 change surface (app/backend): applicationId + appAuthRedirectScheme + AuthManager REDIRECT_URI + Cognito consumer-app callback.
+
+**Deferred**:
+- 6.5 Part B (Google Play): needs $25 dev account + ID verification + D2/D3/D4. Does not block auth.
+
+**Next session**:
+- Optional: confirm consent screen Published; shred redundant local secret file.
+- When ready: Part B (Play) — register developer account, then 6.5 + resolve D2-D4.
+
+---
+
 ### Session: 2026-06-04 (Session 4 — start)
 
 **Context**:
