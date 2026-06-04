@@ -188,4 +188,32 @@ This file tracks session history for context continuity between Claude Code sess
 
 ---
 
+### Session: 2026-06-04 (Session 4 — start)
+
+**Context**:
+- All prior phases (2–5) complete; project was in maintenance state
+- User request: provision Google Cloud OAuth + Google Play for product **Audory** under **info@hylmar.eu**
+
+**Inspection (before adding work)**:
+- `info@hylmar.eu` (Chrome Profile 6) has **NO GCP projects, NO service accounts, NO OAuth clients, NO stored tokens** — `gcp_projects: []`. User's hunch that access/tokens already existed was incorrect → greenfield.
+- No `gcloud` CLI installed, no gcloud auth, no audory/hylmar.eu credential files on disk, no GCP/Play bookmarks in Profile 6.
+- Input doc: `input/external-google-cloud-and-play-setup.md` — Part A (Web OAuth client for Cognito federation, unblocks Audory task 9.0b on AWS vsb-030) + Part B (Google Play app `cz.audory.app`, Android Auto) + 4 owner decisions D1–D4.
+
+**Work Added (/add-work, approved)**:
+- New **Phase 6: Google Cloud + Play External Provisioning (reusable)** — 7 tasks (6.1–6.7)
+- Built broad/reusable per user request: `google/provisioning/<product>/` convention + shared schema so future requests need minimal readjustment
+- Executor: gcloud CLI auth under info@hylmar.eu
+- Source: user request + input doc
+
+**Reality flags**:
+- 6.4: general Web OAuth client creation via gcloud/API is limited → consent screen + Web client likely console under info@hylmar.eu; gcloud does project + API enablement; result recorded
+- 6.5: $25 Play dev account + identity verification (days) → may land pending_verification
+- 6.6→6.5: D1 (`cz.` vs `com.audory.app`) must be resolved before immutable package name is created
+
+**Next Session**:
+- Start Task 6.1 — install + configure gcloud, authenticate info@hylmar.eu
+- current_task set to 6.1
+
+---
+
 <!-- Sessions are prepended above this line -->

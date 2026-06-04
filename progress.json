@@ -247,11 +247,83 @@
           "notes": "Budget $100/month, 4 notifications: ACTUAL at 20%/50%/100% + FORECASTED at 100%, subscriber info@hylmar.eu. May 2026 spend at creation: $42.68 (post-incident)."
         }
       ]
+    },
+    "phase_6_google_provisioning": {
+      "name": "Google Cloud + Play External Provisioning (reusable)",
+      "status": "pending",
+      "added_reason": "User request: provision Google Cloud OAuth + Google Play for 'Audory' (input/external-google-cloud-and-play-setup.md), built as a broad reusable capability so future external Google setup requests need minimal readjustment.",
+      "executor": "gcloud CLI auth under info@hylmar.eu (greenfield — info@hylmar.eu had no GCP projects/credentials at start)",
+      "convention": "google/provisioning/<product>/ folder per request; shared schema in google/provisioning/schema.md",
+      "tasks": [
+        {
+          "id": "6.1",
+          "name": "Install & configure gcloud CLI; authenticate info@hylmar.eu (+ ADC); document the auth pattern (reusable for any owner account)",
+          "status": "pending",
+          "size": "small",
+          "verify": "gcloud auth list shows info@hylmar.eu ACTIVE; gcloud config get-value account == info@hylmar.eu",
+          "added_reason": "No gcloud installed and no auth at session start; required base for all other Phase 6 tasks",
+          "notes": "Document install + `gcloud auth login` + `gcloud auth application-default login` flow generically so any owner account can be used for future requests."
+        },
+        {
+          "id": "6.2",
+          "name": "Define reusable provisioning schema — input-request format + output deliverables JSON template, parameterized by product/account/redirect URIs",
+          "status": "pending",
+          "size": "small",
+          "verify": "google/provisioning/schema.md and google/provisioning/_template.deliverables.json exist",
+          "added_reason": "Reusability backbone so future external Google requests drop in with minimal change",
+          "notes": "Generalize from input/external-google-cloud-and-play-setup.md: product/brand, owner Google account, Cognito redirect URIs (dev/staging/prod), scopes, Android package name, Part A (OAuth) + Part B (Play) deliverables."
+        },
+        {
+          "id": "6.3",
+          "name": "Create 'audory' GCP project under info@hylmar.eu + enable required APIs; record in gcp-projects.json & accounts.json",
+          "status": "pending",
+          "size": "small",
+          "verify": "gcloud projects describe <audory-project-id> returns lifecycleState ACTIVE; info@hylmar.eu gcp_projects updated in google/accounts.json",
+          "added_reason": "Part A1 of the request — base project for the OAuth client",
+          "notes": "Project name 'audory'. Record Project ID. Append project to gcp-projects.json and to info@hylmar.eu account in accounts.json (currently gcp_projects: [])."
+        },
+        {
+          "id": "6.4",
+          "name": "Part A: OAuth consent screen (External; openid/email/profile; test user) + Web OAuth client 'audory-cognito-dev' with Cognito idpresponse redirect URI; record Client ID (secret out-of-band)",
+          "status": "pending",
+          "size": "medium",
+          "verify": "google/provisioning/audory/oauth.json has client_id, redirect_uri https://audory-dev-030062527147.auth.eu-west-1.amazoncognito.com/oauth2/idpresponse, consent screen status",
+          "added_reason": "Part A core — unblocks Audory task 9.0b (Cognito Google IdP)",
+          "notes": "gcloud/API support for general Web OAuth clients is limited; consent screen + Web client likely done in console under info@hylmar.eu, gcloud used for project + API enablement, result recorded here. Authorized domain amazoncognito.com. Build client so more redirect URIs (staging/prod) can be added later. Client SECRET must NOT be committed — out-of-band to AWS Secrets Manager."
+        },
+        {
+          "id": "6.5",
+          "name": "Part B: Play Console — dev account check, create app cz.audory.app (per D1), Play App Signing, internal-testing track; record SHA-1/SHA-256",
+          "status": "pending",
+          "size": "medium",
+          "verify": "google/provisioning/audory/play.json populated (or status pending_verification) with package_name, signing SHA-1/SHA-256, internal_testing_track",
+          "added_reason": "Part B core — Android Auto app publishing setup",
+          "notes": "Depends on 6.6/D1 (package name is immutable once app created). Needs $25 Play developer account + identity verification (can take days) → may legitimately land pending_verification. Capture Android Auto declaration requirements for the app-code team. No Play CLI for setup; Play Developer API only after manual creation."
+        },
+        {
+          "id": "6.6",
+          "name": "Resolve owner decisions D1-D4 (package name, store languages, publishing pipeline, account type)",
+          "status": "pending",
+          "size": "small",
+          "verify": "google/provisioning/audory/decisions.json has D1, D2, D3, D4 answered",
+          "added_reason": "Request requires owner decisions before Play setup can finalize",
+          "notes": "D1 (cz.audory.app vs com.audory.app) must be answered before 6.5 creates immutable package name. D2 languages, D3 manual vs Play Developer API, D4 organization vs individual account."
+        },
+        {
+          "id": "6.7",
+          "name": "Produce filled 'Deliverables to return' hand-back doc (unblocks Audory 9.0b); secret-handling note",
+          "status": "pending",
+          "size": "small",
+          "verify": "google/provisioning/audory/deliverables.md complete with Part A + Part B + decisions tables filled (no secrets in git)",
+          "added_reason": "Closes the loop with the requesting Audory backend agent",
+          "notes": "Mirror the 'Deliverables to return' tables from the input doc. Client ID + Project ID + SHA fingerprints in doc; client secret delivered out-of-band only."
+        }
+      ]
     }
   },
 
-  "current_task": null,
-  "current_phase": null,
+  "current_task": "6.1",
+  "current_phase": "phase_6_google_provisioning",
 
   "git_repos": {
     "main": {
