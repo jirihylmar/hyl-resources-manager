@@ -41,6 +41,9 @@ If you ever read this skill markdown in any project and the binary isn't install
 | `/syndicate-refresh-remote broadcasting-orchestration aps-brm-products-playbook` | Uses both repos. Skips the "which repos" prompt. |
 | `/syndicate-refresh-remote all` | Sync **every** top-level repo under `~/` (confirms count first — typically ~60–70 repos). |
 | `/syndicate-refresh-remote hyl-*` | Glob match; lists candidates and asks to confirm. |
+| `/syndicate-refresh-remote --status` | **Drift dashboard mode** — informational only, never mutates. Surveys every repo under `~/` on local and the box, prints a table showing per-repo LOCAL/BOX/DRIFT state. Project-agnostic: the answer is the same regardless of which playbook you invoke from. |
+| `/syndicate-refresh-remote --status --json` | Same survey, JSON output on stdout (chatter goes to stderr). For tooling/agents that want to consume drift state. |
+| `/syndicate-refresh-remote --status syndicate-remote app-foo` | Status of only the named repos. |
 
 When user input is ambiguous or incomplete, the skill **asks** rather than assumes.
 
