@@ -53,7 +53,46 @@ When multiple agents work in the same repo simultaneously, each agent is assigne
 - Read `progress.json` to identify current state and context hints
 - Read last entry in `session_notes.md` for recent context
 
-### 2. Detect Project State
+### 2. Build Capability Inventory (before you build anything)
+
+**Why this step exists — the "reinventing the wheel" failure:** agents hand-rebuild functionality that already ships as a project command, because they trust a command list written in `CLAUDE.md` prose. Hand-maintained lists drift the moment a command is renamed, added, or is project-specific. The ONLY source of truth is the live filesystem: `.claude/commands/*.md`. Derive your toolset from the directory every session — never from memory or from prose.
+
+**Enumerate the live inventory (always safe; never hardcode a list):**
+
+```bash
+for f in .claude/commands/*.md; do
+  [ -e "$f" ] || continue
+  name=$(basename "$f" .md)
+  desc=$(sed -n 's/^description:[[:space:]]*//p' "$f" | head -1)
+  printf '/%s\t%s\n' "$name" "${desc:-(no description)}"
+done
+```
+
+This answers **"does a command for this already exist / am I aware of it?"** — including project-specific commands the stale prose may omit. It does NOT answer **"is this command the latest canonical version?"** — version reconciliation against central is `/distribute-defaults`'s job, not yours. Do not edit command file contents here. (Output is display-only; descriptions may contain `—`/tabs, so don't re-parse it.)
+
+**Bind yourself to these rules:**
+
+- **Prefer-existing rule.** Before building, scripting, or hand-rolling ANY capability, scan the inventory for a command whose name/description covers the need. If one matches, invoke it instead of doing the work ad-hoc — reinventing an existing command is a defect, not initiative.
+- **Open before you reject.** If a command's name plausibly fits but its one-line description is terse, READ that command file before concluding "mine is different." This closes the most common reinvention loophole.
+- **Re-derive, don't recall.** Consult the live directory each session; never act on a remembered list or `CLAUDE.md` prose.
+
+**Reconcile `CLAUDE.md` only if it has DRIFTED to a hardcoded list (authorized, scoped, idempotent):**
+
+The correct shape of the `CLAUDE.md` commands section is a **list-free prose pointer** to `.claude/commands/` — NOT an enumerated list (a hand-maintained list is the disease this step cures). Detect the section by a heading matching `^##[[:space:]]+Commands` (tolerant of `## Commands`, `## Commands (N total)`, `## Commands Available (N total)`), spanning to the next `## ` heading or `---`.
+
+- **If that section is already list-free prose → change NOTHING and do NOT commit.** This is the normal case; the step is a no-op.
+- **If — and only if — it contains a hardcoded command list** (e.g. a fenced block of `/cmd # …` lines), it has drifted. Self-heal by **replacing the enumerated list with the prose pointer** (no command names — heal toward the directory, never regenerate a list). Touch ONLY that section; touch no other part of `CLAUDE.md` and no other file.
+- **Concurrency guard.** Other agents may be editing `CLAUDE.md` concurrently. Only heal when `CLAUDE.md` has no other unstaged changes (`git diff --name-only` does not list it before your edit), and commit by pathspec so you never sweep another agent's pre-staged files:
+
+```bash
+git commit CLAUDE.md -m "<task-id>: replace stale hardcoded command list with live-inventory pointer"
+```
+
+Never `git add -A` / `git add .` (see Multi-Agent Discipline → "Commit only files related to your task"). If the concurrency guard fails, skip the heal and report the drift in the Session Ready block instead.
+
+**Carry the inventory forward:** include the enumerated list in the Step 9 "Session Ready" report so the prefer-existing reflex stays in working context past session start.
+
+### 3. Detect Project State
 
 #### If no `progress.json` exists:
 ```
@@ -88,9 +127,9 @@ Would you like me to:
 Use AskUserQuestion.
 
 #### If tasks exist:
-Proceed to session handoff (Step 3).
+Proceed to session handoff (Step 4).
 
-### 3. Present Session Handoff
+### 4. Present Session Handoff
 
 ```
 ## Session Handoff
@@ -126,7 +165,7 @@ Proceed to session handoff (Step 3).
 - If yes, follow `/add-work` workflow
 - If no, just note in session_notes.md for later
 
-### 4. Verify AWS Account (CRITICAL)
+### 5. Verify AWS Account (CRITICAL)
 
 **Only if user chose Continue**
 
@@ -137,7 +176,7 @@ Proceed to session handoff (Step 3).
 - **STOP if account ID does not match** `context_hints.aws_account`
 - Confirm region matches `context_hints.aws_region`
 
-### 5. Pre-Work Verification (MANDATORY)
+### 6. Pre-Work Verification (MANDATORY)
 
 Before starting NEW work, verify last completed task still works.
 
@@ -159,7 +198,7 @@ Run its verification step:
 **If verification PASSES:**
 - Proceed to current task
 
-### 6. Check Context Budget
+### 7. Check Context Budget
 
 Run `/context` to check usage:
 - **<40%**: Start any task
@@ -167,7 +206,7 @@ Run `/context` to check usage:
 - **60-80%**: Finish current, then wrap up
 - **>80%**: Only update progress.json, end session
 
-### 7. Check Git Repo Status
+### 8. Check Git Repo Status
 
 ```bash
 git status
@@ -180,7 +219,7 @@ Update `git_repos` status in progress.json:
 - `needs_push` - local commits not pushed
 - `local_only` - no remote configured
 
-### 8. Report Ready Status
+### 9. Report Ready Status
 
 ```
 ## Session Ready
@@ -272,3 +311,4 @@ If you (Claude) used `EnterPlanMode` during a session:
 - **ALWAYS** verify account before any AWS operation
 - **ALWAYS** verify last task before starting new work
 - **NEVER** assume discussion equals authorization
+- **BEFORE** writing any script, loop, or multi-step procedure, STOP and check the live `.claude/commands/` inventory for an existing command — prefer it over ad-hoc work
