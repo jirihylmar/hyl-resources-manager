@@ -47,6 +47,37 @@ When multiple agents work in the same repo simultaneously, each agent is assigne
 
 ## Steps
 
+### 0. Sync to Latest (FF-pull, before any work begins)
+
+**Run this FIRST — before reading orchestration files, before the capability inventory, before AWS verify (Step 5), and before pre-work verify (Step 6).** Those steps all read code or `progress.json`, and a pull can change them; syncing first means every downstream step operates on origin-latest, not a stale tree.
+
+**Why this is a different axis from Multi-Agent Discipline above.** That section governs many agents sharing ONE checkout. This step governs the SAME repo checked out in multiple LOCATIONS — local WSL, the remote dev box (synced via `/syndicate-refresh-remote`, configured by `box.json`), and occasionally-online offline machines — all sharing ONE origin. A commit pushed from any location lands in origin; a checkout that has not pulled is now stale. Surgical Edits cannot save you if the whole file you are editing is three commits behind origin.
+
+**Policy — identical to `/distribute-defaults`: fast-forward only, skip + report, never force.** Never merge, never rebase, never reset, never `--force`. Any repo that cannot fast-forward (dirty tree, diverged, detached HEAD, no upstream, or origin unreachable/offline) is left untouched and reported; resolve divergence with `/syndicate-refresh-remote`. If the repo carrying your task cannot fast-forward, STOP and surface it in the Step 9 report before doing the task — working a stale/diverged checkout risks an unpushable divergence.
+
+For the orchestration repo and each present sub-repo, fetch then fast-forward only:
+
+```bash
+sync_ff() {  # $1=dir ('.' for orchestration), $2=label
+  git -C "$1" fetch --quiet 2>/dev/null || { echo "SKIP $2: origin unreachable (offline?) — proceeding on current checkout"; return; }
+  git -C "$1" rev-parse --abbrev-ref --symbolic-full-name @{u} >/dev/null 2>&1 \
+    || { echo "SKIP $2: no upstream (local-only) — nothing to pull"; return; }
+  [ -z "$(git -C "$1" status --porcelain)" ] \
+    || { echo "SKIP $2: working tree dirty — commit/stash or use /syndicate-refresh-remote first"; return; }
+  if git -C "$1" merge-base --is-ancestor HEAD @{u} 2>/dev/null; then
+    git -C "$1" merge --ff-only @{u} && echo "OK   $2: fast-forwarded to origin-latest"
+  else
+    echo "SKIP $2: diverged / non-fast-forward — DO NOT force; resolve with /syndicate-refresh-remote"
+  fi
+}
+sync_ff "." orchestration
+for dir in infrastructure backend frontend testing; do
+  [ -d "$dir/.git" ] && sync_ff "$dir" "$dir"
+done
+```
+
+A brand-new Phase-0 project whose orchestration repo has no upstream yet is local-only — that is normal; `no upstream` means nothing to pull, so proceed. Carry each repo's sync result into the Step 9 "Session Ready" report. (`infrastructure backend frontend testing` matches the existing Step 8 list; the long-term source of truth is `progress.json` `git_repos`.)
+
 ### 1. Read Orchestration Files
 
 - Read `CLAUDE.md` for project context, rules, and conventions
@@ -244,10 +275,12 @@ Update `git_repos` status in progress.json:
 - Size: [small/medium]
 
 ### Repos Status
-| Repo | Status |
-|------|--------|
-| orchestration | pushed/needs_push |
-| infrastructure | ... |
+| Repo | Sync (Step 0) | Status |
+|------|---------------|--------|
+| orchestration | FF-pulled / up-to-date / DIVERGED / offline / local-only | pushed/needs_push |
+| infrastructure | ... | ... |
+
+(If any repo shows DIVERGED, resolve it with /syndicate-refresh-remote before starting the task; if it shows offline, note the stale-checkout risk and re-sync when online.)
 
 ### Ready to proceed with Task X.Y
 ```

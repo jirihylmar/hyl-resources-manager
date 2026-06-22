@@ -291,10 +291,17 @@ for dir in infrastructure backend frontend testing; do
 done
 ```
 
-### 10. Commit Orchestration Changes
+### 10. Commit and Push Your Work (every repo you changed this session)
+
+Commit and **FF-push only the work YOU did this session — the repos and files you changed for your task, and nothing else.** This is Axis B (cross-checkout publication): other machines (the box, offline computers) only see your work once it reaches the shared origin, so leaving a repo you changed committed-but-unpushed is exactly the stale-checkout trap that `/start-session` Step 0 then has to skip on the next machine. It is distinct from the same-checkout Multi-Agent Discipline above.
+
+**Two firewalls govern this step:**
+1. **Scope to your own work.** Commit by named paths only — never `git add -A` / `git add .` — and only in repos you actually modified for your task. Do not sweep unrelated dirty files, and do not commit or push a repo you did not touch. This is the Multi-Agent Discipline rule "commit only files related to your task," applied across repos.
+2. **Push is publish, not deploy** (see the blockquote below).
+
+**Commit the orchestration repo (scoped to its two files, task-ID message):**
 ```bash
-git add progress.json session_notes.md
-git commit -m "progress: complete task X.Y - [brief description]
+git commit -- progress.json session_notes.md -m "progress: complete task X.Y - [brief description]
 
 Completed:
 - Task X.Y: [name]
@@ -302,8 +309,43 @@ Completed:
 Next: Task X.Z
 
 🤖 Generated with Claude Code"
-git push
 ```
+
+**Commit each sub-repo you changed (scoped by pathspec — never `git add -A`):**
+```bash
+for dir in infrastructure backend frontend testing; do
+  [ -d "$dir/.git" ] || continue
+  [ -n "$(git -C "$dir" status --porcelain)" ] || continue   # skip repos you did not touch
+  echo "=== $dir: review, then commit ONLY your task's files ==="
+  git -C "$dir" status --short
+  # git -C "$dir" commit -- <your-changed-files> -m "task X.Y: [what changed in $dir]"
+done
+```
+
+**FF-push every repo you committed — fast-forward only; skip + report; never force (same policy as `/start-session` Step 0 and `/distribute-defaults`):**
+```bash
+push_ff() {  # $1=dir, $2=label; commit BEFORE calling
+  git -C "$1" rev-parse --abbrev-ref --symbolic-full-name @{u} >/dev/null 2>&1 \
+    || { echo "SKIP $2: no upstream (local-only) — committed, NOT pushed"; return; }
+  git -C "$1" fetch --quiet 2>/dev/null || { echo "SKIP $2: origin unreachable (offline) — committed locally, push when online"; return; }
+  if git -C "$1" push --quiet 2>/dev/null; then
+    echo "OK   $2: pushed to origin (commits published; NOT built or deployed)"
+  else
+    echo "SKIP $2: non-fast-forward — DO NOT force, DO NOT 'git pull'/merge to make it succeed; commit is safe locally; resolve with /syndicate-refresh-remote, then re-push"
+  fi
+}
+push_ff "." orchestration
+for dir in infrastructure backend frontend testing; do
+  [ -d "$dir/.git" ] && push_ff "$dir" "$dir"
+done
+```
+
+Because Step 0 fast-forwarded you to origin-latest at session start and you commit only your task's files, the commits you push are your own. (If a co-agent on this same checkout left an unpushed commit beneath yours, `git push` will publish theirs too — note it in the report; it is committed work, not lost, but it was their publish decision.)
+
+> **CRITICAL — push is PUBLISH, not DEPLOY. Never conflate the two.**
+> A successful `git push` means exactly one thing: **your commits now exist on origin.** It does NOT mean a build ran, an artifact was produced, a deployment happened, or any live/running system changed. SOME repos have CI that builds or deploys on push to certain branches; MANY do not — and you cannot reliably tell which. **Treat build and deploy as a SEPARATE step you claim ONLY when you actually ran it and its own verify passed** (the task's `verify`/`verify_result` field is where that evidence lives). In your report and notes, say **"pushed to origin"** — say "built", "deployed", "shipped", or "live" ONLY with independent evidence. If you ran no build/deploy this session, state that plainly.
+
+Mark a repo's `git_repos` status `pushed` only after a confirmed FF-push; a repo skipped for non-FF stays `needs_push` and is surfaced in the Step 12 report. Work is never lost: an unpushable commit stays safe locally and is flagged, never forced and never discarded.
 
 ### 11. Extract Session Knowledge
 
@@ -450,17 +492,22 @@ git push
 Phase 2: 3/5 tasks complete
 Total: 8/20 tasks complete (40%)
 
-### Repository Status
-| Repo | Status | Notes |
-|------|--------|-------|
-| orchestration | pushed | ✓ |
-| backend | needs_push | 2 files changed |
+### Repository Status (publish state only — NOT build/deploy state)
+| Repo | Pushed to origin? | Notes |
+|------|-------------------|-------|
+| orchestration | yes (FF) | commits published; not built/deployed |
+| backend | SKIPPED (non-FF) | diverged — committed locally, resolve via /syndicate-refresh-remote then re-push |
+
+"Pushed to origin" means the commits reached the shared origin and other machines can now FF-pull them. The pushes above updated origin only — no CI ran, nothing was built, and no live system changed. A build/deploy is a SEPARATE step, claimed only if you ran it and verified it (state it explicitly, or say "no build/deploy was run").
 
 ### Next Task
 - Task 2.4: [name] (repo: [repo])
 
-### Action Required
-- Push backend repo: `cd backend && git push`
+### Action Required (only if something could not be published, or a deploy is expected)
+- Diverged repos: resolve with /syndicate-refresh-remote, then re-push. (Your commit is safe locally.)
+- Offline / local-only repos: re-push when origin is reachable / after adding an origin.
+- Deploy expected but not run: run the deploy command and verify it separately — pushing did not perform it.
+- (If every repo shows pushed / nothing-to-push and no deploy is pending: no action required.)
 ```
 
 ---
