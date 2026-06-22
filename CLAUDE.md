@@ -21,9 +21,9 @@ Infrastructure and resource management for AWS accounts and services - managing 
 | JiHy__d4m__975 | `975050190402` | eu-central-1 | `mcp__aws-d4m-975__call_aws` |
 | JiHy__vsb__030 | - | - | `mcp__aws-vsb-030__call_aws` |
 | JiHy__brm__734 | - | - | `mcp__aws-brm-734__call_aws` |
-| CAG (JiHy__hylmar__126) | `126697143436` | eu-central-1 | _pending — `mcp-126697143436` IAM ready, connector not yet registered_ |
+| CAG (JiHy__hylmar__126) | `126697143436` | eu-central-1 | `mcp__aws-cag__call_aws` _(active after Claude restart)_ |
 
-> CAG is a member of the Hylmar org (`o-8i3fdvbxq7`, master `287773673380`). Until its MCP connector is registered, manage it via assumed `OrganizationAccountAccessRole` from profile `JiHy__hylmar__287`.
+> CAG is a member of the Hylmar org (`o-8i3fdvbxq7`, master `287773673380`). The `aws-cag` connector is registered in `~/.claude.json` and authenticates as IAM user `JiHy__hylmar__126` (profile of the same name). It becomes available as `mcp__aws-cag__call_aws` after restarting Claude Code. Fallback: assume `OrganizationAccountAccessRole` from profile `JiHy__hylmar__287`.
 
 ## Commands
 ```

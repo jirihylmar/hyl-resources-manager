@@ -33,14 +33,16 @@
 
 ## MCP connector (CAG)
 
-- IAM user `mcp-126697143436` + managed policy `MCP-Service-Access` (athena/glue/dynamodb/s3/logs/metrics/lambda-read/sts), access key in Secrets Manager `cag/mcp/mcp-126697143436`.
-- **Pending (owner/harness):** register the `aws-cag` connector in Claude config and restart, then verify `sts get-caller-identity` = 126697143436.
+- Connector **`aws-cag`** registered in `~/.claude.json` (`type stdio`, `awslabs.aws-api-mcp-server`, env `AWS_PROFILE=JiHy__hylmar__126`, `AWS_REGION=eu-central-1`).
+- **Authorized with the created admin user** `JiHy__hylmar__126` (AdministratorAccess) per owner instruction — profile written to `~/.aws/credentials` from Secrets Manager `cag/admin/JiHy__hylmar__126`. Verified: profile authenticates as `user/JiHy__hylmar__126`.
+- Least-priv `mcp-126697143436` + `MCP-Service-Access` (key in `cag/mcp/...`) still exist but are **not** used by the connector.
+- **Activates as `mcp__aws-cag__call_aws` after a Claude Code restart.** Config backups: `~/.claude.json.bak-cag`, `~/.aws/credentials.bak-cag`.
 
 ## Open owner follow-ups
 
 1. ~~Create Workspace alias `aws-126@hylmar.eu`~~ ✅ done 2026-06-22; budget alerts repointed to it.
 2. ~~Switch CAG **root sign-in email** to `aws-126@hylmar.eu`~~ ✅ done 2026-06-22 via Account Mgmt API (`start`/`accept-primary-email-update`); verified; `info+cag@hylmar.eu` removed.
-3. Register `aws-cag` MCP connector + restart.
+3. ~~Register `aws-cag` MCP connector~~ ✅ done — registered in `~/.claude.json` (profile `JiHy__hylmar__126`). **Restart Claude Code** to load `mcp__aws-cag__call_aws`.
 4. (Optional) EUR billing currency → recreate 20 EUR budget.
 
 ## SSO access (added)
