@@ -9,3 +9,29 @@ client_secret*.json
 
 # Local input drop zone may contain downloaded secrets
 input/client_secret*.json
+
+# >>> syndicate artifact-guard baseline (managed by /distribute-defaults; edit central, not here) >>>
+# Regenerable build/deploy artifacts — keep in sync with .claude/hooks/pre-commit.
+# NOTE: .gitignore does NOT untrack files already in git. An artifact already tracked
+# must be removed with `git rm --cached <path>` (these patterns only stop FUTURE staging).
+# The pre-commit hook is the mechanical backstop; intentional exceptions go in
+# .claude/hooks/artifact-guard.allow (and an un-ignore line below if needed).
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.tar.bz2
+*.jar
+*.war
+*.whl
+lambda-deployment.zip
+lambda-function.zip
+.terraform/
+*.tfstate
+*.tfstate.backup
+target/
+*.class
+*.o
+*.so
+*.dylib
+# <<< syndicate artifact-guard baseline <<<

@@ -78,6 +78,32 @@ done
 
 A brand-new Phase-0 project whose orchestration repo has no upstream yet is local-only — that is normal; `no upstream` means nothing to pull, so proceed. Carry each repo's sync result into the Step 9 "Session Ready" report. (`infrastructure backend frontend testing` matches the existing Step 8 list; the long-term source of truth is `progress.json` `git_repos`.)
 
+### 0.5. Ensure the Commit Guard Is Armed (idempotent; never creates files)
+
+A mechanical pre-commit guard (`.claude/hooks/pre-commit`) blocks `git add -A` from sweeping build artifacts / oversized blobs into history — enforced by git on **every** commit, so it holds even when an agent forgets the scoped-commit rule. But it only fires once `core.hooksPath` is set, which is **repo-local config that does NOT travel with a clone**. Re-affirm it every session, right after Step 0 and **before any commit this session makes** (e.g. the Step 2 CLAUDE.md self-heal).
+
+This step only ARMS an already-delivered guard — it never creates or commits the hook file (delivery is `/distribute-defaults`'s job). For the orchestration repo and each present sub-repo:
+
+```bash
+arm_guard() {  # $1=dir
+  local hp="$1/.claude/hooks/pre-commit"
+  if [ -f "$hp" ]; then
+    chmod +x "$hp" 2>/dev/null
+    [ "$(git -C "$1" config --get core.hooksPath 2>/dev/null)" = ".claude/hooks" ] \
+      || git -C "$1" config core.hooksPath .claude/hooks
+    echo "OK   $1: commit guard armed (core.hooksPath=.claude/hooks)"
+  else
+    echo "WARN $1: no .claude/hooks/pre-commit — run /distribute-defaults to deliver it (not creating it here)"
+  fi
+}
+arm_guard "."
+for dir in infrastructure backend frontend testing; do
+  [ -d "$dir/.git" ] && arm_guard "$dir"
+done
+```
+
+Report each repo's armed/absent result in the Step 9 "Session Ready" block. (Re-running this is a no-op once `core.hooksPath` is set.)
+
 ### 1. Read Orchestration Files
 
 - Read `CLAUDE.md` for project context, rules, and conventions

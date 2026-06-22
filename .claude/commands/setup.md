@@ -93,6 +93,15 @@ cp syndicate-playbooks-examples/_project-template/.claude/commands/*.md .claude/
 
 # Copy CLAUDE.md template
 cp syndicate-playbooks-examples/_project-template/CLAUDE.md.template ./CLAUDE.md
+
+# Install the commit guard (mechanical protection against `git add -A` sweeping
+# build artifacts) + the baseline .gitignore, and arm it for this clone.
+mkdir -p .claude/hooks
+cp syndicate-playbooks-examples/_project-template/.claude/hooks/pre-commit .claude/hooks/
+cp -n syndicate-playbooks-examples/_project-template/.claude/hooks/artifact-guard.allow .claude/hooks/ 2>/dev/null || true
+chmod +x .claude/hooks/pre-commit          # BEFORE git add → the index records mode 100755
+cp syndicate-playbooks-examples/_project-template/.gitignore ./.gitignore
+git config core.hooksPath .claude/hooks    # repo-local config — arms the guard for this clone
 ```
 
 ### 4. Customize for This Project
@@ -157,7 +166,10 @@ cdk bootstrap aws://{account}/{region}
 ### 9. Commit Orchestration Repo
 
 ```bash
-git add -A
+# Scoped add by named paths — NEVER `git add -A` (that is the exact pattern that
+# once swept a 36MB build zip into history). List only the framework paths that
+# exist; drop any that don't.
+git add -- CLAUDE.md progress.json IMPLEMENTATION_PLAN.md session_notes.md .gitignore .claude/ tasks/ input/
 git commit -m "setup: Initialize from {playbook} template
 
 Template: {playbook}
@@ -183,8 +195,15 @@ Check what exists:
 ### 2. Copy Commands
 
 ```bash
-mkdir -p .claude/commands
+mkdir -p .claude/commands .claude/hooks
 cp syndicate-playbooks-examples/_project-template/.claude/commands/*.md .claude/commands/
+
+# Commit guard (mechanical protection against `git add -A` sweeping build artifacts)
+cp syndicate-playbooks-examples/_project-template/.claude/hooks/pre-commit .claude/hooks/
+cp -n syndicate-playbooks-examples/_project-template/.claude/hooks/artifact-guard.allow .claude/hooks/ 2>/dev/null || true
+chmod +x .claude/hooks/pre-commit          # BEFORE git add → the index records mode 100755
+cp -n syndicate-playbooks-examples/_project-template/.gitignore ./.gitignore 2>/dev/null || true   # seed only if absent (don't clobber an existing one)
+git config core.hooksPath .claude/hooks
 ```
 
 ### 3. Create progress.json (if missing)
@@ -220,7 +239,7 @@ Copy template and fill in values.
 ### 5. Commit Changes
 
 ```bash
-git add .claude/ progress.json CLAUDE.md
+git add -- .claude/ progress.json CLAUDE.md .gitignore
 git commit -m "setup: Add playbook commands to existing project
 
 🤖 Generated with Claude Code"

@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+# .claude/hooks/pre-commit — syndicate framework commit guard (MECHANICAL).
+#
+# Git runs this on EVERY `git commit`, regardless of how files were staged, so it
+# catches the outcome of `git add -A` no matter what the agent remembered. It
+# REJECTS a commit whose staged set NEWLY ADDS a build artifact or an oversize
+# blob. It NEVER inspects modifications/deletions of already-tracked files — that
+# is what lets a legitimately-tracked large data file (e.g. a 34MB curator .tsv)
+# keep committing while a brand-new 36MB lambda-deployment.zip is blocked.
+#
+# CANONICAL: edit ONLY at _project-template/.claude/hooks/pre-commit in
+# syndicate-playbooks-examples, then run /distribute-defaults. Do NOT hand-edit
+# project copies — the per-project variance point is artifact-guard.allow.
+#
+# Wired via repo-local `git config core.hooksPath .claude/hooks` (set by /setup,
+# the distribute engine, and re-affirmed by /start-session). Never copied into
+# .git/hooks (that would rot and not travel with the repo).
+#
+# Escape valves (so the guard is not bypassed wholesale):
+#   - .claude/hooks/artifact-guard.allow : committed glob allowlist (the right way).
+#   - git commit --no-verify             : standard one-off override (rare, audited).
+set -u
+
+# Size backstop for UN-patterned blobs. High on purpose: true artifacts match the
+# patterns below; a low threshold only creates false positives on legit large data.
+# Override per-repo with env GUARD_MAX_BYTES.
+MAX_BYTES="${GUARD_MAX_BYTES:-26214400}"   # 25 MiB
+
+# Base to diff against; empty-tree sha when there is no HEAD yet → works on the
+# very first commit.
+if git rev-parse -q --verify HEAD >/dev/null 2>&1; then
+  BASE="HEAD"
+else
+  BASE="$(git hash-object -t tree /dev/null)"   # 4b825dc642cb6eb9a060e54bf8d69288fbee4904
+fi
+
+# Allowlist content: read from the INDEX when it is staged (so an entry added in
+# THIS commit is authoritative and travels with the commit), else the working
+# tree, else empty. Avoids the staged-vs-worktree exemption race.
+allow_content() {
+  if git diff --cached --name-only -- .claude/hooks/artifact-guard.allow 2>/dev/null | grep -q .; then
+    git show ":.claude/hooks/artifact-guard.allow" 2>/dev/null
+  elif [ -f .claude/hooks/artifact-guard.allow ]; then
+    cat .claude/hooks/artifact-guard.allow 2>/dev/null
+  fi
+}
+
+# Glob-match a path against the allowlist (gitignore-style globs; # comments + blanks ok).
+is_allowed() {
+  local path="$1" line
+  while IFS= read -r line; do
+    line="${line%$'\r'}"                      # tolerate CRLF allowlists
+    case "$line" in ''|\#*) continue ;; esac
+    # In `case`, * matches across '/', so docs/phase-*/*.tsv works as intended.
+    # shellcheck disable=SC2254
+    case "$path" in
+      $line) return 0 ;;
+      */$line) return 0 ;;                    # also match a bare basename glob anywhere
+    esac
+  done <<EOF
+$(allow_content)
+EOF
+  return 1
+}
+
+# Artifact patterns matched at ANY size (case-insensitive).
+ARTIFACT_EXT='\.(zip|tar|tar\.gz|tgz|tar\.bz2|jar|war|whl|egg|pyc|pyo|class|tfstate|tfstate\.backup)$'
+ARTIFACT_DIR='(^|/)(__pycache__|node_modules|dist|build|cdk\.out|\.terraform|target|\.pytest_cache|\.venv|venv|coverage)/'
+ARTIFACT_EGG='(^|/)[^/]*\.egg-info(/|$)'
+# Compiled-object / opaque-binary patterns — GATED behind size so a small legit
+# vendored lib or binary test fixture is not blocked.
+ARTIFACT_BIN='\.(so|o|dylib|dll|exe|bin)$'
+
+violations=""
+
+# Enumerate ONLY newly-ADDED staged paths. --name-only -z --diff-filter=A emits
+# plain NUL-separated paths (no status field, no rename pairs) → unambiguous parse.
+while IFS= read -r -d '' path; do
+  [ -n "$path" ] || continue
+  is_allowed "$path" && continue
+
+  reason=""
+  if printf '%s' "$path" | grep -qiE "$ARTIFACT_EXT" \
+     || printf '%s' "$path" | grep -qiE "$ARTIFACT_DIR" \
+     || printf '%s' "$path" | grep -qiE "$ARTIFACT_EGG"; then
+    reason="matches build-artifact pattern"
+  fi
+
+  if [ -z "$reason" ]; then
+    sz="$(git cat-file -s ":$path" 2>/dev/null || echo 0)"
+    if printf '%s' "$path" | grep -qiE "$ARTIFACT_BIN" && [ "${sz:-0}" -gt "$MAX_BYTES" ]; then
+      reason="compiled/binary > $((MAX_BYTES/1048576)) MiB"
+    elif [ "${sz:-0}" -gt "$MAX_BYTES" ]; then
+      reason="$(( sz / 1048576 )) MiB > $((MAX_BYTES/1048576)) MiB limit"
+    fi
+  fi
+
+  [ -n "$reason" ] && violations="${violations}  ${path}  (NEW, ${reason})
+"
+done < <(git diff --cached --name-only -z --diff-filter=A "$BASE" 2>/dev/null)
+
+if [ -n "$violations" ]; then
+  {
+    echo "COMMIT BLOCKED by .claude/hooks/pre-commit (framework commit guard)."
+    echo "These NEWLY-ADDED files look like build artifacts or are oversize:"
+    printf '%s' "$violations"
+    echo "Build artifacts are regenerable and must never enter git history. This guard"
+    echo "exists because a 'git add -A' once swept a 36MB lambda-deployment.zip onto a"
+    echo "shared branch. Already-tracked files are NEVER blocked — only new adds."
+    echo ""
+    echo "To proceed, choose ONE:"
+    echo "  1) Unstage it:       git restore --staged <path>   (then add it to .gitignore)"
+    echo "  2) Intentional data: add a glob line to .claude/hooks/artifact-guard.allow,"
+    echo "                       stage that change in THIS commit, then commit again"
+    echo "  3) One-off override: git commit --no-verify   (audited; prefer #2 if recurring)"
+    echo ""
+    echo "Commit by named paths (git commit -- <files>), never 'git add -A'."
+  } >&2
+  exit 1
+fi
+exit 0

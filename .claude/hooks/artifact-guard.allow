@@ -1,0 +1,16 @@
+# artifact-guard.allow — per-project allowlist for the commit guard (.claude/hooks/pre-commit).
+#
+# This is the SANCTIONED, version-controlled way to intentionally track a large or
+# binary asset that the guard would otherwise block — so that `git commit --no-verify`
+# stays a rare, deliberate one-off rather than muscle memory.
+#
+# One gitignore-style glob per line; '#' comments and blank lines are ignored.
+# In shell `case` matching, `*` spans '/', so a path glob like docs/phase-*/*.tsv works.
+# A bare basename glob (e.g. golden-corpus.bin) matches that basename in any directory.
+#
+# This file is project-OWNED: distribution seeds it only if missing, never overwrites.
+# The hook script itself is centrally owned — do not edit it locally.
+#
+# Examples (commented out):
+#   docs/phase-*/*.tsv        # intentional tracked curator data
+#   fixtures/*.bin            # binary test fixtures
