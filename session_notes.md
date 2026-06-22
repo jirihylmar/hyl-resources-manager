@@ -301,4 +301,28 @@ This file tracks session history for context continuity between Claude Code sess
 
 ---
 
+## Session: 2026-06-22 (continuation) — Phase 7 finalized + reusable skill
+
+**Completed after the initial batch**:
+- 7.7 ✅ SSO: Identity Center `d-9367ab04ac` (instance `ssoins-68043e6b5b6e0104`, eu-west-1, owned by mgmt 287) — assigned `AdministratorAccess` to user `jiri-hylmar` on CAG (new accounts get no assignment automatically). Portal now shows CAG.
+- 7.8 ✅ Root email switched `info+cag@` → **`aws-126@hylmar.eu`** via Account Mgmt API (`start`/`accept-primary-email-update`, owner OTP). Verified by get-primary-email + organizations describe-account. (Corrected earlier wrong belief that this is console-only.)
+- 7.5 ✅ Connector **`aws-cag`** registered in `~/.claude.json`, authorized with created admin user `JiHy__hylmar__126` (per owner). Both admin keys written to `~/.aws/credentials`; MiHy too. Activates as `mcp__aws-cag__call_aws` after Claude restart.
+- 7.9 ✅ Created reusable **`/provision-account`** skill (`.claude/commands/provision-account.md`) capturing the full flow + gotchas; listed in CLAUDE.md (command list + Project Skills) and README.
+
+**Verification**:
+| Task | Verify | Result |
+|------|--------|--------|
+| 7.7 | list-account-assignments CAG | PASSED (jiri-hylmar/AdminAccess) |
+| 7.8 | get-primary-email | PASSED (aws-126@hylmar.eu) |
+| 7.5 | profile auth | PASSED (user/JiHy__hylmar__126); MCP tool pends restart |
+| 7.9 | file exists + listed | PASSED |
+
+**Key learnings**: root email is API-changeable; AWS Budgets only accept the account billing currency (EUR rejected → 20 USD); console "API keys" ≠ IAM access keys; MCP connectors auth via `AWS_PROFILE` in `~/.aws/credentials`.
+
+**Open (non-blocking)**: restart Claude to load `aws-cag`; optional EUR billing-currency flip to make the budget exactly 20 EUR.
+
+**Phase 7 COMPLETE** (9/9 tasks).
+
+---
+
 <!-- Sessions are prepended above this line -->

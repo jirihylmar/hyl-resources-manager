@@ -48,12 +48,13 @@ session_notes.md             # session handoff notes
 ## Workflow
 
 ```
-/start-session      # begin work
-/update-progress    # save progress
-/add-work           # add tasks
-/check-aws          # verify AWS resources
+/start-session       # begin work
+/update-progress     # save progress
+/add-work            # add tasks
+/check-aws           # verify AWS resources
+/provision-account   # provision a new nested AWS member account end-to-end
 ```
 
 ---
 
-*Last updated: 2026-03-27*
+*Last updated: 2026-06-22*

@@ -3,8 +3,8 @@
   "project": "hyl-resources-manager",
   "description": "Resource management across AWS, GitHub, and Google services. Organized by skills producing structured output.",
   "created_at": "2026-03-27",
-  "last_updated": "2026-06-04",
-  "last_session_summary": "Session 4: Added Phase 6 (reusable Google Cloud + Play provisioning) for product 'Audory' under info@hylmar.eu. Completed 6.1 (gcloud install+auth), 6.2 (reusable schema), 6.3 (GCP project android-auto-audory under hylmar.eu org), 6.4 (OAuth Web client android-auto-cognito-dev, verified live), 6.7 (hand-back doc). Resolved D1 package name = eu.hylmar.audory.app (reverse-DNS of owner domain audory.hylmar.eu; AGP 8.4.2 decouples applicationId from cz.audory.* namespaces). Pre-staged client secret in vsb-030 Secrets Manager (audory/dev/google-oauth, eu-west-1). Part A delivered → unblocks Audory 9.0b. Part B (Play, 6.5) deferred ($25 acct + ID verification + D2-D4). Note: IAP OAuth Admin APIs shut down 2026-03-19 → OAuth client creation is console-only; gcloud projects.create hit shared-pool 429 on zero-project account (created in console).",
+  "last_updated": "2026-06-22",
+  "last_session_summary": "Session 5: Phase 7 COMPLETE (9/9) — provisioned new Hylmar-org member account CAG (126697143436): create-account (temp plus-address root email), 2 admin users JiHy/MiHy__hylmar__126 (AdministratorAccess, creds in Secrets Manager), 20 USD alert budget (EUR unsupported), Identity Center AdministratorAccess→jiri-hylmar (7.7), root email switched to aws-126@hylmar.eu via Account Mgmt API (7.8), aws-cag MCP connector registered with admin-user creds (7.5, activates on restart), and a reusable /provision-account skill (7.9). Open/non-blocking: restart to load aws-cag; optional EUR billing-currency for an exact 20 EUR budget. PRIOR — Session 4: Added Phase 6 (reusable Google Cloud + Play provisioning) for product 'Audory' under info@hylmar.eu. Completed 6.1 (gcloud install+auth), 6.2 (reusable schema), 6.3 (GCP project android-auto-audory under hylmar.eu org), 6.4 (OAuth Web client android-auto-cognito-dev, verified live), 6.7 (hand-back doc). Resolved D1 package name = eu.hylmar.audory.app (reverse-DNS of owner domain audory.hylmar.eu; AGP 8.4.2 decouples applicationId from cz.audory.* namespaces). Pre-staged client secret in vsb-030 Secrets Manager (audory/dev/google-oauth, eu-west-1). Part A delivered → unblocks Audory 9.0b. Part B (Play, 6.5) deferred ($25 acct + ID verification + D2-D4). Note: IAP OAuth Admin APIs shut down 2026-03-19 → OAuth client creation is console-only; gcloud projects.create hit shared-pool 429 on zero-project account (created in console).",
 
   "context_hints": {
     "aws_accounts": {
@@ -338,8 +338,9 @@
     },
     "phase_7_cag_account": {
       "name": "CAG Account Provisioning (Hylmar org o-8i3fdvbxq7)",
-      "status": "in_progress",
+      "status": "complete",
       "started_at": "2026-06-22",
+      "completed_at": "2026-06-22",
       "added_reason": "User request (/add-work): establish nested member account 'CAG' under management account 287773673380 (hylmar_OA), default region eu-central-1, with 2 admin users, a Google Workspace contact-alias root email, and a 20 EUR/month spend control.",
       "executor": "Direct AWS CLI via local profile JiHy__hylmar__287 (mgmt account 287773673380, IAM user JiHy__hylmar__287, org admin verified). Cross-account ops via assumed OrganizationAccountAccessRole into the new CAG account.",
       "convention": "aws/provisioning/cag/ folder for request + deliverables; secrets (passwords, access keys) staged in Secrets Manager / handed off out-of-band, NEVER in git.",
@@ -445,12 +446,24 @@
           "verify_result": "PASSED — accept-primary-email-update Status=ACCEPTED; get-primary-email AND organizations describe-account both return aws-126@hylmar.eu. info+cag@hylmar.eu fully removed.",
           "added_reason": "Owner rejected the temporary plus-address root email; must be aws-126@hylmar.eu",
           "notes": "Done via Account Mgmt API from mgmt 287 (no console/root needed): start-primary-email-update -> OTP to aws-126@hylmar.eu -> accept-primary-email-update --otp. Owner supplied OTP. Earlier claim that this needs root console was wrong."
+        },
+        {
+          "id": "7.9",
+          "name": "Create reusable /provision-account skill capturing the end-to-end new-account flow",
+          "status": "complete",
+          "completed_at": "2026-06-22",
+          "size": "small",
+          "verify": ".claude/commands/provision-account.md exists; listed in CLAUDE.md commands",
+          "verify_result": "PASSED — skill created with full procedure (create-account, admin users, budget, SSO, MCP connector, root-email via Account Mgmt API, docs) + gotchas section; added to CLAUDE.md command list",
+          "artifacts": [".claude/commands/provision-account.md", "CLAUDE.md"],
+          "added_reason": "Owner request: make the CAG provisioning repeatable for future accounts",
+          "notes": "Generalized from the CAG/Phase 7 run. Project-local skill (no central-distribution banner). Encodes all learned gotchas (temp plus-address + API root-email switch, USD-only budgets, non-automatic SSO assignments, profile-based MCP auth)."
         }
       ]
     }
   },
 
-  "current_task": "7.5",
+  "current_task": "7.9",
   "current_phase": "phase_7_cag_account",
 
   "git_repos": {

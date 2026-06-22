@@ -33,7 +33,14 @@ Infrastructure and resource management for AWS accounts and services - managing 
 /generate-architecture   # Generate architecture diagram
 /add-work                # Add phases or tasks mid-project
 /check-aws               # Verify AWS resources
+/provision-account       # Provision a new nested AWS member account end-to-end
 ```
+
+### Project Skills
+
+| Skill | When to Use | Purpose |
+|-------|-------------|---------|
+| `/provision-account` | Creating a new nested AWS member account in an org | End-to-end: create-account → admin users → budget → SSO assignment → MCP connector → root-email finalization → docs. Generalized from the CAG/Phase 7 run; includes the known gotchas. |
 
 ## Key Files
 | File | Purpose | Updates |
