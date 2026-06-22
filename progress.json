@@ -338,7 +338,8 @@
     },
     "phase_7_cag_account": {
       "name": "CAG Account Provisioning (Hylmar org o-8i3fdvbxq7)",
-      "status": "pending",
+      "status": "in_progress",
+      "started_at": "2026-06-22",
       "added_reason": "User request (/add-work): establish nested member account 'CAG' under management account 287773673380 (hylmar_OA), default region eu-central-1, with 2 admin users, a Google Workspace contact-alias root email, and a 20 EUR/month spend control.",
       "executor": "Direct AWS CLI via local profile JiHy__hylmar__287 (mgmt account 287773673380, IAM user JiHy__hylmar__287, org admin verified). Cross-account ops via assumed OrganizationAccountAccessRole into the new CAG account.",
       "convention": "aws/provisioning/cag/ folder for request + deliverables; secrets (passwords, access keys) staged in Secrets Manager / handed off out-of-band, NEVER in git.",
@@ -354,56 +355,70 @@
         {
           "id": "7.1",
           "name": "Owner creates Google Workspace alias aws-{NNN}@hylmar.eu; record chosen address as the CAG account root email",
-          "status": "pending",
+          "status": "in_progress",
           "size": "small",
           "verify": "aws/provisioning/cag/request.md records the exact alias address (and confirms it is unique / not used by an existing AWS account)",
           "added_reason": "AWS create-account requires a unique, deliverable root email; hylmar.eu mail is Google Workspace (owner-managed, not provisionable via these tools)",
-          "notes": "Owner picks 'first free digits' per the aws-NNN@hylmar.eu scheme and creates the alias/group in Workspace. Gates 7.2."
+          "notes": "Convention resolved = aws-{first 3 digits of account id}@hylmar.eu (existing member 299 -> aws-299@hylmar.eu). Two-step chosen: account created with temp deliverable plus-address info+cag@hylmar.eu (no Workspace change needed). Account id 126697143436 -> target alias aws-126@hylmar.eu. OWNER FOLLOW-UP: create aws-126@hylmar.eu in Workspace, then switch CAG root email to it (root sign-in). Recorded in aws/provisioning/cag/request.md."
         },
         {
           "id": "7.2",
           "name": "Create CAG member account via organizations create-account (name CAG, email = alias, OrganizationAccountAccessRole)",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-06-22",
           "size": "small",
           "verify": "aws --profile JiHy__hylmar__287 organizations describe-create-account-status returns SUCCEEDED; new account id captured and recorded",
+          "verify_result": "PASSED — request car-83dc05078abc493f95a34955afb3b988 State=SUCCEEDED; AccountId=126697143436; OrganizationAccountAccessRole assumed OK (arn:aws:sts::126697143436:assumed-role/OrganizationAccountAccessRole/cag-provision)",
+          "artifacts": ["AWS account 126697143436 (CAG) in org o-8i3fdvbxq7, root r-om7t"],
           "added_reason": "Core deliverable — the nested account under o-8i3fdvbxq7",
-          "notes": "Depends on 7.1 (root email). Run from mgmt profile JiHy__hylmar__287. Capture AccountId for downstream {XXX} username derivation and OU/budget steps. Default OU = root."
+          "notes": "Created from mgmt profile JiHy__hylmar__287. AccountId=126697143436 -> {XXX}=126 (users JiHy__hylmar__126 / MiHy__hylmar__126; target alias aws-126@hylmar.eu). TWO-STEP email: created with temporary plus-address info+cag@hylmar.eu (globally unique, deliverable to info@hylmar.eu via Workspace plus-addressing — no alias provisioning needed). Final step: owner creates aws-126@hylmar.eu, then root email switched to it (needs root sign-in). iam-user-access-to-billing=ALLOW. OU=root (no OUs in org)."
         },
         {
           "id": "7.3",
           "name": "Create admin IAM users JiHy__hylmar__{XXX} and MiHy__hylmar__{XXX} (AdministratorAccess, console pw force-reset, access keys, no MFA) via assumed OrganizationAccountAccessRole",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-06-22",
           "size": "medium",
           "verify": "iam list-users in CAG shows both users with AdministratorAccess attached; each has a login profile + one access key; secrets staged out-of-band (not in git)",
+          "verify_result": "PASSED — list-users = JiHy__hylmar__126, MiHy__hylmar__126; both list-attached-user-policies = AdministratorAccess; login profiles created (reset required); 1 access key each; creds in Secrets Manager cag/admin/<user> (eu-central-1)",
+          "artifacts": ["iam user JiHy__hylmar__126", "iam user MiHy__hylmar__126", "secret cag/admin/JiHy__hylmar__126", "secret cag/admin/MiHy__hylmar__126"],
           "added_reason": "User request: two admin users named by first-3-digits of the account id",
-          "notes": "Depends on 7.2 (account id -> {XXX}). Assume arn:aws:iam::{CAG}:role/OrganizationAccountAccessRole from mgmt profile. Stage passwords/keys in Secrets Manager or hand off; never commit."
+          "notes": "{XXX}=126. Assumed OrganizationAccountAccessRole into 126697143436. AdministratorAccess managed policy, login profile --password-reset-required, one access key each. Passwords + access keys stored ONLY in Secrets Manager (eu-central-1), never echoed/committed. No MFA enforced (per decision)."
         },
         {
           "id": "7.4",
           "name": "Create alert-only AWS Budget (20 EUR/month) with email alerts at 50/80/100% to the contact alias",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-06-22",
           "size": "small",
           "verify": "budgets describe-budget returns the 20 EUR monthly budget with 3 notifications to the alias",
+          "verify_result": "PASSED (with currency note) — budget monthly-cost-alerts MONTHLY COST 20 USD; 3 ACTUAL notifications at 50/80/100% -> info+cag@hylmar.eu",
+          "artifacts": ["budget monthly-cost-alerts (account 126697143436)"],
           "added_reason": "User request: extra spend limit control 20 EUR/month (resolved to alert-only)",
-          "notes": "Depends on 7.2. Confirm account billing currency for EUR unit (else note/approximate). Mirrors pattern of vsb-299 budget (task 5.2)."
+          "notes": "EUR NOT a supported budget unit (account bills USD): create-budget rejected EUR -> created as 20 USD (~18.4 EUR, slightly tighter cap). To get exact 20 EUR: owner sets account billing currency to EUR (root) then recreate with Unit=EUR. Alerts to info+cag@hylmar.eu (deliverable; switch to aws-126@ after alias exists). Mirrors vsb-299 budget (5.2)."
         },
         {
           "id": "7.5",
           "name": "Set up mcp-{CAG-id} MCP connector (IAM user + MCP-Service-Access policy + access keys) so CAG is managed via MCP like the other 6 accounts",
-          "status": "pending",
+          "status": "in_progress",
           "size": "medium",
           "verify": "after owner loads connector into Claude config + restart, new MCP tool returns sts get-caller-identity = CAG account id",
+          "verify_result": "PARTIAL — IAM side done (user mcp-126697143436 + managed policy MCP-Service-Access attached; access key in Secrets Manager cag/mcp/mcp-126697143436). Connector registration + restart is harness-side, pending owner; MCP tool not yet verifiable.",
+          "artifacts": ["iam user mcp-126697143436", "policy MCP-Service-Access (126697143436)", "secret cag/mcp/mcp-126697143436"],
           "added_reason": "Project convention: each managed account has an mcp-{id} connector (CLAUDE.md prefers MCP over bash aws)",
-          "notes": "Depends on 7.2. I create the IAM user + policy + keys via assumed role; owner registers the connector in MCP config and restarts (harness-side step)."
+          "notes": "IAM user + MCP-Service-Access managed policy (athena/glue/dynamodb/s3/logs/metrics/lambda-read/sts, Resource *) + access key created via assumed role; key in Secrets Manager (eu-central-1). OWNER FOLLOW-UP: register aws-cag connector in Claude config with this key, restart, then verify sts get-caller-identity = 126697143436."
         },
         {
           "id": "7.6",
           "name": "Document & hand back: add CAG to aws/accounts.json (default_region eu-central-1, costcenter hylmar) + CLAUDE.md account table + aws/provisioning/cag/deliverables.md",
-          "status": "pending",
+          "status": "complete",
+          "completed_at": "2026-06-22",
           "size": "small",
           "verify": "aws/accounts.json has a CAG entry under org o-8i3fdvbxq7; deliverables.md complete (account id, users, budget, secret locations) with no secrets in git",
+          "verify_result": "PASSED — accounts.json has CAG (126697143436) entry; CLAUDE.md account table row added; request.md + deliverables.md written; no secrets in git (only Secrets Manager ARNs referenced)",
+          "artifacts": ["aws/accounts.json", "CLAUDE.md", "aws/provisioning/cag/request.md", "aws/provisioning/cag/deliverables.md"],
           "added_reason": "Close the loop and keep the source-of-truth inventory accurate",
-          "notes": "Depends on 7.3-7.5. Record console_login, profiles (JiHy__hylmar__{XXX}, MiHy__hylmar__{XXX}), mcp_connector."
+          "notes": "Recorded console_login, profiles JiHy__hylmar__126/MiHy__hylmar__126, mcp_iam_user mcp-126697143436, default_region eu-central-1, costcenter hylmar, budget, secret locations, and owner follow-ups."
         }
       ]
     }

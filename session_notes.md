@@ -280,14 +280,24 @@ This file tracks session history for context continuity between Claude Code sess
 - Admin users = `JiHy__hylmar__{XXX}` / `MiHy__hylmar__{XXX}` (XXX = first 3 digits of new acct id); AdministratorAccess, console pw force-reset, access keys, no MFA enforcement
 - OU placement = org root (default)
 
+**Executed this session (via profile JiHy__hylmar__287)**:
+- 7.2 ✅ Created account **CAG = 126697143436** (req car-83dc05078abc493f95a34955afb3b988, SUCCEEDED). Temp root email `info+cag@hylmar.eu` (plus-address, deliverable). {XXX}=126.
+- 7.3 ✅ Admin users `JiHy__hylmar__126` + `MiHy__hylmar__126` (AdministratorAccess, console reset-required, access keys, no MFA). Creds in Secrets Manager `cag/admin/<user>` (eu-central-1).
+- 7.4 ✅ Budget `monthly-cost-alerts` 20 **USD** (EUR unit unsupported — account bills USD; ~18.4 EUR, tighter cap), ACTUAL alerts 50/80/100% → info+cag@hylmar.eu.
+- 7.5 ◑ MCP IAM side done: user `mcp-126697143436` + `MCP-Service-Access` policy + key (Secrets Manager `cag/mcp/...`). Connector registration pending owner.
+- 7.6 ✅ Docs: accounts.json + CLAUDE.md table + `aws/provisioning/cag/{request,deliverables}.md`. No secrets in git.
+
+**Owner follow-ups (out-of-band, tracked in 7.1/7.5)**:
+1. Create Workspace alias `aws-126@hylmar.eu`; switch CAG root email to it (root sign-in).
+2. Register `aws-cag` MCP connector (key `mcp-126697143436`) + restart; verify caller identity = 126697143436.
+3. (Optional) Set account billing currency to EUR → recreate budget as 20 EUR.
+
 **Reality flags**:
-- 7.1 owner dependency: Workspace alias must exist + be unique before `create-account`
-- 7.4: EUR budget unit needs account billing currency = EUR (new accounts default USD) — confirm
-- 7.5: MCP connector registration is harness-side (owner loads config + restart)
+- 7.4: EUR not a valid budget unit on a USD-billed account → created as 20 USD.
+- 7.5: MCP connector registration is harness-side (owner loads config + restart).
 
 **Next Session**:
-- Start with 7.1 (await Workspace alias address), then 7.2 create-account
-- current_task set to 7.1
+- Phase 7 owner follow-ups (1–3 above); current_task = 7.1 (root-email finalization)
 
 ---
 
