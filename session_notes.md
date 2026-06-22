@@ -257,4 +257,38 @@ This file tracks session history for context continuity between Claude Code sess
 
 ---
 
+### Session: 2026-06-22
+
+**Context**:
+- Phase: 7 - CAG Account Provisioning (Hylmar org `o-8i3fdvbxq7`)
+
+**Work Added (/add-work, approved)**:
+- New **Phase 7: CAG Account Provisioning** — 6 tasks (7.1–7.6)
+- Establish nested member account **CAG** under mgmt account **287773673380** (`hylmar_OA`),
+  default region **eu-central-1**, 2 admin users, Workspace contact-alias root email, 20 EUR/month budget
+- Source: user request
+
+**Access finding (resolved mid-discussion)**:
+- `aws/accounts.json` showed `hylmar_OA` (287773673380) with **no MCP connector** → looked like a blocker.
+- User confirmed local profile **`JiHy__hylmar__287`** has access. Verified live:
+  `arn:aws:iam::287773673380:user/JiHy__hylmar__287`, org `o-8i3fdvbxq7` readable (FeatureSet ALL, SCP enabled).
+- → Execution model = direct CLI via `--profile JiHy__hylmar__287`; cross-account via assumed `OrganizationAccountAccessRole`. No MCP bootstrap needed.
+
+**Decisions captured (AskUserQuestion)**:
+- Spend control = **alert-only** budget (20 EUR/mo, 50/80/100% email alerts), no enforced cap
+- Alias email = `aws-{first free digits}@hylmar.eu`, **owner-created in Google Workspace** (gates account creation)
+- Admin users = `JiHy__hylmar__{XXX}` / `MiHy__hylmar__{XXX}` (XXX = first 3 digits of new acct id); AdministratorAccess, console pw force-reset, access keys, no MFA enforcement
+- OU placement = org root (default)
+
+**Reality flags**:
+- 7.1 owner dependency: Workspace alias must exist + be unique before `create-account`
+- 7.4: EUR budget unit needs account billing currency = EUR (new accounts default USD) — confirm
+- 7.5: MCP connector registration is harness-side (owner loads config + restart)
+
+**Next Session**:
+- Start with 7.1 (await Workspace alias address), then 7.2 create-account
+- current_task set to 7.1
+
+---
+
 <!-- Sessions are prepended above this line -->
