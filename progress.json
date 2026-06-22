@@ -359,7 +359,7 @@
           "size": "small",
           "verify": "aws/provisioning/cag/request.md records the exact alias address (and confirms it is unique / not used by an existing AWS account)",
           "added_reason": "AWS create-account requires a unique, deliverable root email; hylmar.eu mail is Google Workspace (owner-managed, not provisionable via these tools)",
-          "notes": "Convention resolved = aws-{first 3 digits of account id}@hylmar.eu (existing member 299 -> aws-299@hylmar.eu). Two-step chosen: account created with temp deliverable plus-address info+cag@hylmar.eu (no Workspace change needed). Account id 126697143436 -> target alias aws-126@hylmar.eu. OWNER FOLLOW-UP: create aws-126@hylmar.eu in Workspace, then switch CAG root email to it (root sign-in). Recorded in aws/provisioning/cag/request.md."
+          "notes": "Convention resolved = aws-{first 3 digits of account id}@hylmar.eu (existing member 299 -> aws-299@hylmar.eu). Two-step chosen: account created with temp deliverable plus-address info+cag@hylmar.eu. Account id 126697143436 -> alias aws-126@hylmar.eu. 2026-06-22: owner ESTABLISHED aws-126@hylmar.eu (deliverable) -> budget alerts repointed to it (3/3 verified). REMAINING owner step: switch the AWS root SIGN-IN email from info+cag@hylmar.eu to aws-126@hylmar.eu (org describe-account still shows info+cag@; console+root only, no AWS API). Recorded in aws/provisioning/cag/request.md + deliverables.md."
         },
         {
           "id": "7.2",

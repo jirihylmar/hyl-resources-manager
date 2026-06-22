@@ -28,7 +28,7 @@
 ## Spend control
 
 - AWS Budget **`monthly-cost-alerts`**, COST, MONTHLY, **20 USD** (EUR unit unsupported — account bills USD; 20 USD ≈ 18.4 EUR, a slightly tighter cap).
-- ACTUAL email alerts at **50% / 80% / 100%** → `info+cag@hylmar.eu`.
+- ACTUAL email alerts at **50% / 80% / 100%** → **`aws-126@hylmar.eu`** (repointed 2026-06-22 once the alias was established).
 - To make it exactly 20 EUR: owner sets billing currency to EUR (root), then recreate with `Unit=EUR`.
 
 ## MCP connector (CAG)
@@ -38,7 +38,7 @@
 
 ## Open owner follow-ups
 
-1. Create Workspace alias `aws-126@hylmar.eu`.
-2. Switch CAG root email to `aws-126@hylmar.eu` (root sign-in required).
+1. ~~Create Workspace alias `aws-126@hylmar.eu`~~ ✅ done 2026-06-22; budget alerts repointed to it.
+2. Switch CAG **root sign-in email** to `aws-126@hylmar.eu` — still `info+cag@hylmar.eu`. Console + root only (no AWS API): root password reset to info+cag@hylmar.eu → Account settings → change email → verify aws-126@hylmar.eu.
 3. Register `aws-cag` MCP connector + restart.
 4. (Optional) EUR billing currency → recreate 20 EUR budget.

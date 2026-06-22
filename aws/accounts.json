@@ -174,8 +174,8 @@
       "mcp_connector": "aws-cag (IAM ready, pending registration in Claude config + restart)",
       "mcp_iam_user": "mcp-126697143436",
       "iam_users": ["JiHy__hylmar__126", "MiHy__hylmar__126", "mcp-126697143436"],
-      "root_email": "info+cag@hylmar.eu (temporary plus-address; target aws-126@hylmar.eu pending Workspace alias + root-email change)",
-      "budget": "monthly-cost-alerts 20 USD, ACTUAL alerts 50/80/100% -> info+cag@hylmar.eu (EUR unsupported; account billing currency USD)",
+      "root_email": "AWS root sign-in email still info+cag@hylmar.eu (console+root switch pending — no AWS API). Target alias aws-126@hylmar.eu now established/deliverable in Workspace (2026-06-22).",
+      "budget": "monthly-cost-alerts 20 USD, ACTUAL alerts 50/80/100% -> aws-126@hylmar.eu (EUR unsupported; account billing currency USD)",
       "secrets": [
         "cag/admin/JiHy__hylmar__126 (Secrets Manager eu-central-1)",
         "cag/admin/MiHy__hylmar__126 (Secrets Manager eu-central-1)",
