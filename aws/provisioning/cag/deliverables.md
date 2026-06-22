@@ -39,6 +39,10 @@
 ## Open owner follow-ups
 
 1. ~~Create Workspace alias `aws-126@hylmar.eu`~~ ✅ done 2026-06-22; budget alerts repointed to it.
-2. Switch CAG **root sign-in email** to `aws-126@hylmar.eu` — still `info+cag@hylmar.eu`. Console + root only (no AWS API): root password reset to info+cag@hylmar.eu → Account settings → change email → verify aws-126@hylmar.eu.
+2. Switch CAG **root sign-in email** to `aws-126@hylmar.eu` — IN PROGRESS via Account Mgmt API (no console/root needed): `account start-primary-email-update` (done, OTP → aws-126@hylmar.eu) → owner supplies OTP → `account accept-primary-email-update`. **Blocked:** OTP not received → confirm the alias actually receives external mail.
 3. Register `aws-cag` MCP connector + restart.
 4. (Optional) EUR billing currency → recreate 20 EUR budget.
+
+## SSO access (added)
+
+IAM Identity Center `d-9367ab04ac` (instance `ssoins-68043e6b5b6e0104`, eu-west-1, owned by mgmt 287) — **`AdministratorAccess` assigned to `jiri-hylmar`** on CAG. Appears at https://d-9367ab04ac.awsapps.com/start/ (new accounts need this assignment; it is not automatic).

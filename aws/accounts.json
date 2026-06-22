@@ -174,7 +174,8 @@
       "mcp_connector": "aws-cag (IAM ready, pending registration in Claude config + restart)",
       "mcp_iam_user": "mcp-126697143436",
       "iam_users": ["JiHy__hylmar__126", "MiHy__hylmar__126", "mcp-126697143436"],
-      "root_email": "AWS root sign-in email still info+cag@hylmar.eu (console+root switch pending — no AWS API). Target alias aws-126@hylmar.eu now established/deliverable in Workspace (2026-06-22).",
+      "root_email": "Changing info+cag@hylmar.eu -> aws-126@hylmar.eu via Account Mgmt API (start/accept-primary-email-update from mgmt 287). PENDING: OTP sent to aws-126@hylmar.eu 2026-06-22 15:50 UTC, not yet received -> verify alias deliverability, then accept.",
+      "sso_access": "IAM Identity Center d-9367ab04ac (instance ssoins-68043e6b5b6e0104, eu-west-1, owned by mgmt 287): AdministratorAccess assigned to user jiri-hylmar. Portal https://d-9367ab04ac.awsapps.com/start/",
       "budget": "monthly-cost-alerts 20 USD, ACTUAL alerts 50/80/100% -> aws-126@hylmar.eu (EUR unsupported; account billing currency USD)",
       "secrets": [
         "cag/admin/JiHy__hylmar__126 (Secrets Manager eu-central-1)",

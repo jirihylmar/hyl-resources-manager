@@ -419,6 +419,27 @@
           "artifacts": ["aws/accounts.json", "CLAUDE.md", "aws/provisioning/cag/request.md", "aws/provisioning/cag/deliverables.md"],
           "added_reason": "Close the loop and keep the source-of-truth inventory accurate",
           "notes": "Recorded console_login, profiles JiHy__hylmar__126/MiHy__hylmar__126, mcp_iam_user mcp-126697143436, default_region eu-central-1, costcenter hylmar, budget, secret locations, and owner follow-ups."
+        },
+        {
+          "id": "7.7",
+          "name": "Add CAG to IAM Identity Center (SSO) — assign AdministratorAccess to user jiri-hylmar so CAG appears in the org access portal",
+          "status": "complete",
+          "completed_at": "2026-06-22",
+          "size": "small",
+          "verify": "list-account-assignments for CAG shows jiri-hylmar/AdministratorAccess; list-accounts-for-provisioned-permission-set includes 126697143436",
+          "verify_result": "PASSED — assignment USER 32b5e4b4-4021-70b4-8586-192dbff63860 (jiri-hylmar) + AdministratorAccess on 126697143436; PS now provisioned to 287/299/126",
+          "artifacts": ["account assignment in ssoins-68043e6b5b6e0104 (eu-west-1)"],
+          "added_reason": "Owner reported CAG missing from SSO portal d-9367ab04ac; new accounts get no Identity Center assignments automatically",
+          "notes": "Identity Center d-9367ab04ac / instance ssoins-68043e6b5b6e0104 is owned by Hylmar mgmt 287773673380 (region eu-west-1) — so CAG (same org) is eligible. Mirrored existing pattern: single PS AdministratorAccess (ps-f5e41a0bba13eaf9) assigned DIRECTLY to user jiri-hylmar (admins group is empty). Portal: https://d-9367ab04ac.awsapps.com/start/"
+        },
+        {
+          "id": "7.8",
+          "name": "Replace temporary root email info+cag@hylmar.eu with aws-126@hylmar.eu via Account Management API (start/accept primary-email-update)",
+          "status": "in_progress",
+          "size": "small",
+          "verify": "account get-primary-email --account-id 126697143436 returns aws-126@hylmar.eu",
+          "added_reason": "Owner rejected the temporary plus-address root email; must be aws-126@hylmar.eu",
+          "notes": "CORRECTION to earlier claim that root email change has no API — it does: account start-primary-email-update sends an OTP to the NEW address; account accept-primary-email-update --otp completes it (run from mgmt 287773673380). start-primary-email-update called (PENDING) and re-sent 2026-06-22 15:50 UTC. BLOCKED on OTP delivery: owner reports no email at aws-126@hylmar.eu -> verify the Workspace alias actually receives external mail (propagation/spam/group config). Once OTP provided, accept to complete."
         }
       ]
     }
