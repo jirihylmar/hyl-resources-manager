@@ -355,9 +355,11 @@
         {
           "id": "7.1",
           "name": "Owner creates Google Workspace alias aws-{NNN}@hylmar.eu; record chosen address as the CAG account root email",
-          "status": "in_progress",
+          "status": "complete",
+          "completed_at": "2026-06-22",
           "size": "small",
           "verify": "aws/provisioning/cag/request.md records the exact alias address (and confirms it is unique / not used by an existing AWS account)",
+          "verify_result": "PASSED — alias aws-126@hylmar.eu established (deliverable) and set as the actual account root email (see 7.8). info+cag@ no longer used.",
           "added_reason": "AWS create-account requires a unique, deliverable root email; hylmar.eu mail is Google Workspace (owner-managed, not provisionable via these tools)",
           "notes": "Convention resolved = aws-{first 3 digits of account id}@hylmar.eu (existing member 299 -> aws-299@hylmar.eu). Two-step chosen: account created with temp deliverable plus-address info+cag@hylmar.eu. Account id 126697143436 -> alias aws-126@hylmar.eu. 2026-06-22: owner ESTABLISHED aws-126@hylmar.eu (deliverable) -> budget alerts repointed to it (3/3 verified). REMAINING owner step: switch the AWS root SIGN-IN email from info+cag@hylmar.eu to aws-126@hylmar.eu (org describe-account still shows info+cag@; console+root only, no AWS API). Recorded in aws/provisioning/cag/request.md + deliverables.md."
         },
@@ -435,17 +437,19 @@
         {
           "id": "7.8",
           "name": "Replace temporary root email info+cag@hylmar.eu with aws-126@hylmar.eu via Account Management API (start/accept primary-email-update)",
-          "status": "in_progress",
+          "status": "complete",
+          "completed_at": "2026-06-22",
           "size": "small",
           "verify": "account get-primary-email --account-id 126697143436 returns aws-126@hylmar.eu",
+          "verify_result": "PASSED — accept-primary-email-update Status=ACCEPTED; get-primary-email AND organizations describe-account both return aws-126@hylmar.eu. info+cag@hylmar.eu fully removed.",
           "added_reason": "Owner rejected the temporary plus-address root email; must be aws-126@hylmar.eu",
-          "notes": "CORRECTION to earlier claim that root email change has no API — it does: account start-primary-email-update sends an OTP to the NEW address; account accept-primary-email-update --otp completes it (run from mgmt 287773673380). start-primary-email-update called (PENDING) and re-sent 2026-06-22 15:50 UTC. BLOCKED on OTP delivery: owner reports no email at aws-126@hylmar.eu -> verify the Workspace alias actually receives external mail (propagation/spam/group config). Once OTP provided, accept to complete."
+          "notes": "Done via Account Mgmt API from mgmt 287 (no console/root needed): start-primary-email-update -> OTP to aws-126@hylmar.eu -> accept-primary-email-update --otp. Owner supplied OTP. Earlier claim that this needs root console was wrong."
         }
       ]
     }
   },
 
-  "current_task": "7.1",
+  "current_task": "7.5",
   "current_phase": "phase_7_cag_account",
 
   "git_repos": {

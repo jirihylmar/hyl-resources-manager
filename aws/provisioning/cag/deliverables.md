@@ -12,7 +12,7 @@
 | Default region (convention) | eu-central-1 |
 | Cost center | hylmar |
 | Console | https://126697143436.signin.aws.amazon.com/console |
-| Root email | `info+cag@hylmar.eu` (temporary) → target `aws-126@hylmar.eu` (owner to switch) |
+| Root email | **`aws-126@hylmar.eu`** (set 2026-06-22 via Account Mgmt API; temp `info+cag@` removed) |
 | Create request | `car-83dc05078abc493f95a34955afb3b988` → SUCCEEDED |
 | Cross-account role | `OrganizationAccountAccessRole` (trusts 287773673380) |
 
@@ -39,7 +39,7 @@
 ## Open owner follow-ups
 
 1. ~~Create Workspace alias `aws-126@hylmar.eu`~~ ✅ done 2026-06-22; budget alerts repointed to it.
-2. Switch CAG **root sign-in email** to `aws-126@hylmar.eu` — IN PROGRESS via Account Mgmt API (no console/root needed): `account start-primary-email-update` (done, OTP → aws-126@hylmar.eu) → owner supplies OTP → `account accept-primary-email-update`. **Blocked:** OTP not received → confirm the alias actually receives external mail.
+2. ~~Switch CAG **root sign-in email** to `aws-126@hylmar.eu`~~ ✅ done 2026-06-22 via Account Mgmt API (`start`/`accept-primary-email-update`); verified; `info+cag@hylmar.eu` removed.
 3. Register `aws-cag` MCP connector + restart.
 4. (Optional) EUR billing currency → recreate 20 EUR budget.
 
