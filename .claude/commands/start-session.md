@@ -149,6 +149,38 @@ Never `git add -A` / `git add .` (see Multi-Agent Discipline → "Commit only fi
 
 **Carry the inventory forward:** include the enumerated list in the Step 9 "Session Ready" report so the prefer-existing reflex stays in working context past session start.
 
+### 2.7. Repo Hygiene Gate (triggered consolidation — /repo-hygiene)
+
+**Why:** one-off documentation audits decay — weeks after a big cleanup, docs drift from the code,
+skills reference moved tools, indexes go stale, progress.json balloons. `/repo-hygiene` is the
+standing consolidation pass; THIS gate is what makes it actually run.
+
+Run the quick clock check (read-only, cheap):
+
+```bash
+python3 - <<'PY'
+import json, time
+from pathlib import Path
+p = Path(".claude/hygiene-state.json")
+if not p.exists():
+    print("HYGIENE: never recorded — run /repo-hygiene to establish the baseline")
+else:
+    st = json.loads(p.read_text())
+    age = (time.time() - time.mktime(time.strptime(st.get("last_pass","1970-01-01"), "%Y-%m-%d"))) / 86400
+    if age > 60:   print(f"HYGIENE: OVERDUE x2 ({age:.0f}d since {st['last_pass']}) — MUST run /repo-hygiene before new work")
+    elif age > 30: print(f"HYGIENE: due ({age:.0f}d since {st['last_pass']}) — schedule /repo-hygiene this session or next")
+    else:          print(f"HYGIENE: ok (last pass {st['last_pass']}, {age:.0f}d ago)")
+PY
+```
+
+- `ok` → proceed; omit from the handoff.
+- `due` → surface a "⚠ Repo hygiene due" line in the Session Handoff (informational).
+- `OVERDUE x2` or `never recorded` → surface it PROMINENTLY in the handoff and treat
+  `/repo-hygiene` as the recommended first task — the operator can override, but the default
+  next action is the hygiene pass, not new work on a drifting tree.
+- If the project ships its own richer checker (e.g. a docs-currency tool wired via a local
+  overlay), its findings feed the same banner.
+
 ### 3. Detect Project State
 
 #### If no `progress.json` exists:
@@ -206,6 +238,9 @@ Proceed to session handoff (Step 4).
 ### Open Items
 - [Any pending user decisions from last session]
 - [Any blockers noted]
+
+### ⚠ Repo hygiene  (omit if Step 2.7 reported ok)
+[due / OVERDUE x2 / never recorded — recommend /repo-hygiene accordingly]
 
 ---
 **What would you like to do?**

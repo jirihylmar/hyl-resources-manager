@@ -129,6 +129,26 @@ Record verification:
 }
 ```
 
+### 3a. Phase-Close Hygiene (runs whenever a phase's status flips to `complete`)
+
+Repos rot at phase boundaries — a closed phase leaves a working dir, verbose progress bodies, and
+stale index entries behind. When THIS update marks a phase `complete`:
+
+1. **Working-dir sweep (extract-then-archive).** If `docs/<phase-dir>/` (or any working dir the
+   phase created) exists: repoint/extract every live inbound reference FIRST (a "closed" dir can
+   hold live dependencies — skill default paths, test fixtures, cited rules), then `git mv` the
+   remainder to `docs/_archive/`. Never blind-move, never delete. A reference check after the move
+   must show zero new broken refs.
+2. **progress.json weight check.** If `progress.json` exceeds ~300KB, run the compaction step from
+   `/repo-hygiene` (Step 4: dry-run, review, `--apply`) — verbose bodies of long-completed phases
+   move to committed sidecars under `docs/_archive/progress-sidecars/`; tasks/ids/status/verify
+   never change (append-only preserved).
+3. **Index touch-up.** Any index the closed phase's files appeared in (CLAUDE.md pointers, skill
+   picker, knowledge base) is reconciled to the post-sweep paths.
+
+This is the incremental half of repo hygiene; the periodic full pass is `/repo-hygiene`
+(triggered by the clock gate in `/start-session` Step 2.7).
+
 ### 4. Update git_repos Status
 For each repo in `git_repos`:
 ```bash
