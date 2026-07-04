@@ -152,8 +152,11 @@ Never `git add -A` / `git add .` (see Multi-Agent Discipline → "Commit only fi
 ### 2.7. Repo Hygiene Gate (triggered consolidation — /repo-hygiene)
 
 **Why:** one-off documentation audits decay — weeks after a big cleanup, docs drift from the code,
-skills reference moved tools, indexes go stale, progress.json balloons. `/repo-hygiene` is the
-standing consolidation pass; THIS gate is what makes it actually run.
+skills reference moved tools, indexes go stale, progress.json balloons. And the rot is not just
+index-level: operational claims inside skills/docs (CLI flags, resource names, payload shapes)
+decay against the implementation while every index check passes — `/repo-hygiene` grounds a
+rotating content slice for exactly this. It is the standing consolidation pass; THIS gate is what
+makes it actually run.
 
 Run the quick clock check (read-only, cheap):
 
@@ -169,12 +172,16 @@ else:
     age = (time.time() - time.mktime(time.strptime(st.get("last_pass","1970-01-01"), "%Y-%m-%d"))) / 86400
     if age > 60:   print(f"HYGIENE: OVERDUE x2 ({age:.0f}d since {st['last_pass']}) — MUST run /repo-hygiene before new work")
     elif age > 30: print(f"HYGIENE: due ({age:.0f}d since {st['last_pass']}) — schedule /repo-hygiene this session or next")
+    elif "grounded" not in st: print("HYGIENE: content baseline missing — run /repo-hygiene once to baseline grounding + terminology (then /update-progress Step 2b rotates per session)")
     else:          print(f"HYGIENE: ok (last pass {st['last_pass']}, {age:.0f}d ago)")
 PY
 ```
 
 - `ok` → proceed; omit from the handoff.
 - `due` → surface a "⚠ Repo hygiene due" line in the Session Handoff (informational).
+- `content baseline missing` → surface it in the handoff: the clock is fine but the per-session
+  content-consolidation rotation (`/update-progress` Step 2b) has no baseline yet — recommend a
+  one-time manual `/repo-hygiene` run this session or next.
 - `OVERDUE x2` or `never recorded` → surface it PROMINENTLY in the handoff and treat
   `/repo-hygiene` as the recommended first task — the operator can override, but the default
   next action is the hygiene pass, not new work on a drifting tree.
@@ -300,10 +307,13 @@ Run `/context` to check usage:
 
 ### 8. Check Git Repo Status
 
+Same sub-repo set as Steps 0/0.5 (long-term source of truth: `progress.json` `git_repos`):
+
 ```bash
 git status
-git -C infrastructure status --short 2>/dev/null
-git -C backend status --short 2>/dev/null
+for dir in infrastructure backend frontend testing; do
+  [ -d "$dir/.git" ] && { echo "=== $dir ==="; git -C "$dir" status --short; }
+done
 ```
 
 Update `git_repos` status in progress.json:

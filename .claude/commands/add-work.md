@@ -6,6 +6,7 @@ allowed-tools:
   - Edit
   - Glob
   - Grep
+  - Bash
   - AskUserQuestion
 ---
 
@@ -162,7 +163,8 @@ Add these to progress.json?
 }
 ```
 
-**Create/update task file** `tasks/phase_X.md`:
+**If the project keeps per-phase task files** (a `tasks/` directory exists), create/update
+`tasks/phase_X.md` — projects that track work in progress.json only skip this:
 ```markdown
 # Phase X: [Name]
 
@@ -187,8 +189,11 @@ Add these to progress.json?
 
 ### 8. Commit
 
+Scoped to the files this command changed (include `tasks/` only if the project keeps task files
+and you updated them):
+
 ```bash
-git add progress.json tasks/ session_notes.md
+git add progress.json session_notes.md   # + tasks/phase_X.md if updated
 git commit -m "work: add [N] tasks to Phase X
 
 Added:

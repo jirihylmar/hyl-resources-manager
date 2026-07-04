@@ -6,6 +6,7 @@ allowed-tools:
   - Edit
   - Glob
   - Grep
+  - Bash
 ---
 
 <!--
@@ -44,7 +45,9 @@ Check for environment info in:
 - Multiple MCP tools
 - Integration notes
 
-**If missing:** STOP and direct user to run `/start-session` first to collect environment info.
+**If missing:** STOP and direct user to run `/setup` (its environment-collection step gathers
+account/region/MCP/naming), or to add the values to `CLAUDE.md` / `input/environment.md` directly —
+then re-run this command.
 
 ### 2. Specification Must Be Approved
 
@@ -63,7 +66,8 @@ The specification must be reviewed and approved first.
 2. Provide explicit approval ("approved", "looks good", etc.)
 3. Then run `/generate-phases`
 
-Run `/start-session` to initiate the approval process.
+Approval is given directly in the conversation — the spec-approval task in Phase 0 presents
+IMPLEMENTATION_PLAN.md and blocks until you approve it.
 ```
 
 ### 3. Phases Must Not Already Exist

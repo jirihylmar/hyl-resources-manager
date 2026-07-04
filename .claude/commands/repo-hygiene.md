@@ -1,5 +1,5 @@
 ---
-description: Periodic repo consolidation pass — verify every docs + skills file is canonical and current, archive stale material, reconcile indexes and knowledge surfaces, compact progress.json. Triggered by the hygiene clock at session start; not a scheduled chore.
+description: Periodic repo consolidation pass — verify every docs + skills file is canonical and current, ground a rotating slice of operational claims against the implementation, enforce naming/terminology discipline, archive stale material, reconcile indexes and knowledge surfaces, compact progress.json. Triggered by the hygiene clock at session start; not a scheduled chore.
 allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Agent, AskUserQuestion
 ---
 <!--
@@ -29,10 +29,23 @@ drifts far enough to need a crusade.
 - **Timeless canon**: durable instructions carry no session/phase/task numbers — process metadata
   lives in progress.json / session_notes / incidents / `_archive` (the trail), never in canonical
   method docs, skills, or externally-served knowledge bases.
+- **Content grounded**: the operational claims inside skills and canonical docs — cited file paths,
+  CLI flags, deployed-resource names, payload/query shapes, documented commands — are verified
+  against the actual implementation, not read-and-nodded. Index-level checks cannot see this rot:
+  a repo has passed every clock/ref/index gate while carrying dozens of confirmed grounding defects
+  (flags that don't exist, queries against nonexistent table models, procedures invoking retired
+  resources, example payloads that half-execute a pipeline).
+- **One name per concept**: a ratified terminology registry gives each concept ONE grep-friendly
+  canonical name; competing synonyms and bare ambiguous words are flagged. The operating test:
+  a human's search and an agent's grep must land on ALL and ONLY the relevant places with one
+  keyword — that is how both humans and agents verify anything.
 
 **Cadence**: triggered, not scheduled. `/start-session` surfaces a banner when the clock in
 `.claude/hygiene-state.json` is >30 days old (or absent), or when the quick checks find drift.
-Overdue ×2 (>60 days) escalates to MUST-RUN-before-new-work.
+Overdue ×2 (>60 days) escalates to MUST-RUN-before-new-work. **Content consolidation does NOT
+wait for this clock**: `/update-progress` Step 2b grounds one rotating file at every session
+close; this pass baselines that rotation (first run — trigger it manually once in an existing
+project after receiving these defaults) and catches up whatever the session cadence missed.
 
 ---
 
@@ -80,6 +93,21 @@ if pj.exists():
     kb = pj.stat().st_size/1024
     if kb > 300: findings.append(f"D: progress.json {kb:.0f}KB (>300KB) — compaction due (Step 4)")
 
+# (F) process metadata leaked into canonical surfaces (sizes the Step 3 de-phase slice)
+meta_re = re.compile(r"\b(?:Phase|Session)\s+\d+\b|\btask\s+\d+\.\d+\b", re.I)
+mcount = mfiles = 0
+for f in surfaces:
+    if "_archive" in f.parts: continue
+    try: text = f.read_text(errors="ignore")
+    except OSError: continue
+    n = len(meta_re.findall(text))
+    if n: mcount += n; mfiles += 1
+if mcount > 20: findings.append(f"F: {mcount} phase/session/task refs across {mfiles} canonical files — de-phase slice due (Step 3)")
+
+# (G) terminology registry presence (Step 3a)
+if (root/"docs").exists() and not list((root/"docs").rglob("terminology.md")):
+    findings.append("G: no terminology registry under docs/ — bootstrap one (Step 3a)")
+
 for f in findings: print(" -", f)
 print(f"\nHYGIENE-CHECK findings: {len(findings)}")
 PY
@@ -114,6 +142,37 @@ tree** (referenced tool exists, path resolves, procedure matches the code), not 
 For large repos, fan the sweep out (subagents/workflow) — but the dispositions land in one merged
 table and every actionable one is executed or explicitly deferred with a named reason.
 
+## Step 1a — Grounding slice: baseline + catch-up (deep content verification, bounded)
+
+The Step 1 sweep judges every file's *disposition*; this step goes one level deeper on a **bounded
+subset** and verifies the file's operational claims line by line.
+
+**Division of labor**: the PRIMARY grounding cadence is per-session — `/update-progress` Step 2b
+grounds one rotating file at EVERY session close, so the backlog is paid down continuously. This
+step is (a) the **baseline**: the first pass in a project establishes the `grounded` map and the
+terminology registry that Step 2b then rotates on — in an existing project, run `/repo-hygiene`
+**manually once** after receiving these defaults; and (b) the **catch-up backstop**: when the pass
+runs, it grounds whatever the per-session rotation has left oldest (sessions get skipped, repos go
+dormant — the clock catches what session cadence missed). Both use the SAME `grounded` map, so
+nothing is double-verified.
+
+1. **Pick the slice.** From the live skills + canonical docs, take the least-recently-grounded
+   files per the `grounded` map in `.claude/hygiene-state.json` (never-grounded first). Bound the
+   slice — 3–5 files, or roughly what one pass can verify properly. The bound is the point.
+2. **Extract the claims.** For each file in the slice, list every operational claim: cited file
+   paths, CLI flags, deployed-resource names, payload/query shapes, commands presented as runnable.
+3. **Verify each claim against the implementation**, not against other docs: the path resolves;
+   the flag exists in the tool's argument parser; the resource name appears in a **fresh** inventory
+   (not a remembered one); the payload/query shape matches the deployed definition; the command is
+   shell-runnable as written (multi-line commands actually paste-and-run).
+4. **Record per finding**: claim / reality / fix — then fix in place. At scale (many findings, or
+   subagent fan-out), add an independent refutation step before reporting so the worklist stays
+   confirmed-only: a finding that survives an adversarial attempt to refute it is a fact, not a maybe.
+5. **Advance the cursor.** Update the `grounded` map in Step 5 so the next pass picks the next slice.
+
+Claims that cannot be verified this pass (resource offline, tool unavailable) are deferred with a
+named reason — an unverifiable claim is a finding, not a pass.
+
 ## Step 2 — Index + knowledge-surface reconciliation
 
 After the sweep, reconcile every index surface to the post-sweep reality:
@@ -123,11 +182,40 @@ After the sweep, reconcile every index surface to the post-sweep reality:
   must cover the post-sweep file set with correct routing. Update the KB **source**; deploy through
   the repo's sanctioned connector-update procedure (never hand-push KB without its verify gates).
 
-## Step 3 — Timeless-canon check
+## Step 3 — Timeless-canon check (de-phased canonical surfaces)
 
-Grep canonical surfaces for process metadata (`Session N`, `Phase N`, dotted task IDs, dated
-anchors) that leaked in since the last pass. Keep durable tokens (schema versions, § refs,
-regulation numbers, file names). Fix in place — statement stays, process token goes.
+Grep the **whole canonical tree** — docs, skills, and any externally-served knowledge base — for
+process metadata (`Session N`, `Phase N`, dotted task IDs, dated anchors) that leaked in since the
+last pass (quick check F sizes this). Phase/task/session numbering is never load-bearing content
+in a canonical surface; phase-scoped working material lives clearly separated (phase dirs /
+`_archive/`). Keep durable tokens (schema versions, § refs, regulation numbers, file names) and
+allow process metadata where the context is explicitly archival or changelog. Fix in place —
+statement stays, process token goes. If leakage is heavy (hundreds of refs), fix a bounded slice
+and defer the rest with the count — never let this step become a mass rewrite.
+
+## Step 3a — Terminology / naming discipline
+
+Naming fragments silently: real usage found ~85 distinct referents hiding behind 8 recurring bare
+words ("matcher" meaning 9 different things), which defeats both a human's search and an agent's
+grep. The countermeasure is a **canonical terminology registry as a first-class artifact** —
+a `terminology.md` anywhere under the docs tree — ratified and binding:
+
+- **One grep-friendly canonical name per concept**, each grounded in the code/resource that IS
+  the thing; deployed resource names verbatim.
+- **A convention that makes grep decisive** (e.g. underscore selects the code symbol, hyphen
+  selects the deployed thing).
+- **Explicit bans on bare ambiguous words** — the registry names the banned words and what to
+  write instead.
+
+This pass:
+1. **If no registry exists** (quick check G), bootstrap one from the concepts the Step 1/1a sweep
+   actually touched — start small and ratified rather than large and speculative.
+2. **Flag competing synonyms** in the files this pass touched: two names for one concept → the
+   registry name wins; the other becomes a pointer or is rewritten.
+3. **Renames go through the registry first**, then propagate — never as local drift in one file.
+
+New/edited content anywhere in the repo must use registry names (that half is enforced at touch —
+see `/update-progress`); this step is the periodic backstop that catches what slipped through.
 
 ## Step 4 — progress.json compaction (guarded; append-only preserved)
 
@@ -179,8 +267,12 @@ pre-compact backup + the sidecars are committed together with the shrunk progres
 ## Step 5 — Record + close
 
 1. Write `.claude/hygiene-state.json`:
-   `{"last_pass": "<today YYYY-MM-DD>", "findings_fixed": N, "deferred": ["<item — named reason>"]}`
-2. session_notes entry: dispositions summary, what was archived/updated, deferred items with reasons.
+   `{"last_pass": "<today YYYY-MM-DD>", "findings_fixed": N, "deferred": ["<item — named reason>"],
+   "grounded": {"<file>": "<YYYY-MM-DD grounded>", ...}}`
+   — merge this pass's Step 1a slice into the existing `grounded` map (never drop prior entries);
+   the map is what makes the rotation converge to full coverage.
+2. session_notes entry: dispositions summary, grounding-slice findings (claim/reality/fix),
+   what was archived/updated, deferred items with reasons.
 3. Commit (scoped to what this pass touched). A pass with unexecuted actionable dispositions is
    not complete — defer only with a named reason the next session can pick up.
 
@@ -194,3 +286,8 @@ pre-compact backup + the sidecars are committed together with the shrunk progres
   after the move must show zero new broken refs.
 - If in-progress work owns files (an active phase's handoff, an engine mid-rebuild), leave that
   work's files alone and note the dependency.
+- **Bounded, never a crusade.** Steps 1a/3/3a run as bounded slices — small always-on consolidation
+  beats large occasional remediation. If a slice uncovers a systemic problem (mass grounding rot,
+  wholesale naming fragmentation), do NOT fan out into a remediation inside this pass: record the
+  evidence, defer with the count, and let the operator decide whether to open dedicated work. The
+  one-off 63-agent audit this mechanism exists to prevent started as exactly that fan-out.

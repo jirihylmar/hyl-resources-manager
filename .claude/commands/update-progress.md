@@ -102,6 +102,62 @@ Record verification:
 {"id": "2.3", "status": "complete", "verify_result": "PASSED - API returns 200"}
 ```
 
+### 2a. Grounding-at-Touch (sessions that edited skills or canonical docs)
+
+Index-level hygiene cannot see content rot — a repo passes every clock/ref/index gate while its
+skills cite CLI flags that don't exist and its docs describe retired resources. The fix is standing
+and incremental: **the session that touches a claim verifies that claim.**
+
+If this session edited any skill (`.claude/commands/*.md`) or canonical doc (`docs/` outside
+`_archive/`), verify the operational claims **in the sections you touched** against the actual
+implementation before marking the task complete:
+
+| Claim type | Verification |
+|---|---|
+| Cited file path | Path resolves in the live tree |
+| Cited CLI flag / subcommand | Exists in the tool's argument parser (`--help`, source) |
+| Deployed-resource name | Appears in a **fresh** inventory, not a remembered one |
+| Payload / query shape | Matches the deployed definition (schema, table model, API) |
+| Command presented as runnable | Actually shell-runnable as written (multi-line included) |
+
+Also at touch: new/edited content uses the project's terminology-registry names if a registry
+exists (no new synonyms, no banned bare words), and adds no phase/task/session numbers as
+load-bearing content to canonical surfaces.
+
+**An edit that leaves a touched claim unverified is incomplete work** — verify it, fix it, or
+record it as an explicit deferral with a named reason. Scope is the sections you touched, not the
+whole file (the standing full-file rotation is Step 2b below).
+
+### 2b. Session-Close Consolidation Slice (EVERY session; one file; bounded)
+
+Step 2a covers what this session changed; this step works off the **standing backlog** — the rot
+already sitting in files nobody touched. It runs at every session close so consolidation debt is
+paid continuously: one small slice per session beats a monthly rotation, which beats a yearly
+crusade. Waiting for a periodic pass is how a repo passes every gate for 30 days while its skills
+cite flags that don't exist.
+
+1. **Read the rotation state**: `.claude/hygiene-state.json` → `grounded` map
+   (`{"<file>": "<YYYY-MM-DD>"}`). If the file or map is absent, self-bootstrap: create it with
+   `{"grounded": {}}` — and recommend the one-time `/repo-hygiene` baseline in the Step 12 report.
+2. **Pick ONE file**: the least-recently-grounded live skill (`.claude/commands/*.md`) or canonical
+   doc (`docs/` outside `_archive/`), never-grounded first. Files Step 2a fully verified this
+   session count as grounded — stamp them in the map rather than re-picking them.
+3. **Ground it** (claim types and verifications per the Step 2a table): extract the file's
+   operational claims, verify each against the implementation, fix in place, record
+   claim / reality / fix in session_notes.
+4. **Same file, naming + de-phasing**: flag synonyms against the terminology registry (registry
+   name wins); strip leaked phase/session/task numbers (statement stays, process token goes).
+   If NO registry exists yet, seed a minimal `terminology.md` under `docs/` from this file's
+   concepts, marked DRAFT, and surface it for ratification in the Step 12 report.
+5. **Stamp the map**: `"<file>": "<today>"` for the sliced file and any 2a-verified files. If the
+   file was too large to finish, record `"partial": {"<file>": "<where you stopped>"}` in
+   `hygiene-state.json` and stamp the map only when the file completes.
+
+**Bounds and skips** (the bound is the point — this must stay cheap enough to never be worth
+skipping): one file per session, roughly small-task effort. Skip ONLY when context is already
+>60% at session close or the session is an emergency hotfix — record the skip + reason in
+session_notes. Two consecutive skips make the slice MANDATORY at the next session close.
+
 ### 3. Update progress.json (Conservative)
 
 **Only modify allowed fields:**
@@ -145,6 +201,11 @@ stale index entries behind. When THIS update marks a phase `complete`:
    never change (append-only preserved).
 3. **Index touch-up.** Any index the closed phase's files appeared in (CLAUDE.md pointers, skill
    picker, knowledge base) is reconciled to the post-sweep paths.
+4. **Content check on what the phase leaves canonical.** Any doc/skill the phase promotes to (or
+   leaves in) a canonical location gets the grounding-at-touch treatment (Step 2a table) and is
+   de-phased: phase/task numbering stays with the archived working material, never as load-bearing
+   content in the surviving canonical doc. Bounded to the phase's own files — this is a slice,
+   not a tree-wide sweep.
 
 This is the incremental half of repo hygiene; the periodic full pass is `/repo-hygiene`
 (triggered by the clock gate in `/start-session` Step 2.7).
@@ -258,8 +319,8 @@ _No documents registered yet. Add paths here as project docs are created._
 
 **Purpose**: Continuously improve project-specific skills based on session experience.
 
-**Scope**: Only project-specific skills — everything in `.claude/commands/` EXCEPT the 9 defaults:
-`add-work.md, check-aws.md, generate-architecture.md, generate-phases.md, refresh-remote.md, setup-workflow-only.md, setup.md, start-session.md, update-progress.md`
+**Scope**: Only project-specific skills — everything in `.claude/commands/` EXCEPT the 10 defaults:
+`add-work.md, check-aws.md, generate-architecture.md, generate-phases.md, repo-hygiene.md, syndicate-refresh-remote.md, setup-workflow-only.md, setup.md, start-session.md, update-progress.md`
 
 If there are no project-specific skills, skip this step.
 

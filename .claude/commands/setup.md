@@ -81,11 +81,15 @@ Write to `input/environment.md`.
 ### 3. Copy from Playbook Template
 
 ```bash
-# Copy all template files
-cp syndicate-playbooks-examples/{selected-playbook}/IMPLEMENTATION_PLAN.md ./
-cp syndicate-playbooks-examples/{selected-playbook}/progress.json ./
-cp syndicate-playbooks-examples/{selected-playbook}/session_notes.md ./
-cp -r syndicate-playbooks-examples/{selected-playbook}/tasks/ ./
+# Copy the playbook's reference files — playbooks vary in what they ship
+# (e.g. playbook-mcp-mono-repo has only CLAUDE.md/README.md/progress.json),
+# so copy each file only if the selected playbook actually provides it.
+for f in IMPLEMENTATION_PLAN.md progress.json session_notes.md; do
+  [ -f "syndicate-playbooks-examples/{selected-playbook}/$f" ] \
+    && cp "syndicate-playbooks-examples/{selected-playbook}/$f" ./
+done
+[ -d "syndicate-playbooks-examples/{selected-playbook}/tasks" ] \
+  && cp -r "syndicate-playbooks-examples/{selected-playbook}/tasks/" ./
 
 # Copy commands
 mkdir -p .claude/commands
