@@ -40,12 +40,13 @@ drifts far enough to need a crusade.
   a human's search and an agent's grep must land on ALL and ONLY the relevant places with one
   keyword — that is how both humans and agents verify anything.
 
-**Cadence**: triggered, not scheduled. `/start-session` surfaces a banner when the clock in
-`.claude/hygiene-state.json` is >30 days old (or absent), or when the quick checks find drift.
-Overdue ×2 (>60 days) escalates to MUST-RUN-before-new-work. **Content consolidation does NOT
-wait for this clock**: `/update-progress` Step 2b grounds one rotating file at every session
-close; this pass baselines that rotation (first run — trigger it manually once in an existing
-project after receiving these defaults) and catches up whatever the session cadence missed.
+**Cadence**: triggered, not scheduled. `/start-session` Step 2.7 surfaces a banner from the clock
+in `.claude/hygiene-state.json` alone (`last_pass` >30 days → due; >60 days or the file absent →
+MUST-RUN-before-new-work; a `grounded` map present but no `last_pass` → content-baseline-missing).
+The Step 0 quick checks below run inside THIS pass, not at session start. **Content consolidation
+does NOT wait for this clock**: `/update-progress` Step 2b grounds one rotating file at every
+session close; this pass baselines that rotation (first run — trigger it manually once in an
+existing project after receiving these defaults) and catches up whatever the session cadence missed.
 
 ---
 
@@ -80,6 +81,8 @@ for f in surfaces:
     if "_archive" in f.parts: continue
     try: text = f.read_text(errors="ignore")
     except OSError: continue
+    text = re.sub(r"```.*?```", "", text, flags=re.S)  # skip fenced code — path strings inside examples aren't live refs
+    text = re.sub(r"<!--.*?-->", "", text, flags=re.S)  # skip HTML comments — instructional example paths aren't live refs
     for m in ref_re.finditer(text):
         ref = m.group(1).rstrip(".,)")
         if ref in seen: continue
@@ -118,11 +121,16 @@ project checkers are authoritative over this generic one; this one is the floor 
 
 **(E) Overlay discipline** — if `.claude/local-overlays/` exists: the distributed defaults
 (`start-session.md`, `update-progress.md`, …) must equal **canonical + overlay**, never carry
-hand-edits. Check git history: any commit that modified a distributed command file WITHOUT touching
-its overlay sibling is a divergence — it will block the next `/distribute-defaults` for that file.
-Fix by folding the hand-edited content into the overlay fragment (splice blocks) and rebaking
-(`apply-overlay.py <canonical> <overlay> > .claude/commands/<file>`); project-specific session
-steps belong in the overlay, period.
+hand-edits. Hand-edits do not survive the next `/distribute-defaults`: a file WITH an overlay
+classifies `overlay-stale` and is silently rebaked from canonical+overlay (the edit is lost); a
+file WITHOUT an overlay classifies `divergent` and blocks that file's distribution until resolved.
+Either outcome is a defect. Fix by folding the intended change into the overlay fragment (splice
+blocks) in `.claude/local-overlays/<file>`; the next `/distribute-defaults` rebakes canonical+overlay
+centrally (via the engine's `scripts/apply-overlay.py`) and redistributes — you do not rebake by
+hand in the project. Project-specific session steps belong in the overlay, period. (When auditing
+git history for stray hand-edits, ignore the engine's own sync commits — message
+`chore(playbook): sync default commands` — which legitimately rewrite command files without touching
+overlays.)
 
 ## Step 1 — Per-file sweep (the judgment work)
 

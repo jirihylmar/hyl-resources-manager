@@ -31,7 +31,8 @@ Before running AWS checks, environment config must exist.
 - MCP Tool name
 - Project prefix (naming convention)
 
-**If environment missing:** STOP and direct to `/start-session` or `/setup` first.
+**If environment missing:** STOP and direct user to `/setup` (its environment-collection step
+gathers account/region/MCP/naming), or to add the values to `CLAUDE.md` / `input/environment.md`.
 
 ---
 
@@ -50,15 +51,14 @@ Using MCP tool from environment:
 ```
 Expected: Correct account ID and role matching environment config.
 
+**Expected-resource lists come from THIS project** — derive them from `IMPLEMENTATION_PLAN.md`
+(and `resource_inventory` in progress.json if it exists), never from this template's examples.
+
 ### 3. Check S3 Buckets
 ```
 {mcp_tool} aws s3 ls
 ```
-Filter for project buckets (matching project_prefix).
-
-Expected buckets for this project:
-- `{project}-artifacts-*` - Build artifacts
-- `{project}-sessions-*` - Session files for analysis
+Filter for project buckets (matching project_prefix), e.g. `{project}-artifacts-*`.
 
 ### 4. Check DynamoDB Tables
 ```
@@ -66,27 +66,17 @@ Expected buckets for this project:
 ```
 Filter for project tables (matching project_prefix).
 
-Expected tables for this project:
-- `{project}-experts-*` - Expert profiles and expertise
-
 ### 5. Check SQS Queues
 ```
 {mcp_tool} aws sqs list-queues
 ```
-Filter for project queues.
-
-Expected queues:
-- `{project}-commands-*` - Command queue for Master-of-Masters
-- `{project}-commands-*-dlq` - Dead letter queue
+Filter for project queues (matching project_prefix), including any `*-dlq` dead-letter pairs.
 
 ### 6. Check SNS Topics
 ```
 {mcp_tool} aws sns list-topics
 ```
-Filter for project topics.
-
-Expected topics:
-- `{project}-notifications-*` - Notification topic
+Filter for project topics (matching project_prefix).
 
 ### 7. Check Lambda Functions
 ```
@@ -135,12 +125,11 @@ Filter for project roles (matching project_prefix).
 | CloudFormation Stacks | 2 | 0 | ✗ Not deployed |
 
 ### Missing Resources
-- SQS command queue (Phase 1.2)
-- SNS notification topic (Phase 1.2)
-- Lambda functions (Phase 2)
+- {resource} — created by {task/phase ref from progress.json}
+- ...
 
 ### Next Steps
-- Deploy foundation stack: Task 1.4
+- {deploy/create step for the missing resources, from progress.json}
 - Or continue with current phase task
 ```
 
@@ -151,5 +140,5 @@ Filter for project roles (matching project_prefix).
 - Always read environment config first
 - Use MCP tools, never raw aws CLI
 - Compare against expected resources from IMPLEMENTATION_PLAN.md
-- Update this file as new resource types are added
+- Add project-specific resource types via `.claude/local-overlays/check-aws.md` (splice fragment), not by hand-editing this distributed default
 - Use resource_inventory in progress.json as reference if it exists

@@ -169,11 +169,17 @@ if not p.exists():
     print("HYGIENE: never recorded — run /repo-hygiene to establish the baseline")
 else:
     st = json.loads(p.read_text())
-    age = (time.time() - time.mktime(time.strptime(st.get("last_pass","1970-01-01"), "%Y-%m-%d"))) / 86400
-    if age > 60:   print(f"HYGIENE: OVERDUE x2 ({age:.0f}d since {st['last_pass']}) — MUST run /repo-hygiene before new work")
-    elif age > 30: print(f"HYGIENE: due ({age:.0f}d since {st['last_pass']}) — schedule /repo-hygiene this session or next")
-    elif "grounded" not in st: print("HYGIENE: content baseline missing — run /repo-hygiene once to baseline grounding + terminology (then /update-progress Step 2b rotates per session)")
-    else:          print(f"HYGIENE: ok (last pass {st['last_pass']}, {age:.0f}d ago)")
+    lp = st.get("last_pass")   # may be absent OR explicitly null — treat both as "no full pass yet"
+    if not lp:
+        if "grounded" in st:
+            print("HYGIENE: content baseline missing — grounded map exists but no full pass; run /repo-hygiene once to set the clock (then /update-progress Step 2b rotates per session)")
+        else:
+            print("HYGIENE: never recorded — run /repo-hygiene to establish the baseline")
+    else:
+        age = (time.time() - time.mktime(time.strptime(lp, "%Y-%m-%d"))) / 86400
+        if age > 60:   print(f"HYGIENE: OVERDUE x2 ({age:.0f}d since {lp}) — MUST run /repo-hygiene before new work")
+        elif age > 30: print(f"HYGIENE: due ({age:.0f}d since {lp}) — schedule /repo-hygiene this session or next")
+        else:          print(f"HYGIENE: ok (last pass {lp}, {age:.0f}d ago)")
 PY
 ```
 
@@ -272,6 +278,7 @@ Proceed to session handoff (Step 4).
 {mcp_tool} aws sts get-caller-identity
 ```
 
+- If `context_hints` has no `aws_account` (a Phase 0 project, or one without AWS), skip this step and record "AWS verify: n/a (no aws_account in context_hints)" in the Step 9 report.
 - **STOP if account ID does not match** `context_hints.aws_account`
 - Confirm region matches `context_hints.aws_region`
 

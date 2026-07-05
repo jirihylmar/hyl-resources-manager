@@ -57,14 +57,14 @@ When user input is ambiguous or incomplete, the skill **asks** rather than assum
 2. **Binary check.** `command -v syndicate-refresh-remote` must succeed. If not, surface:
    > "syndicate-refresh-remote not installed. Run `~/syndicate-remote/scripts/install.sh` once on this machine, then retry."
 3. **Config check.** `~/.syndicate-remote-secrets/box.json` must exist and have non-empty `host`, `user`, `workspace`, `ssh_key`. If missing fields, surface:
-   > "box.json missing fields X, Y. Resolve current values and update the file; the binary's first `--help` invocation prints the schema."
+   > "box.json missing fields X, Y. Resolve current values and update the file. If `box.json` is missing entirely, running `syndicate-refresh-remote` prints the exact seed command (an `echo '{...}' > ~/.syndicate-remote-secrets/box.json && chmod 600` line with the full schema)."
 4. **SSH probe.** The binary's first pre-flight step does this. If it fails, ask the user what likely changed: box IP / SG / box stopped / key file missing — and offer the matching remediation.
 
 ### Step 2 — Gather the repo list (if not provided as args)
 
 Use `AskUserQuestion` (multi-select) populated by:
 ```bash
-find ~ -maxdepth 1 -type d -name '.git' \! -path "${HOME}/.*" -prune -o -maxdepth 1 -type d -print \
+find ~ -mindepth 1 -maxdepth 1 -type d -not -name '.*' \
   | xargs -I {} sh -c 'test -d "{}/.git" && basename "{}"' \
   | sort
 ```
@@ -111,10 +111,15 @@ If the binary exits 2 (HALT — conflict) and `--keep-side` wasn't pre-set:
 After all repos process, the binary prints:
 
 ```
-=== syndicate-refresh-remote summary ===
-repos:   N total, M synced cleanly, K had conflicts (resolved: ..., skipped: ...)
-env:     E files transferred
-host:    <ip> (saved to ~/.syndicate-remote-secrets/box.json)
+=== Summary ===
+repo                                               status               detail
+----                                               ------               ------
+<repo>                                             <result>             <detail>
+...
+
+total conflicts encountered: <N>
+box host used: <ip>
+box info cached at: /home/<user>/.syndicate-remote-secrets/box.json
 ```
 
 Then ask: "Anything else to sync?" (no / yes — back to step 2).

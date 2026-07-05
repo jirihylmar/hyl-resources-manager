@@ -322,7 +322,8 @@ Use Edit tool to remove the `syndicate-playbooks-examples/` line from `.gitignor
 ## Step 9: Commit Workflow Files
 
 ```bash
-git add .claude/ progress.json session_notes.md CLAUDE.md .gitignore
+git add .claude/ progress.json session_notes.md CLAUDE.md
+[ -f .gitignore ] && git add .gitignore   # only if present — new projects may not have one yet
 git commit -m "workflow: Add playbook session discipline
 
 Added:

@@ -51,9 +51,10 @@ then re-run this command.
 
 ### 2. Specification Must Be Approved
 
-Check for approval indicator:
-- `IMPLEMENTATION_PLAN.md` contains `## Status: Approved`
-- OR `session_notes.md` contains explicit approval record
+Check for approval indicator (the Phase 0 spec-approval task records the approval — it does not
+appear on its own):
+- `session_notes.md` contains an explicit approval record from the spec-approval task, OR
+- `IMPLEMENTATION_PLAN.md` carries a `## Status: Approved` line the approver added
 
 **If not approved:** STOP and inform user:
 ```
@@ -160,7 +161,7 @@ tasks/
 
 **GOOD (atomic):**
 ```json
-{"id": "2.1", "name": "Create Cognito User Pool via CDK", "verify": "aws cognito list-user-pools shows pool", "size": "small"},
+{"id": "2.1", "name": "Create Cognito User Pool via CDK", "verify": "aws cognito-idp list-user-pools --max-results 10 shows pool", "size": "small"},
 {"id": "2.2", "name": "Add signup Lambda function", "verify": "Lambda exists in console", "size": "small"},
 {"id": "2.3", "name": "Add login Lambda function", "verify": "Lambda exists", "size": "small"},
 {"id": "2.4", "name": "Create API Gateway auth endpoints", "verify": "POST /auth/signup returns 200", "size": "medium"},

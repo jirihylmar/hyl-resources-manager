@@ -290,7 +290,7 @@ Run `/start-session` to begin work.
 
 ## Notes
 
-- Playbook templates contain complete specs, phases, and tasks
-- `/setup` copies and customizes - no need to generate phases
+- Playbooks vary in what they ship (see Scenario A step 3) — copy what exists. Some carry a spec/phases/tasks; some carry only CLAUDE.md/README.md/progress.json.
+- If the selected playbook ships a complete spec + tasks, `/setup` copies and customizes them — no need to generate phases. If it does not, follow the Phase 0 flow (draft the spec, then `/generate-phases`).
 - For additions mid-project, use `/add-work`
 - Commands in `_project-template/.claude/commands/` are the source of truth

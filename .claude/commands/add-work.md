@@ -163,8 +163,9 @@ Add these to progress.json?
 }
 ```
 
-**If the project keeps per-phase task files** (a `tasks/` directory exists), create/update
-`tasks/phase_X.md` — projects that track work in progress.json only skip this:
+**If the project keeps per-phase task files** (a `tasks/` directory exists), create/update the
+phase's existing `tasks/phase_X_<name>.md` (the file `/generate-phases` created) — projects that
+track work in progress.json only skip this:
 ```markdown
 # Phase X: [Name]
 
@@ -193,7 +194,7 @@ Scoped to the files this command changed (include `tasks/` only if the project k
 and you updated them):
 
 ```bash
-git add progress.json session_notes.md   # + tasks/phase_X.md if updated
+git add progress.json session_notes.md   # + tasks/phase_X_<name>.md if updated
 git commit -m "work: add [N] tasks to Phase X
 
 Added:

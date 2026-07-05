@@ -222,12 +222,13 @@ git status --porcelain
 
 ### 5. Update session_notes.md
 
-**Append** new session entry:
+Insert a new entry using the **same header format and placement as the Multi-Agent Discipline
+section above** (`## Session: YYYY-MM-DD - Task X.Y`, inserted after the `---` below the title):
 
 ```markdown
 ---
 
-## Session X - YYYY-MM-DD
+## Session: YYYY-MM-DD - Task X.Y
 
 ### Completed This Session
 - Task 2.3: Add API endpoint (repo: backend) ✓
@@ -382,15 +383,18 @@ Commit and **FF-push only the work YOU did this session — the repos and files 
 
 **Commit the orchestration repo (scoped to its two files, task-ID message):**
 ```bash
-git commit -- progress.json session_notes.md -m "progress: complete task X.Y - [brief description]
+git commit -m "progress: complete task X.Y - [brief description]
 
 Completed:
 - Task X.Y: [name]
 
 Next: Task X.Z
 
-🤖 Generated with Claude Code"
+🤖 Generated with Claude Code" -- progress.json session_notes.md
 ```
+
+(The `-m` message comes BEFORE the `--` pathspec — `git commit -- <paths> -m "msg"` fails because
+everything after `--` is treated as a pathspec, including `-m`.)
 
 **Commit each sub-repo you changed (scoped by pathspec — never `git add -A`):**
 ```bash
@@ -399,7 +403,7 @@ for dir in infrastructure backend frontend testing; do
   [ -n "$(git -C "$dir" status --porcelain)" ] || continue   # skip repos you did not touch
   echo "=== $dir: review, then commit ONLY your task's files ==="
   git -C "$dir" status --short
-  # git -C "$dir" commit -- <your-changed-files> -m "task X.Y: [what changed in $dir]"
+  # git -C "$dir" commit -m "task X.Y: [what changed in $dir]" -- <your-changed-files>
 done
 ```
 

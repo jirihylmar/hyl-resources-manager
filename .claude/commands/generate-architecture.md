@@ -143,8 +143,8 @@ python3 docs/architecture/generate.py
 ```
 
 Requirements:
-- `pip3 install diagrams`
-- `apt-get install graphviz`
+- `pip3 install --break-system-packages diagrams`
+- `sudo apt-get install -y graphviz`
 ```
 
 ---
