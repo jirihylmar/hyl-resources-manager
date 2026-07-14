@@ -71,12 +71,15 @@ sync_ff() {  # $1=dir ('.' for orchestration), $2=label
   fi
 }
 sync_ff "." orchestration
-for dir in infrastructure backend frontend testing; do
+for dir in */; do
+  dir="${dir%/}"
   [ -d "$dir/.git" ] && sync_ff "$dir" "$dir"
 done
 ```
 
-A brand-new Phase-0 project whose orchestration repo has no upstream yet is local-only — that is normal; `no upstream` means nothing to pull, so proceed. Carry each repo's sync result into the Step 9 "Session Ready" report. (`infrastructure backend frontend testing` matches the existing Step 8 list; the long-term source of truth is `progress.json` `git_repos`.)
+A brand-new Phase-0 project whose orchestration repo has no upstream yet is local-only — that is normal; `no upstream` means nothing to pull, so proceed. Carry each repo's sync result into the Step 9 "Session Ready" report.
+
+**Why the sub-repo list is discovered, not hardcoded.** This loop used to read `for dir in infrastructure backend frontend testing` — a fixed list that silently matched **nothing** in any project whose sub-repos are named otherwise (`mcp-docker-playbook`'s are `mcp-infrastructure`, `mcp-connectors`, `mcp-solutions`, `mcp-audit`). Because each iteration is guarded by `[ -d "$dir/.git" ]`, a non-matching name produced **no error and no output** — the step reported success having synced zero sub-repos, and multi-location drift accumulated unseen. Discovery by glob is ground truth for the thing this loop actually asks ("which sub-repos are *present*?"), needs no parser, and cannot drift. `progress.json` `git_repos` remains the **declarative registry** (Step 8 reports status into it); a future refinement could cross-check the two and warn on a declared-but-absent repo. With no subdirectories the glob is a safe no-op.
 
 ### 0.5. Ensure the Commit Guard Is Armed (idempotent; never creates files)
 
@@ -97,7 +100,8 @@ arm_guard() {  # $1=dir
   fi
 }
 arm_guard "."
-for dir in infrastructure backend frontend testing; do
+for dir in */; do
+  dir="${dir%/}"
   [ -d "$dir/.git" ] && arm_guard "$dir"
 done
 ```
@@ -314,11 +318,12 @@ Run `/context` to check usage:
 
 ### 8. Check Git Repo Status
 
-Same sub-repo set as Steps 0/0.5 (long-term source of truth: `progress.json` `git_repos`):
+Same discovered sub-repo set as Steps 0/0.5 (`progress.json` `git_repos` is the declarative registry this step reports *into*):
 
 ```bash
 git status
-for dir in infrastructure backend frontend testing; do
+for dir in */; do
+  dir="${dir%/}"
   [ -d "$dir/.git" ] && { echo "=== $dir ==="; git -C "$dir" status --short; }
 done
 ```
