@@ -153,6 +153,72 @@ Never `git add -A` / `git add .` (see Multi-Agent Discipline → "Commit only fi
 
 **Carry the inventory forward:** include the enumerated list in the Step 9 "Session Ready" report so the prefer-existing reflex stays in working context past session start.
 
+### 2.5. Cross-Host Repo Resolution (where does each repo you reach into actually LIVE?)
+
+**A repo lives in exactly ONE place.** If a repo is on the remote box, it is **developed there** — a
+local directory of the same name would be a stale backup or leftover, not the truth. The inverse also
+holds: some repos are **local-only by policy** and must never appear on the box
+(`syndicate-playbooks-examples`, `syndicate-remote`).
+
+**Why this step exists — the hardcoded-path failure.** Project skills reach into *other* repos by
+absolute path (`/home/<user>/<repo>/…`). The moment that repo moves to the box, every such path
+resolves to **nothing** — and the agent does not error. It improvises: writes into the current repo,
+"recreates" the missing tree, or reports success having done neither. This is the same failure class
+as a knowledge extraction scattering into the local repo, and it is worse than an outage because it
+looks like success. Measured on this estate: one designer skill carried **11** references to a deploy
+repo that had moved to the box; all 11 pointed at an empty path.
+
+**Resolve by presence — never by hostname, `$USER`, or a hardcoded list.** Same rule as the
+`/update-progress` inbox and the sub-repo glob: the filesystem is ground truth, a declaration drifts.
+
+```bash
+CFG="$HOME/.syndicate-remote-secrets/box.json"
+SELF="$(basename "$PWD")"
+
+# Discover which OTHER repos this project's skills point at — live grep, never a hardcoded list.
+REFS=$(grep -rhoE '(/home/[A-Za-z0-9._-]+|\$HOME|~)/[A-Za-z0-9._-]+' .claude/commands/*.md 2>/dev/null \
+       | sed -E 's#^(/home/[A-Za-z0-9._-]+|\$HOME|~)/##; s/[.,:;)]+$//' \
+       | grep -vE '^\.?$|^\.' | sort -u)
+
+# One cheap probe for the box's repo list (skip silently if there is no box configured).
+BOXLIST=""
+if [ -f "$CFG" ]; then
+  H=$(python3 -c "import json;print(json.load(open('$CFG'))['host'])")
+  U=$(python3 -c "import json;print(json.load(open('$CFG'))['user'])")
+  K=$(python3 -c "import json;print(json.load(open('$CFG'))['ssh_key'])")
+  BOXLIST=$(ssh -n -i "$K" -o ConnectTimeout=15 -o BatchMode=yes "$U@$H" \
+            'for d in ~/*/; do [ -d "$d/.git" ] && basename "$d"; done' 2>/dev/null)
+fi
+
+for r in $REFS; do
+  [ "$r" = "$SELF" ] && continue
+  if [ -d "$HOME/$r/.git" ]; then
+    printf 'REPO %-34s local\n' "$r"
+  elif printf '%s\n' "$BOXLIST" | grep -qx "$r"; then
+    printf 'REPO %-34s REMOTE (box) — local paths to it are DEAD\n' "$r"
+  else
+    printf 'REPO %-34s UNRESOLVABLE — neither local nor on the box\n' "$r"
+  fi
+done
+```
+
+**Act on the result:**
+
+| Verdict | What it means | What you do |
+|---|---|---|
+| `local` | The repo is here. | Use it directly. Normal case; say nothing. |
+| `REMOTE (box)` | It lives on the box and is **developed there**. Every `/home/<user>/<repo>/…` path in this project's skills is **dead**. | **Surface it in the handoff.** Work touching that repo must run **on the box** (`ssh`, or a session started there) — reading its files, running its scripts, and committing in it all happen there. Do **not** clone it locally to "fix" the path: that creates a second copy, and the box copy is the real one. |
+| `UNRESOLVABLE` | Neither local nor on the box. | **Report it and stop** before doing work that depends on it. Do not invent a path, do not recreate the tree, do not substitute the current repo. |
+
+> **The one thing you must never do:** treat a dead absolute path as an invitation to improvise. A
+> skill that says `/home/<user>/<repo>/…` for a repo that now lives on the box is **stale
+> documentation, not an instruction** — resolve where the repo actually is, and if that is the box,
+> say so plainly rather than quietly doing the work somewhere else.
+
+**Cross-host work is a real constraint, not a detail.** A skill whose *source* repo is local and whose
+*target* repo is remote cannot run wholly on either host. When you hit one, surface the split to the
+operator rather than half-executing it — half of a two-sided sync is a partial-sync defect.
+
 ### 2.7. Repo Hygiene Gate (triggered consolidation — /repo-hygiene)
 
 **Why:** one-off documentation audits decay — weeks after a big cleanup, docs drift from the code,
@@ -255,6 +321,12 @@ Proceed to session handoff (Step 4).
 ### Open Items
 - [Any pending user decisions from last session]
 - [Any blockers noted]
+
+### ⚠ Remote-resident repos  (omit ONLY if Step 2.5 found none)
+[repo → REMOTE (box): this project's skills reference it by a local path that is DEAD.
+ Work touching it must run on the box. Name every one — an agent that does not know this
+ will improvise into the current repo and report success.]
+[repo → UNRESOLVABLE: neither local nor on the box. Do not start work that depends on it.]
 
 ### ⚠ Repo hygiene  (omit if Step 2.7 reported ok)
 [due / OVERDUE x2 / never recorded — recommend /repo-hygiene accordingly]

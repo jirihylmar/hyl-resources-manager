@@ -441,6 +441,14 @@ Mark a repo's `git_repos` status `pushed` only after a confirmed FF-push; a repo
 
 ### 11. Extract Session Knowledge
 
+> **The inbox is one instance of a general rule — see `/start-session` Step 2.5.** A repo lives in
+> exactly ONE place. `syndicate-playbook` (the inbox) and `mcp-docker-playbook` (the MCP deploy repo)
+> live **on the box** and are developed there; `syndicate-playbooks-examples` and `syndicate-remote`
+> are **local-only** and must never appear on the box. Any `/home/<user>/<repo>/…` path in a skill is
+> a **claim about location that may already be false** — resolve by presence before acting on it, and
+> if the repo turned out to be remote, do the work there and say so. Never let a dead path become an
+> excuse to improvise locally. The rest of this step applies that rule to the knowledge inbox.
+
 #### 11.0 — ALWAYS FIRST: resolve the inbox, then flush the spool
 
 **Do this on every run of this step, whether or not this session produced any learnings.** A spool
