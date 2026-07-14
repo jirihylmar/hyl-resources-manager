@@ -441,6 +441,48 @@ Mark a repo's `git_repos` status `pushed` only after a confirmed FF-push; a repo
 
 ### 11. Extract Session Knowledge
 
+#### 11.0 — ALWAYS FIRST: resolve the inbox, then flush the spool
+
+**Do this on every run of this step, whether or not this session produced any learnings.** A spool
+backlog is left by an *earlier* run that hit an outage; it has nothing to do with what *this* session
+learned. If the flush were nested under "write extraction file (if candidates found)", a host that
+spooled once and then had a run of quiet sessions would never deliver — the spool would silently
+become the destination it is explicitly not allowed to be.
+
+**Resolve the inbox — `syndicate-playbook` is remote-only.** The one inbox is
+`<workspace>/syndicate-playbook/knowledge_extraction/`. Resolve it by **presence**, never by hostname
+or `$USER`: the same file ships to every host, it works while a local copy still exists, and it needs
+no edit on the day the local copy is retired.
+
+```bash
+SPOOL="$HOME/.syndicate-knowledge-spool"        # used by 11.0 and by step 3 below
+if [ -d "$HOME/syndicate-playbook/knowledge_extraction" ]; then
+  ROUTE=direct         # this host holds the inbox — write straight to that path
+elif [ -f "$HOME/.syndicate-remote-secrets/box.json" ]; then
+  ROUTE=remote         # inbox is on the box — scp it in
+else
+  ROUTE=spool          # inbox not resolvable from this host — spool it
+fi
+echo "$ROUTE"
+```
+
+**Then flush the spool.** If `ROUTE` is `direct` or `remote` and `$SPOOL` is non-empty, deliver the
+backlog by that route now, and **remove only the files that confirmably arrive**. A file that fails to
+deliver stays spooled — never deleted, never assumed delivered:
+
+```bash
+if [ -d "$SPOOL" ] && [ -n "$(ls -A "$SPOOL" 2>/dev/null)" ]; then
+  echo "SPOOL: $(ls -1 "$SPOOL" | wc -l) extraction(s) awaiting delivery — flushing via $ROUTE"
+  # deliver each via the resolved route (direct: mv into the inbox; remote: scp — see step 3),
+  # and rm ONLY on confirmed success. If ROUTE=spool, deliver nothing and report the backlog.
+fi
+```
+
+**Report the outcome in Step 12 even if this session extracted nothing** — `N flushed, M still
+spooled`. A backlog that nobody reports is a backlog nobody clears.
+
+#### 11.1 — Extract this session's knowledge
+
 **Purpose**: Capture learnings from this session for future use.
 
 **When to extract** (at least one must apply):
@@ -466,28 +508,14 @@ Mark a repo's `git_repos` status `pushed` only after a confirmed FF-push; a repo
 
    **Naming convention**: `{project}-{YYYY-MM-DD}-{topic}-recommended.md`
 
-   **Resolve the inbox before writing — `syndicate-playbook` is remote-only.**
-
-   The one inbox is `<workspace>/syndicate-playbook/knowledge_extraction/`. Resolve it by **presence**,
-   never by hostname or `$USER`: the same file ships to every host, it works while a local copy still
-   exists, and it needs no edit on the day the local copy is retired.
-
-   ```bash
-   SPOOL="$HOME/.syndicate-knowledge-spool"
-   if [ -d "$HOME/syndicate-playbook/knowledge_extraction" ]; then
-     echo direct          # this host holds the inbox — write straight to that path
-   elif [ -f "$HOME/.syndicate-remote-secrets/box.json" ]; then
-     echo remote          # inbox is on the box — scp it in
-   else
-     echo spool           # inbox not resolvable from this host — spool it
-   fi
-   ```
+   Write it via the `$ROUTE` already resolved in **11.0** — do not re-resolve, and never invent a
+   third destination:
 
    - **direct** — write `$HOME/syndicate-playbook/knowledge_extraction/{project}-{YYYY-MM-DD}-{topic}-recommended.md`
      with the Write tool.
 
-   - **remote** — write the file to a temp path, then copy it in. This uses only services that already
-     exist on the box; it creates and changes nothing there:
+   - **remote** — write the file to a temp path (`TMPFILE=$(mktemp)`, then Write into it), and copy it
+     in. This uses only services that already exist on the box; it creates and changes nothing there:
 
      ```bash
      CFG=~/.syndicate-remote-secrets/box.json
@@ -508,19 +536,8 @@ Mark a repo's `git_repos` status `pushed` only after a confirmed FF-push; a repo
      ```
 
      Then **report it loudly** in the Step 12 summary — spooled, not delivered, with the reason verbatim.
-     The spool is a **waiting room, not a destination**: it is flushed by the next run that resolves an
-     inbox (see below) and by `/syndicate-refresh-remote`.
-
-   **Flush the spool first, every time.** Before writing a new extraction, if `direct` or `remote`
-   resolved and `$SPOOL` is non-empty, deliver its backlog by the same route and remove only the files
-   that arrive. A file that fails to deliver stays spooled — never deleted, never silently dropped:
-
-   ```bash
-   if [ -d "$SPOOL" ] && [ -n "$(ls -A "$SPOOL" 2>/dev/null)" ]; then
-     echo "SPOOL: $(ls -1 "$SPOOL" | wc -l) extraction(s) awaiting delivery — flushing"
-     # deliver each via the resolved route (direct: mv; remote: scp), rm ONLY on confirmed success
-   fi
-   ```
+     The spool is a **waiting room, not a destination**: it is drained by **11.0** on the next run that
+     resolves an inbox, and by `/syndicate-refresh-remote` Step 6a.
 
    > **Never write the extraction into the current repo as a substitute.** A local write looks like
    > success and silently removes the knowledge from the curation path — that is worse than an outage,
@@ -642,8 +659,14 @@ Mark a repo's `git_repos` status `pushed` only after a confirmed FF-push; a repo
 - Items: 2 patterns, 1 anti-pattern
 - Delivered: direct → $HOME/syndicate-playbook/knowledge_extraction/
   (or "remote → box inbox via scp"; or "SPOOLED → ~/.syndicate-knowledge-spool/ — NOT delivered: <reason verbatim>")
-- Spool backlog: empty (or "N file(s) still awaiting delivery")
 (or "None - no generalizable learnings this session")
+
+### Knowledge Spool (ALWAYS report — never omit, even when nothing was extracted)
+- Route resolved: direct (or remote / spool — inbox unreachable)
+- Flushed this run: 0
+- Still spooled: 0
+(A backlog is independent of whether this session learned anything. "Nothing extracted" must never
+hide "3 extractions still undelivered" — that is how a waiting room quietly becomes a destination.)
 
 ### Overall Progress
 Phase 2: 3/5 tasks complete

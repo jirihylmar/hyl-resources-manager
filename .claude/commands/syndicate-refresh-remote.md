@@ -101,9 +101,16 @@ Use `AskUserQuestion`:
 > final Summary never mentions them.
 >
 > **State this to the user before they choose.** If the tree is dirty, the correct remedy is
-> **commit first**. With no `--keep-side`, the binary halts safely (`HALT_LOCAL_DIRTY`) having touched
-> nothing on either side — **that halt is the safe default and the good path**, not an obstacle to
-> route around. Prefer "Ask me per repo" and resolve dirt by committing.
+> **commit first**. With no `--keep-side`, the binary **refuses to touch the dirty repo**
+> (`HALT_LOCAL_DIRTY`) and stops the run — **that halt is the safe default and the good path**, not an
+> obstacle to route around. Prefer "Ask me per repo" and resolve dirt by committing.
+>
+> **But the halt is not a rewind.** The dirty check runs *per repo, inside the loop*, so every repo
+> processed **before** the dirty one has already been fully synced — pushed to origin, cloned or
+> fast-forwarded on the box, and its `.env*` files copied over. The binary says so itself:
+> `halted after N ok`. So a halt means "stopped here", **not** "nothing happened". On a nested
+> project the parent is processed first, so a dirty **child** halts a run in which the parent is
+> already synced. Read the Summary to see what did land before reporting the run as a no-op.
 
 ### Step 4 — Invoke the binary
 
@@ -142,7 +149,7 @@ If the binary exits 2 (HALT) and `--keep-side` wasn't pre-set — **first read t
 
 1. Parse the output for the offending repo + divergence info.
 2. `AskUserQuestion`:
-   - **Keep local** — `git reset --hard origin/<branch>` on the box (loses box-only commits).
+   - **Keep local** — `git reset --hard origin/<branch>` on the box. ⚠ **The binary never checks whether the box tree is dirty.** Box-only commits are reflog-recoverable, but **uncommitted and staged changes to tracked files on the box are destroyed — no stash, no reflog, unrecoverable.** Verify the box tree is clean first: `ssh <box> "git -C '<box_path>' status --porcelain"` (must be empty).
    - **Keep box** — push box-only commits to origin; then local pulls.
    - **Manual** — print the SSH command + diff and stop; user resolves themselves.
    - **Skip this repo** — leave it diverged, move on.
@@ -211,16 +218,38 @@ Always confirm before executing if interpretation is non-obvious.
 - **Transfer secrets through git.** Only `.env*` files via scp (mode 600 on receiver).
 - **Cross branches.** Only syncs the currently-checked-out branch on each side. If branches differ, it surfaces and asks.
 
-### The one exception — read this before trusting the list above
+### The exceptions — read this before trusting the list above
 
-**`--keep-side` is not free.** Everything above is true, and none of it makes the tool non-destructive
-when `--keep-side` is set: on a dirty tree it **auto-stashes uncommitted and untracked work and never
-restores it** (one stash per sub-repo, before any divergence is detected). The work is recoverable
-(`git stash list`), never deleted — but it leaves your tree without a durable warning.
+**`--keep-side` is not free, and it cuts on both sides.** Everything above is true *by default*; none
+of it survives `--keep-side`. There are **two** distinct hazards, and the second is worse:
 
-Read the list above as: *the tool is genuinely safe by default, and `--keep-side` is the single edge
-you must opt into knowingly.* The safe default is to pass no `--keep-side`, let a dirty repo halt, and
-**commit first**.
+**1. Local — auto-stash, never restored (recoverable).** On a dirty local tree, `--keep-side` runs
+`git stash push -u` (uncommitted **and untracked**) and never pops it — one stash per sub-repo, before
+any divergence is detected. The work is **recoverable** via `git stash list`; it is not deleted.
+
+**2. Box — `git reset --hard`, no dirty check at all (UNRECOVERABLE).** On a divergence with
+`--keep-side local`, the binary runs `git reset --hard origin/<branch>` **on the box**. There is **no
+box-side dirty check anywhere in the tool** — the only `git status --porcelain` it performs is on the
+*local* tree. So:
+>
+> - Box-only **commits** are reflog-recoverable.
+> - Box-only **uncommitted or staged changes to tracked files are destroyed** — no stash, no reflog,
+>   **no recovery.** (Untracked files on the box survive `reset --hard`.)
+>
+> This also means the "Delete files" bullet above holds **only** without `--keep-side`: a
+> `reset --hard` will discard box-side modifications to tracked paths that were never `git rm`'d.
+
+**Before ever choosing "Keep local" on a diverged repo, check that the box tree is clean** — the tool
+will not check for you:
+
+```bash
+ssh <box> "git -C '<box_path>' status --porcelain"   # must be empty
+```
+
+Read the list above as: *the tool is genuinely safe by default — no force-push, no `git clean`, no
+deletions — and `--keep-side` is the single edge you must opt into knowingly, in both directions.*
+The safe default is to pass no `--keep-side`, let a dirty repo halt, and **commit first — on whichever
+side is dirty.**
 
 ---
 
@@ -252,7 +281,8 @@ The skill above is the conversational front-end that:
 | `fatal: not a git repository` on box | Repo never cloned on box | Binary auto-clones; if it fails, check `gh auth status` on the box. |
 | `! [rejected] main -> main (non-fast-forward)` | Local and box diverged | Skill's conflict-resolution dialog handles this. |
 | `unexpected status:  — treating as failure` (blank status), exit 2 | **Repo has no `origin` remote.** The binary does **not** skip it — `git fetch origin` fails, execution continues, and the empty box status falls through to `HALT_UNKNOWN` → **exit 2**, which is the same code as a real conflict. Misleading twice over: it prints `local synced with origin` first, for a repo that has no origin. | Add an origin, then re-run. Do not hunt for a conflict — there isn't one. |
-| Work disappeared from the tree after a `--keep-side` run | `git stash push -u` fired on a dirty tree and was never popped (see the ⚠ under Step 3). One stash **per sub-repo**. | `git stash list` in the affected repo (and in **each** sub-repo of a nested project), then `git stash pop`. Nothing is lost — it is stashed, not deleted. |
+| Work disappeared from the **local** tree after a `--keep-side` run | `git stash push -u` fired on a dirty tree and was never popped (see the ⚠ under Step 3). One stash **per sub-repo**. | `git stash list` in the affected repo (and in **each** sub-repo of a nested project), then `git stash pop`. Nothing is lost — it is stashed, not deleted. |
+| Work disappeared from the **box** tree after `--keep-side local` on a diverged repo | `git reset --hard origin/<branch>` ran on the box. **There is no box-side dirty check in the tool at all.** | Box-only **commits**: recover via `git reflog` on the box. Box-only **uncommitted/staged changes to tracked files**: **unrecoverable** — no stash was taken. Untracked files survive. Check `ssh <box> "git -C '<box_path>' status --porcelain"` *before* choosing this, every time. |
 | A typo'd or never-cloned repo name reports **success** | `SKIP_NOT_GIT` exits **0**. A no-op is indistinguishable from a sync. | Read the Summary table rows — do not trust the exit code alone. Check the repo name spelling. |
 | Command hangs forever, no output, no timeout | `--keep-side` was passed as the **final** argument — the parser spins (see the ⚠ under Step 4). | Ctrl-C. Re-run with `--keep-side` **before** the repo list. |
 
