@@ -41,9 +41,19 @@ If you ever read this skill markdown in any project and the binary isn't install
 | `/syndicate-refresh-remote broadcasting-orchestration aps-brm-products-playbook` | Uses both repos. Skips the "which repos" prompt. |
 | `/syndicate-refresh-remote all` | Sync **every** top-level repo under `~/` (confirms count first — typically ~60–70 repos). |
 | `/syndicate-refresh-remote hyl-*` | Glob match; lists candidates and asks to confirm. |
-| `/syndicate-refresh-remote --status` | **Drift dashboard mode** — informational only, never mutates. Surveys every repo under `~/` on local and the box, prints a table showing per-repo LOCAL/BOX/DRIFT state. Project-agnostic: the answer is the same regardless of which playbook you invoke from. |
-| `/syndicate-refresh-remote --status --json` | Same survey, JSON output on stdout (chatter goes to stderr). For tooling/agents that want to consume drift state. |
-| `/syndicate-refresh-remote --status syndicate-remote app-foo` | Status of only the named repos. |
+| `/syndicate-refresh-remote --status` | **Drift dashboard mode** — informational only, never mutates. Surveys every **top-level** repo under `~/` on local and the box, prints a table showing per-repo LOCAL/BOX/DRIFT state. Project-agnostic: the answer is the same regardless of which playbook you invoke from. ⚠ **Depth-1 only — see below.** |
+| `/syndicate-refresh-remote --status --json` | Same survey, JSON output on stdout (chatter goes to stderr). For tooling/agents that want to consume drift state. ⚠ Same depth-1 blindness. |
+| `/syndicate-refresh-remote --status syndicate-remote app-foo` | Status of only the named repos. ⚠ Same depth-1 blindness. |
+
+> **⚠ `--status` does NOT see nested sub-repos.** Both the local and box surveys glob one level
+> (`<base>/*/`) and never recurse, so for a nested project the dashboard prints the **parent** as a
+> single row — and an `in sync` parent tells you **nothing** about its children. A sub-repo can be 40
+> commits diverged behind a green parent row.
+>
+> This is the one place the skill's own "handles nested sub-repos" claim does not hold: **only the sync
+> path is nesting-aware** (it walks the tree with `find`); the dashboard is not. For a nested project,
+> **do not trust `--status`** — verify via the sync path (a real or `--dry-run` run), or check each
+> sub-repo manually.
 
 When user input is ambiguous or incomplete, the skill **asks** rather than assumes.
 
@@ -79,8 +89,21 @@ Use `AskUserQuestion`:
 | Question | Options |
 |---|---|
 | Sync `.env*` files too? | Yes (default) / No |
-| If repos diverge between local and box, what to do? | Ask me per repo (default) / Keep local everywhere / Keep box everywhere / Abort the run |
+| If repos diverge between local and box, what to do? | Ask me per repo (default) / Keep local everywhere ⚠ auto-stashes / Keep box everywhere ⚠ auto-stashes / Abort the run |
 | Dry-run? | No, do it for real (default) / Yes, dry-run |
+
+> **⚠ Both "everywhere" options set `--keep-side`, which auto-stashes and never restores.** Do not
+> present them as a plain divergence policy — they are also a **dirty-tree** policy. When the tree is
+> dirty and `--keep-side` is set, the binary runs `git stash push -u` (uncommitted **and untracked**
+> work) and **never pops it**. The work leaves the tree; it is recoverable only via `git stash list`.
+> Worse, the stash fires **per sub-repo, before any divergence is even detected** — so one run over a
+> nested project with N dirty repos leaves N separate orphaned stashes, one in each repo, and the
+> final Summary never mentions them.
+>
+> **State this to the user before they choose.** If the tree is dirty, the correct remedy is
+> **commit first**. With no `--keep-side`, the binary halts safely (`HALT_LOCAL_DIRTY`) having touched
+> nothing on either side — **that halt is the safe default and the good path**, not an obstacle to
+> route around. Prefer "Ask me per repo" and resolve dirt by committing.
 
 ### Step 4 — Invoke the binary
 
@@ -92,11 +115,30 @@ syndicate-refresh-remote \
   <repo>...
 ```
 
+> **⚠ `--keep-side` takes a value and must never be the final argument.** Always place it **before**
+> the repo list, exactly as shown. Trailing it (`syndicate-refresh-remote repo --keep-side`) makes the
+> binary's argument parser **hang forever** — it `shift 2`s on a single remaining argument, the shift
+> fails, the argument count never decrements, and the parse loop spins. There is no error and no
+> timeout; the command simply never returns.
+
 Stream stdout to the user so they see live progress.
+
+### Step 4a — Exit codes, as the binary **actually** emits them
+
+Trust this table, not the binary's own header comment — the two disagree.
+
+| Code | Emitted when | What it does **not** mean |
+|---|---|---|
+| `0` | Every repo returned OK — **or was silently skipped**. `SKIP_*` results (including `SKIP_NOT_GIT`, a repo name that is missing or not a git repo) take the empty arm and fall through to `exit 0`. | **Not** "everything synced". A typo'd repo name is a **silent success**: exit 0 with a `SKIP_NOT_GIT` row buried in the Summary. |
+| `1` | Pre-flight / setup failure. | — |
+| `2` | Any `HALT_*`: a real conflict, `HALT_LOCAL_DIRTY`, **or `HALT_UNKNOWN`** (which is what a no-origin repo produces). | **Not** necessarily a conflict — the skill must not assume divergence and open the Step 5 dialog without reading the actual status. |
+| ~~`3`~~ | **Never.** The binary's header documents `3 local repo missing or not a git repo`, but no code path emits it — that condition returns `0`. | Do not test for `3`, and do not tell the user it exists. |
+
+**Therefore: always read the Summary table rows — never conclude from the exit code alone.** Exit 0 with a `SKIP_*` row means that repo was *not* synced. Report skipped repos to the user by name.
 
 ### Step 5 — Handle interactive conflicts
 
-If the binary exits 2 (HALT — conflict) and `--keep-side` wasn't pre-set:
+If the binary exits 2 (HALT) and `--keep-side` wasn't pre-set — **first read the status: `HALT_CONFLICT` is a divergence, `HALT_LOCAL_DIRTY` means commit first, `HALT_UNKNOWN` usually means no `origin`.** Only a genuine divergence warrants the dialog below:
 
 1. Parse the output for the offending repo + divergence info.
 2. `AskUserQuestion`:
@@ -122,6 +164,25 @@ box host used: <ip>
 box info cached at: /home/<user>/.syndicate-remote-secrets/box.json
 ```
 
+### Step 6a — Flush the knowledge spool (only after the box is confirmed reachable)
+
+`/update-progress` writes session knowledge to the **one** inbox at
+`<workspace>/syndicate-playbook/knowledge_extraction/` on the box. When the box is unreachable it
+spools to `~/.syndicate-knowledge-spool/` rather than losing the extraction or scattering it into the
+current repo. This run has just proven the box reachable, so it is the natural flush point.
+
+```bash
+SPOOL="$HOME/.syndicate-knowledge-spool"
+[ -d "$SPOOL" ] && [ -n "$(ls -A "$SPOOL" 2>/dev/null)" ] \
+  && echo "SPOOL: $(ls -1 "$SPOOL" | wc -l) extraction(s) awaiting delivery"
+```
+
+If non-empty, `scp` each file to the box inbox using the same `box.json` values the binary just used,
+and **remove only the files that arrive**. A file that fails to copy **stays spooled** — never deleted,
+never assumed delivered. Report the result: `N flushed, M still spooled`.
+
+Skip this step entirely on a dry-run, and on any run where the box was not reached.
+
 Then ask: "Anything else to sync?" (no / yes — back to step 2).
 
 ---
@@ -145,9 +206,21 @@ Always confirm before executing if interpretation is non-obvious.
 - **Run on the box.** First step verifies hostname.
 - **Force-push.** "Keep box" pushes box-only commits the normal way — not `--force`.
 - **Delete files.** Even if a file is locally removed, the skill doesn't touch the same path on the box unless `git rm` was committed.
+- **`git clean`.** The binary never runs it, anywhere. This matters concretely: nested clones are typically **gitignored**, so a `git clean -xdf` would destroy them. It is not in the tool.
 - **Touch AWS** beyond a single read-only call to find the box IP when prompted. No mutations.
 - **Transfer secrets through git.** Only `.env*` files via scp (mode 600 on receiver).
 - **Cross branches.** Only syncs the currently-checked-out branch on each side. If branches differ, it surfaces and asks.
+
+### The one exception — read this before trusting the list above
+
+**`--keep-side` is not free.** Everything above is true, and none of it makes the tool non-destructive
+when `--keep-side` is set: on a dirty tree it **auto-stashes uncommitted and untracked work and never
+restores it** (one stash per sub-repo, before any divergence is detected). The work is recoverable
+(`git stash list`), never deleted — but it leaves your tree without a durable warning.
+
+Read the list above as: *the tool is genuinely safe by default, and `--keep-side` is the single edge
+you must opt into knowingly.* The safe default is to pass no `--keep-side`, let a dirty repo halt, and
+**commit first**.
 
 ---
 
@@ -178,7 +251,10 @@ The skill above is the conversational front-end that:
 | `Permission denied (publickey)` | `.pem` not in `~/.ssh/` or wrong mode | Verify `ssh_key` value in `box.json` and the file's mode (must be 0400 or 0600). |
 | `fatal: not a git repository` on box | Repo never cloned on box | Binary auto-clones; if it fails, check `gh auth status` on the box. |
 | `! [rejected] main -> main (non-fast-forward)` | Local and box diverged | Skill's conflict-resolution dialog handles this. |
-| Repo has no `origin` remote | Local-only repo never pushed | Binary reports + skips. Add an origin first. |
+| `unexpected status:  — treating as failure` (blank status), exit 2 | **Repo has no `origin` remote.** The binary does **not** skip it — `git fetch origin` fails, execution continues, and the empty box status falls through to `HALT_UNKNOWN` → **exit 2**, which is the same code as a real conflict. Misleading twice over: it prints `local synced with origin` first, for a repo that has no origin. | Add an origin, then re-run. Do not hunt for a conflict — there isn't one. |
+| Work disappeared from the tree after a `--keep-side` run | `git stash push -u` fired on a dirty tree and was never popped (see the ⚠ under Step 3). One stash **per sub-repo**. | `git stash list` in the affected repo (and in **each** sub-repo of a nested project), then `git stash pop`. Nothing is lost — it is stashed, not deleted. |
+| A typo'd or never-cloned repo name reports **success** | `SKIP_NOT_GIT` exits **0**. A no-op is indistinguishable from a sync. | Read the Summary table rows — do not trust the exit code alone. Check the repo name spelling. |
+| Command hangs forever, no output, no timeout | `--keep-side` was passed as the **final** argument — the parser spins (see the ⚠ under Step 4). | Ctrl-C. Re-run with `--keep-side` **before** the repo list. |
 
 ---
 

@@ -364,14 +364,19 @@ If skills were added, removed, or renamed this session, update this table.
 # Orchestration
 git status
 
-# Each code repo
-for dir in infrastructure backend frontend testing; do
+# Each sub-repo that is present (discovered by glob, not a hardcoded list)
+for dir in */; do
+  dir="${dir%/}"
   if [ -d "$dir/.git" ]; then
     echo "=== $dir ==="
     git -C "$dir" status --short
   fi
 done
 ```
+
+**The sub-repo list is discovered, never hardcoded** — same rule and same idiom as `/start-session` Steps 0/0.5/8, where the rationale is argued in full. Steps 9 and 10 here used to read `for dir in infrastructure backend frontend testing`, a fixed list that silently matched **nothing** in any project whose sub-repos are named otherwise. Because every iteration is guarded by `[ -d "$dir/.git" ]`, a non-matching name produced **no error and no output**: the step reported success having reviewed, committed and pushed **zero** sub-repos. `progress.json` `git_repos` remains the **declarative registry** this step reports *into*; the filesystem is what it reads *from*. With no subdirectories the glob is a safe no-op.
+
+> **Why this mattered most in Step 10.** A missed *pull* causes staleness and is recoverable — the work still exists on origin. A missed *push* means the work exists on exactly one disk and nowhere else. The hardcoded list was fixed on the pull side (`/start-session`) before the push side; if you are reading this in a project that resolved zero sub-repos before, those repos were never published by session close, while the Step 12 report rendered as though all was well.
 
 ### 10. Commit and Push Your Work (every repo you changed this session)
 
@@ -398,7 +403,8 @@ everything after `--` is treated as a pathspec, including `-m`.)
 
 **Commit each sub-repo you changed (scoped by pathspec — never `git add -A`):**
 ```bash
-for dir in infrastructure backend frontend testing; do
+for dir in */; do
+  dir="${dir%/}"
   [ -d "$dir/.git" ] || continue
   [ -n "$(git -C "$dir" status --porcelain)" ] || continue   # skip repos you did not touch
   echo "=== $dir: review, then commit ONLY your task's files ==="
@@ -420,7 +426,8 @@ push_ff() {  # $1=dir, $2=label; commit BEFORE calling
   fi
 }
 push_ff "." orchestration
-for dir in infrastructure backend frontend testing; do
+for dir in */; do
+  dir="${dir%/}"
   [ -d "$dir/.git" ] && push_ff "$dir" "$dir"
 done
 ```
@@ -459,7 +466,69 @@ Mark a repo's `git_repos` status `pushed` only after a confirmed FF-push; a repo
 
    **Naming convention**: `{project}-{YYYY-MM-DD}-{topic}-recommended.md`
 
-   Create `/home/hylmarj/syndicate-playbook/knowledge_extraction/{project}-{YYYY-MM-DD}-{topic}-recommended.md`:
+   **Resolve the inbox before writing — `syndicate-playbook` is remote-only.**
+
+   The one inbox is `<workspace>/syndicate-playbook/knowledge_extraction/`. Resolve it by **presence**,
+   never by hostname or `$USER`: the same file ships to every host, it works while a local copy still
+   exists, and it needs no edit on the day the local copy is retired.
+
+   ```bash
+   SPOOL="$HOME/.syndicate-knowledge-spool"
+   if [ -d "$HOME/syndicate-playbook/knowledge_extraction" ]; then
+     echo direct          # this host holds the inbox — write straight to that path
+   elif [ -f "$HOME/.syndicate-remote-secrets/box.json" ]; then
+     echo remote          # inbox is on the box — scp it in
+   else
+     echo spool           # inbox not resolvable from this host — spool it
+   fi
+   ```
+
+   - **direct** — write `$HOME/syndicate-playbook/knowledge_extraction/{project}-{YYYY-MM-DD}-{topic}-recommended.md`
+     with the Write tool.
+
+   - **remote** — write the file to a temp path, then copy it in. This uses only services that already
+     exist on the box; it creates and changes nothing there:
+
+     ```bash
+     CFG=~/.syndicate-remote-secrets/box.json
+     HOST=$(python3 -c "import json;print(json.load(open('$CFG'))['host'])")
+     BUSER=$(python3 -c "import json;print(json.load(open('$CFG'))['user'])")
+     WS=$(python3 -c "import json;print(json.load(open('$CFG'))['workspace'])")
+     KEY=$(python3 -c "import json;print(json.load(open('$CFG'))['ssh_key'])")
+     scp -i "$KEY" -o ConnectTimeout=15 "$TMPFILE" \
+       "$BUSER@$HOST:$WS/syndicate-playbook/knowledge_extraction/{project}-{YYYY-MM-DD}-{topic}-recommended.md"
+     ```
+
+   - **spool** — **also the fallback whenever `direct` fails or the `remote` `scp` fails** (box rebooting,
+     SSH unreachable, key rejected). Never drop the extraction, and never substitute a local repo path:
+
+     ```bash
+     mkdir -p "$SPOOL" && chmod 700 "$SPOOL"
+     mv "$TMPFILE" "$SPOOL/{project}-{YYYY-MM-DD}-{topic}-recommended.md"
+     ```
+
+     Then **report it loudly** in the Step 12 summary — spooled, not delivered, with the reason verbatim.
+     The spool is a **waiting room, not a destination**: it is flushed by the next run that resolves an
+     inbox (see below) and by `/syndicate-refresh-remote`.
+
+   **Flush the spool first, every time.** Before writing a new extraction, if `direct` or `remote`
+   resolved and `$SPOOL` is non-empty, deliver its backlog by the same route and remove only the files
+   that arrive. A file that fails to deliver stays spooled — never deleted, never silently dropped:
+
+   ```bash
+   if [ -d "$SPOOL" ] && [ -n "$(ls -A "$SPOOL" 2>/dev/null)" ]; then
+     echo "SPOOL: $(ls -1 "$SPOOL" | wc -l) extraction(s) awaiting delivery — flushing"
+     # deliver each via the resolved route (direct: mv; remote: scp), rm ONLY on confirmed success
+   fi
+   ```
+
+   > **Never write the extraction into the current repo as a substitute.** A local write looks like
+   > success and silently removes the knowledge from the curation path — that is worse than an outage,
+   > because an outage is visible. If the inbox cannot be reached, **spool and say so**. The spool
+   > fails *loudly*; the repo-scatter fails *silently*, and the silent one is the failure class this
+   > step exists to prevent.
+
+   The file body, in every case:
    ```markdown
    # {Topic} Knowledge Extraction
 
@@ -568,9 +637,12 @@ Mark a repo's `git_repos` status `pushed` only after a confirmed FF-push; a repo
 ### Tasks Added This Session
 - Task 2.3a: Handle edge case (pending)
 
-### Knowledge Extracted
-- File: knowledge_extraction/2025-12-22-api-error-handling.md
+### Knowledge Extracted (delivery state — say which route, never just "written")
+- File: {project}-2025-12-22-api-error-handling-recommended.md
 - Items: 2 patterns, 1 anti-pattern
+- Delivered: direct → $HOME/syndicate-playbook/knowledge_extraction/
+  (or "remote → box inbox via scp"; or "SPOOLED → ~/.syndicate-knowledge-spool/ — NOT delivered: <reason verbatim>")
+- Spool backlog: empty (or "N file(s) still awaiting delivery")
 (or "None - no generalizable learnings this session")
 
 ### Overall Progress
@@ -592,7 +664,8 @@ Total: 8/20 tasks complete (40%)
 - Diverged repos: resolve with /syndicate-refresh-remote, then re-push. (Your commit is safe locally.)
 - Offline / local-only repos: re-push when origin is reachable / after adding an origin.
 - Deploy expected but not run: run the deploy command and verify it separately — pushing did not perform it.
-- (If every repo shows pushed / nothing-to-push and no deploy is pending: no action required.)
+- Spooled extractions: the inbox was unreachable; files are safe in `~/.syndicate-knowledge-spool/` and will flush on the next session that reaches it, or run `/syndicate-refresh-remote`. Nothing is lost — but nothing is curated either until they land.
+- (If every repo shows pushed / nothing-to-push, the spool is empty, and no deploy is pending: no action required.)
 ```
 
 ---
