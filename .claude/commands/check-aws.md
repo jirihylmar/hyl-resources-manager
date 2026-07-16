@@ -68,17 +68,28 @@ the account number is visible in the Arn of any successful `aws sts get-caller-i
 > **This step is one instance of the rule in `/start-session` § Two Environments — *verify identity,
 > resolve location, never declare a nickname*. The rule is stated there and not restated here.**
 
-**Do not assume a call style — the two machines differ.** Locally there is one connection **per
-account**, each pre-bound, so a bare call already lands somewhere. On the remote dev box one
-connection serves many accounts and is bound to none, so a bare call may reach nothing until you name
-a profile. A file that hardcodes either style is wrong on the other machine.
+**There are two AWS service models. Both are correct. Detect which one this host runs — never assume.**
+
+| Model | How it is set up | How you call it |
+|---|---|---|
+| **Per-account servers** | one MCP server per account, each carrying its own `AWS_PROFILE` | pick the right server, pass **nothing** |
+| **One central server** | a single MCP server bound to **no** account | name the account with `--profile` on every call |
+
+> **Why two models exist — memory, and this is not negotiable.** Every configured AWS MCP server
+> spawns **its own process per session** (~120 MB each). A host with 12 per-account servers and 6
+> live sessions needs ~8.8 GB **for AWS tooling alone** — which is more RAM than the dev box has, so
+> it burst. Moving that host to one central server cut it roughly 12×. **Do not "fix" a central-server
+> host by re-adding per-account servers**: you will re-create the outage, and it will look like you
+> improved the config. The per-account model is a large-RAM luxury; the central model is what a host
+> adopts when sessions multiply. Expect hosts to move **toward** central, never back.
 
 > **`--profile` silently OVERRIDES a binding — it does not fail.** Passing a profile that exists
-> returns *that* profile's account with `200 OK`, even on a connection bound to a different one
-> (measured: a connection bound to `030…`, given a profile for `299…`, returned `299…`). Only a
-> profile that does not exist on this machine errors. **So a wrong profile does not break the run —
-> it quietly checks the wrong account.** That is why Step 2 ends at an account-number comparison and
-> not at "the call worked": *the call working proves nothing about where it landed.*
+> returns *that* profile's account with `200 OK`, even on a server bound to a different one
+> (measured: a server bound to `030…`, given a profile for `299…`, returned `299…`). Only a profile
+> that does not exist on this host errors. **So a wrong profile does not break the run — it quietly
+> checks the wrong account.** Two consequences, both load-bearing: never pass `--profile` to a server
+> that already answered bare, and never trust "the call worked" — *only the returned account number
+> tells you where you landed.*
 
 **Candidates, in this order:** `context_hints.mcp_tool` if present, then every other
 `mcp__aws-*__call_aws` tool available in THIS session. Read your own live tool inventory — **never a
@@ -90,18 +101,30 @@ list written down anywhere, including this file.** The set differs per machine a
 {candidate} aws sts get-caller-identity
 ```
 
-| What comes back | What it means | What you do |
+| What comes back | Which model | What you do |
 |---|---|---|
-| Identity, `Account` **==** `aws_account` | Bound to the right account | **Resolved.** Use this candidate, bare, for every step below. |
-| Identity, `Account` **!=** `aws_account` | Bound to a different account | Wrong handle — say which account it hit. Next candidate. |
-| Error: no credentials / no default account | A multi-account connection | Find the profile that reaches your account (below). |
-| Error: unknown tool | Not on this machine | Next candidate. |
+| Identity, `Account` **==** `aws_account` | per-account | **Resolved.** Use this candidate **bare** everywhere below. Adding `--profile` here can only move you off a correct binding. |
+| Identity, `Account` **!=** `aws_account` | per-account, wrong one | Say which account it hit. Next candidate. |
+| Error: no credentials / no default account | **central** | Not broken — this is the central model. Find the profile that reaches your account (below). |
+| Error: unknown tool | not on this host | Next candidate. |
 
-**Multi-account connection — match a profile by account number, never by name:**
+**Central server — match a profile by account number, never by name:**
 
-First, list the profiles this machine actually has. **Read `$HOME/.aws/config`** (with the Read tool
-— `Read` is in this command's `allowed-tools` for exactly this) and take the names from its
+First, list the profiles this host actually has. **Read `$HOME/.aws/config`** (with the Read tool —
+`Read` is in this command's `allowed-tools` for exactly this) and take the names from its
 `[profile <name>]` headers.
+
+> **Read it, never write it.** You are reading a list of *names* to find which one reaches your
+> account. `/check-aws` never modifies AWS configuration, never adds a profile, and never edits
+> `~/.aws/*`. If the profile you need does not exist on this host, that is a host-configuration gap —
+> **report it** (§ below); creating it is the operator's call, not yours.
+>
+> **Why the file, and not a command:** profile names are per-host and unguessable — the same account
+> is `vsb-182` on one machine and `HylmarJ` on another, with no rule connecting them — so the name
+> cannot live in `progress.json` (which travels to every host). And you cannot ask AWS: the MCP
+> server validates commands against the AWS service model and rejects `aws configure` outright
+> (`ServiceNotAllowedError: The given service name is not allowed: configure`). The names live in a
+> config file, so the file is where you read them.
 
 > **Do NOT ask the AWS connection to list profiles.** `aws configure list-profiles` is **rejected
 > before it runs** — the MCP server validates every command against the AWS service model and
@@ -125,17 +148,26 @@ one from the other*. There is no convention to infer. Match by account number an
 **Below, `{handle}` means:** the resolved candidate, plus `--profile {profile}` appended to the `aws`
 command if and only if Step 2 resolved through a profile.
 
-**If no candidate reaches `aws_account`, report and stop — this is a normal state, not a failure:**
+**If no candidate reaches `aws_account`, report and stop. Say which model this host runs — that is
+what makes the report actionable:**
 
 ```
-This project's AWS account {aws_account} is not reachable from this machine.
-Tried: {each candidate and what it returned}
-Some accounts exist on only one machine. Run /check-aws where that account lives.
+This project's AWS account {aws_account} is not reachable from this host.
+
+  Host model:  per-account servers  (or: one central server)
+  Tried:       {each candidate/profile and what it returned}
+  Gap:         no server is bound to {aws_account}
+               (central model: no profile in ~/.aws/config reaches it)
+
+This is a host-configuration matter, not something to work around. Either the account
+belongs on another host — run /check-aws where it lives — or this host is missing the
+server/profile, which is the operator's call to add.
 ```
 
-That is the same answer the framework already gives for a repo that lives on the other machine: **do
-the work where the thing actually is.** Do not invent a profile, do not guess a name from a pattern,
-and do not report on resources you could not see.
+Same answer the framework gives for a repo that lives on the other machine: **do the work where the
+thing actually is.** Do not invent a profile, do not guess a name from a pattern, do not add a
+server, and do not report on resources you could not see. **Never present an unreachable account as a
+resource finding** — *zero found* and *could not look* are different facts.
 
 **Record nothing.** Never write the resolved handle into `progress.json` — it travels to both
 machines, where it would be a nickname true on only one. Resolving costs one call; a stale nickname

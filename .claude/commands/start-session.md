@@ -82,10 +82,18 @@ ways that matter:
 | | Local workstation | Remote dev box |
 |---|---|---|
 | `HOME` | `/home/<user>` | `/home/ubuntu` |
-| AWS access | one connection **per account**, each pre-bound to one | **one** connection for many accounts, pre-bound to none |
-| A bare call (no `--profile`) | returns that connection's bound account | may return nothing — no account to default to |
+| AWS **service model** | one server **per account**, each carrying its own profile | **one central** server, bound to no account |
+| A bare call (no `--profile`) | returns that server's bound account | returns nothing — name the account per call |
 | `box.json` | present (it is the local pointer *to* the box) | absent, and that is correct |
 | Which repos exist | some live only here, by policy | some live only there, and are developed there |
+
+> **The AWS row is a deliberate design difference, not drift — and the box is AHEAD, not broken.**
+> Every configured AWS MCP server spawns **its own process per session** (~120 MB). Twelve
+> per-account servers across six live sessions needs ~8.8 GB for AWS tooling alone — more RAM than
+> the box has, so it burst; one central server cut that ~12×. **Never "fix" a central-server host by
+> restoring per-account servers.** The per-account model is a large-RAM luxury, and hosts move
+> *toward* central as sessions multiply — the workstation is expected to follow. `/check-aws` detects
+> the model rather than assuming it; do the same anywhere else you reach AWS.
 
 > **`--profile` is honoured on both machines, and it silently OVERRIDES the binding.** Passing a
 > profile that exists returns **that** profile's account, with a `200 OK` and no warning — even on a
