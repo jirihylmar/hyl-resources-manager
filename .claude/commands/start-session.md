@@ -45,6 +45,98 @@ When multiple agents work in the same repo simultaneously, each agent is assigne
 
 ---
 
+## Writing for the Operator (binds this whole session, not just the report)
+
+**The operator is running several projects at once and has none of this project's internals in
+working memory.** Not the task numbers, not the plan you made twenty minutes ago, not the labels you
+invented while making it. Assume that every session, from scratch. It is not a failure of theirs to
+be fixed by explaining more later — it is the normal condition, and it is what you write for.
+
+**The three rules:**
+
+1. **Never present a task by its ID alone.** `999.c.i` is not a description of anything. An ID is an
+   index into a document the reader does not have open. Always: the ID **and** what it means in plain
+   words — *"4.2 — stop agents writing in shorthand the operator can't follow"*.
+2. **Expand every abbreviation on first use, every session.** If you use it, you explain it. An
+   unexplained abbreviation carries no information; it only makes the reader ask, which costs them
+   more than spelling it out would have cost you.
+3. **Never use a label you invented.** *"I'm working on a and g"* means nothing to someone who did
+   not watch you write the list `a`…`g`. Your plan's internal names are yours alone. Say the thing.
+
+**This binds mid-session, not only at the handoff.** Every progress line, every question you ask,
+every proposal — the operator has to be able to follow it *as it happens*, without reconstructing
+your reasoning first. A report they have to decode is a report that has not been delivered.
+
+> **The test, before you send anything:** could someone who has not read this project's
+> `progress.json` today act on this sentence? If not, rewrite it. Information the reader cannot use
+> is, as the operator put it, *"good for nothing"*.
+
+---
+
+## Two Environments (this file ships to both — nothing in it may assume one)
+
+**Which machine you are running on is not knowable from this file.** Every default command ships
+unchanged to two environments — the local workstation and the remote dev box — and they differ in
+ways that matter:
+
+| | Local workstation | Remote dev box |
+|---|---|---|
+| `HOME` | `/home/<user>` | `/home/ubuntu` |
+| AWS access | one connection **per account**, each pre-bound to one | **one** connection for many accounts, pre-bound to none |
+| A bare call (no `--profile`) | returns that connection's bound account | may return nothing — no account to default to |
+| `box.json` | present (it is the local pointer *to* the box) | absent, and that is correct |
+| Which repos exist | some live only here, by policy | some live only there, and are developed there |
+
+> **`--profile` is honoured on both machines, and it silently OVERRIDES the binding.** Passing a
+> profile that exists returns **that** profile's account, with a `200 OK` and no warning — even on a
+> connection bound to a different account. Measured: the connection bound to account `030…`, given a
+> profile belonging to account `299…`, returned **`299…`** and success. Passing a profile that does
+> *not* exist on this machine is the only case that errors (`The config profile could not be found`).
+>
+> So the failure mode is not "the call breaks" — it is **"the call succeeds against the wrong
+> account and nothing tells you."** This is exactly why the rule below says *verify identity*: the
+> account number is the only thing that can catch it. An earlier draft of this table claimed naming
+> an account "fails" locally; that was inferred from a single probe using a profile name that only
+> exists on the *other* machine — the probe artifact, not the behaviour. It is recorded here because
+> the mistake is instructive: it is the same error the rule exists to prevent.
+
+**The rule — and it is one rule, not four:**
+
+> **Verify identity. Resolve location. Never declare a nickname.**
+>
+> - **Verify identity** — prove you reached the thing you meant to reach (the account number, the
+>   repo) *before* acting on it. Reaching *something* is not reaching the *right* thing.
+> - **Resolve location** — ask the filesystem, the live tool list, a probe. Presence is ground truth;
+>   a declaration drifts the moment anything moves.
+> - **Never declare a nickname** — a name that is true on only one machine must never be written into
+>   a file that travels to both. `progress.json` travels. So does this one.
+
+**A nickname is any name true on only one machine:** an MCP server name, an AWS profile name, an
+absolute path, a hostname, `$USER`. An AWS **account number** is not a nickname — it is the same on
+both machines, which is precisely why it is the thing you verify against. Same shape elsewhere: a
+repo's *identity* is its name; where it *lives* is a per-machine fact you resolve.
+
+**Why a rule and not just care — this failure class is silent by construction.** It does not error;
+it succeeds wrongly, and the report reads as though all was well:
+
+- The sub-repo loop once hardcoded `infrastructure backend frontend testing`. In any project whose
+  sub-repos are named otherwise it matched **nothing** and printed **no error** — reporting success
+  having synced zero repos, while drift accumulated unseen.
+- A `/home/<user>/<repo>/…` path to a repo that moved to the box resolves to nothing, and the agent
+  does not stop. It improvises — writes into the current repo, "recreates" the missing tree — and
+  reports success.
+- A missing `box.json` yields an empty list, not a failure, so everything downstream reads as
+  "nothing is on the box."
+
+**You find out by resolving, or you do not find out.**
+
+**Where this rule already applies in this file** — each is an *instance*, not a separate rule; they
+point here rather than restate it: Step 0 (sub-repo discovery by glob), Step 2 (live command
+inventory), Step 2.5 (cross-host repo resolution), Step 5 (AWS identity). Same rule, four surfaces.
+When you meet a fifth, it is still this rule.
+
+---
+
 ## Steps
 
 ### 0. Sync to Latest (FF-pull, before any work begins)
@@ -168,36 +260,55 @@ as a knowledge extraction scattering into the local repo, and it is worse than a
 looks like success. Measured on this estate: one designer skill carried **11** references to a deploy
 repo that had moved to the box; all 11 pointed at an empty path.
 
-**Resolve by presence — never by hostname, `$USER`, or a hardcoded list.** Same rule as the
-`/update-progress` inbox and the sub-repo glob: the filesystem is ground truth, a declaration drifts.
+**This step is one instance of the rule in § Two Environments above — *resolve location* applied to
+repos.** Resolve by presence; never by hostname, `$USER`, or a hardcoded list. The rule is stated
+there and not restated here; if this step and that section ever disagree, that section wins.
 
 ```bash
 CFG="$HOME/.syndicate-remote-secrets/box.json"
 SELF="$(basename "$PWD")"
+
+# Repos that are local-only BY POLICY. This is not a nickname and not a location claim: it is a
+# host-independent fact, equally true on both machines, so it belongs in a file that ships to both.
+# Their absence from the box is the INTENT, never a fault. Stated once, here.
+POLICY_LOCAL="syndicate-playbooks-examples syndicate-remote"
 
 # Discover which OTHER repos this project's skills point at — live grep, never a hardcoded list.
 REFS=$(grep -rhoE '(/home/[A-Za-z0-9._-]+|\$HOME|~)/[A-Za-z0-9._-]+' .claude/commands/*.md 2>/dev/null \
        | sed -E 's#^(/home/[A-Za-z0-9._-]+|\$HOME|~)/##; s/[.,:;)]+$//' \
        | grep -vE '^\.?$|^\.' | sort -u)
 
-# One cheap probe for the box's repo list (skip silently if there is no box configured).
-BOXLIST=""
+# Probe the box's repo list. CRITICAL: "I could not ask" is NOT "the box does not have it".
+# box.json is a LOCAL WORKSTATION artifact — it is this machine's pointer TO the box. Run this step
+# ON the box and it is correctly absent. Collapsing that into an empty list is what made a correct
+# state report as a blocker.
+BOXLIST=""; BOXPROBE="unavailable — no box.json (this may BE the box, or a host with no box configured)"
 if [ -f "$CFG" ]; then
   H=$(python3 -c "import json;print(json.load(open('$CFG'))['host'])")
   U=$(python3 -c "import json;print(json.load(open('$CFG'))['user'])")
   K=$(python3 -c "import json;print(json.load(open('$CFG'))['ssh_key'])")
-  BOXLIST=$(ssh -n -i "$K" -o ConnectTimeout=15 -o BatchMode=yes "$U@$H" \
-            'for d in ~/*/; do [ -d "$d/.git" ] && basename "$d"; done' 2>/dev/null)
+  if BOXLIST=$(ssh -n -i "$K" -o ConnectTimeout=15 -o BatchMode=yes "$U@$H" \
+               'for d in ~/*/; do [ -d "$d/.git" ] && basename "$d"; done' 2>/dev/null); then
+    BOXPROBE="ok"
+  else
+    BOXPROBE="unreachable — box did not answer (offline? maintenance?)"
+  fi
 fi
+echo "BOX PROBE: $BOXPROBE"
 
 for r in $REFS; do
   [ "$r" = "$SELF" ] && continue
+  case " $POLICY_LOCAL " in *" $r "*) POLICY=yes ;; *) POLICY=no ;; esac
   if [ -d "$HOME/$r/.git" ]; then
     printf 'REPO %-34s local\n' "$r"
-  elif printf '%s\n' "$BOXLIST" | grep -qx "$r"; then
+  elif [ "$POLICY" = yes ]; then
+    printf 'REPO %-34s local-only by policy, absent here — EXPECTED, not a blocker\n' "$r"
+  elif [ "$BOXPROBE" = "ok" ] && printf '%s\n' "$BOXLIST" | grep -qx "$r"; then
     printf 'REPO %-34s REMOTE (box) — local paths to it are DEAD\n' "$r"
+  elif [ "$BOXPROBE" = "ok" ]; then
+    printf 'REPO %-34s UNRESOLVABLE — not local, and the box answered that it is not there either\n' "$r"
   else
-    printf 'REPO %-34s UNRESOLVABLE — neither local nor on the box\n' "$r"
+    printf 'REPO %-34s UNKNOWN — not local; could not ask the box. Do NOT conclude it is missing.\n' "$r"
   fi
 done
 ```
@@ -207,8 +318,18 @@ done
 | Verdict | What it means | What you do |
 |---|---|---|
 | `local` | The repo is here. | Use it directly. Normal case; say nothing. |
+| `local-only by policy` | It is one of the repos policy keeps off the box, and you are not on the machine that holds it. **Its absence is the intent.** | **Nothing.** This is a correct state, not a finding — do not surface it, do not "fix" it, and above all do not clone it here. If your task genuinely needs it, that task belongs on the workstation, and *that* is what you say. |
 | `REMOTE (box)` | It lives on the box and is **developed there**. Every `/home/<user>/<repo>/…` path in this project's skills is **dead**. | **Surface it in the handoff.** Work touching that repo must run **on the box** (`ssh`, or a session started there) — reading its files, running its scripts, and committing in it all happen there. Do **not** clone it locally to "fix" the path: that creates a second copy, and the box copy is the real one. |
-| `UNRESOLVABLE` | Neither local nor on the box. | **Report it and stop** before doing work that depends on it. Do not invent a path, do not recreate the tree, do not substitute the current repo. |
+| `UNRESOLVABLE` | Not local, **and the box answered that it does not have it either.** Genuinely nowhere. | **Report it and stop** before doing work that depends on it. Do not invent a path, do not recreate the tree, do not substitute the current repo. |
+| `UNKNOWN` | Not local, and **you could not ask the box** — no `box.json`, or it did not answer. | **Report it; do not conclude anything.** You have no evidence about the box, and no evidence is not evidence of absence. Say "could not resolve" and why. Never upgrade this to `UNRESOLVABLE`. |
+
+> **Why `UNKNOWN` exists at all.** This step used to treat "the probe returned nothing" and "the probe
+> could not run" as the same answer. `box.json` is a **local workstation artifact** — this machine's
+> pointer *to* the box — so running this step **on the box** finds it correctly absent, produced an
+> empty box list, and routed **every** referenced repo to `UNRESOLVABLE → stop`. The two repos it hit
+> hardest were the two the paragraph above declares local-only by policy: their absence was the
+> intent, reported as a blocker. An empty answer and an unasked question are different facts, and a
+> step that conflates them manufactures blockers out of correct states.
 
 > **The one thing you must never do:** treat a dead absolute path as an invitation to improvise. A
 > skill that says `/home/<user>/<repo>/…` for a repo that now lives on the box is **stale
@@ -313,20 +434,54 @@ Proceed to session handoff (Step 4).
 - Any issues encountered
 
 ### Upcoming Work
-- **Current Task**: X.Y - [Task Name]
-- **Phase**: X - [Phase Name]
-- **Repo**: [which repository]
-- **Description**: [what this task involves]
 
-### Open Items
-- [Any pending user decisions from last session]
-- [Any blockers noted]
+<!-- HEADING NAMES IN THIS FILE ARE A PUBLIC API — DO NOT RENAME THIS ONE.
+     Projects splice overlay content onto exact heading text (`<!-- splice-before: "### Upcoming
+     Work" -->`). Renaming a heading orphans every anchor pointing at it: the bake fails
+     (apply-overlay.py exit 2 = broken-overlay), the engine's blocker gate fires, and
+     /distribute-defaults exits 3 having written NOTHING to ANY project on that host.
+     This is not hypothetical — this exact heading was renamed to "### Open Work" during
+     development and broke 4 anchors in a live project, which would have halted distribution
+     estate-wide. Add sections; never rename one. -->
 
-### ⚠ Remote-resident repos  (omit ONLY if Step 2.5 found none)
+**Open Work — ALWAYS render this table. It is the default, not an extra.** The operator runs
+several projects and does not carry this one's task numbers in their head. See § Writing for the
+Operator: an ID alone is not a description.
+
+ Scope: every open task in the CURRENT phase, plus anything stuck in ANY phase.
+ "Stuck" = in_progress, blocked, or pending in a phase that is not the current one —
+ those are precisely the ones that go stale and are never resolved.
+
+ "In plain words" is not the task's name repeated. It is what it MEANS, in language that
+ needs no other document open. If you cannot write it, you do not understand the task yet.]
+
+**Phase X — [phase name in plain words]** (N open)
+
+| Task | In plain words | State |
+|------|----------------|-------|
+| X.Y | [what it actually is — no jargon, no invented labels] | working on it now |
+| X.Z | [...] | not started |
+
+**Stuck elsewhere** (omit this block entirely if there is nothing)
+
+| Task | In plain words | Stuck since | Why it's still here |
+|------|----------------|-------------|---------------------|
+| A.B | [...] | YYYY-MM-DD | [blocked on what, or: nobody has picked it up] |
+
+[If a stuck task has been pending long enough that its context is likely stale, say so —
+ that is a candidate for the disposition rules in /update-progress Step 3a, not a task to
+ quietly keep carrying.]
+
+### ⚠ Remote-resident repos  (omit ONLY if Step 2.5 found none needing action)
 [repo → REMOTE (box): this project's skills reference it by a local path that is DEAD.
  Work touching it must run on the box. Name every one — an agent that does not know this
  will improvise into the current repo and report success.]
-[repo → UNRESOLVABLE: neither local nor on the box. Do not start work that depends on it.]
+[repo → UNRESOLVABLE: not local, and the box answered that it is not there. Do not start
+ work that depends on it.]
+[repo → UNKNOWN: not local, and the box could not be asked. Say so and say why. Do NOT
+ present this as missing — you have no evidence either way.]
+[repo → local-only by policy: OMIT ENTIRELY. Its absence is the intent, not a finding.
+ Mentioning it trains the operator to ignore this section.]
 
 ### ⚠ Repo hygiene  (omit if Step 2.7 reported ok)
 [due / OVERDUE x2 / never recorded — recommend /repo-hygiene accordingly]

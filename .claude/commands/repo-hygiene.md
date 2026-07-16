@@ -60,11 +60,24 @@ root = Path.cwd()
 findings = []
 
 # (A) hygiene clock
+# `last_pass` may be ABSENT or explicitly NULL — both mean "no full pass yet", and
+# /start-session's clock check documents that state as legitimate. Read it the same way here.
+# (`st.get("last_pass", "1970-01-01")` returns None for a present-but-null key — the default only
+# fires when the KEY is missing — and strptime(None) raises TypeError. Because check A runs first
+# and this block is one script, that crash took B/C/D/F/G down with it: the whole quick-check
+# reported nothing at all on a state the sibling file calls normal. Do not "simplify" this back.)
 state_p = root/".claude/hygiene-state.json"
 if state_p.exists():
     st = json.loads(state_p.read_text())
-    age = (time.time() - time.mktime(time.strptime(st.get("last_pass","1970-01-01"), "%Y-%m-%d"))) / 86400
-    if age > 30: findings.append(f"A: hygiene pass overdue ({age:.0f} days since {st.get('last_pass')})")
+    lp = st.get("last_pass") or None
+    if not lp:
+        findings.append("A: no full hygiene pass recorded yet (last_pass absent/null) — run /repo-hygiene to set the clock")
+    else:
+        try:
+            age = (time.time() - time.mktime(time.strptime(lp, "%Y-%m-%d"))) / 86400
+            if age > 30: findings.append(f"A: hygiene pass overdue ({age:.0f} days since {lp})")
+        except (ValueError, TypeError):
+            findings.append(f"A: last_pass is not a YYYY-MM-DD date ({lp!r}) — cannot age the clock; fix or clear it")
 else:
     findings.append("A: hygiene never recorded (.claude/hygiene-state.json absent)")
 
@@ -97,15 +110,28 @@ if pj.exists():
     if kb > 300: findings.append(f"D: progress.json {kb:.0f}KB (>300KB) — compaction due (Step 4)")
 
 # (F) process metadata leaked into canonical surfaces (sizes the Step 3 de-phase slice)
+#
+# SCOPE: project-owned surfaces only. `.claude/commands/` is EXCLUDED by construction.
+# Those are centrally distributed defaults, and "Phase 1", "task 2.3" etc. inside them are the
+# ENGINE'S OWN DOMAIN LANGUAGE in worked examples — correct content, not leakage. The check used to
+# include them and fired on exactly that: 16 of 21 hits in one real pass were generic examples inside
+# defaults. Worse, it was unactionable BY CONSTRUCTION — it pointed the agent at the one set of files
+# the same skill forbids it to hand-edit (fix them centrally, or via an overlay; never in place).
+# A check whose only remedy is a forbidden act is noise that trains agents to ignore findings.
 meta_re = re.compile(r"\b(?:Phase|Session)\s+\d+\b|\btask\s+\d+\.\d+\b", re.I)
 mcount = mfiles = 0
+skipped_defaults = 0
 for f in surfaces:
     if "_archive" in f.parts: continue
+    if ".claude" in f.parts and "commands" in f.parts:
+        skipped_defaults += 1; continue
     try: text = f.read_text(errors="ignore")
     except OSError: continue
     n = len(meta_re.findall(text))
     if n: mcount += n; mfiles += 1
-if mcount > 20: findings.append(f"F: {mcount} phase/session/task refs across {mfiles} canonical files — de-phase slice due (Step 3)")
+if mcount > 20: findings.append(f"F: {mcount} phase/session/task refs across {mfiles} project-owned canonical files — de-phase slice due (Step 3)")
+# Report the exclusion rather than hiding it — a silent scope cut reads as "clean" when it is "not looked at".
+if skipped_defaults: print(f"   (F: skipped {skipped_defaults} file(s) under .claude/commands/ — distributed defaults; their phase/task vocabulary is the engine's own and is not leakage)")
 
 # (G) terminology registry presence (Step 3a)
 if (root/"docs").exists() and not list((root/"docs").rglob("terminology.md")):
@@ -119,25 +145,77 @@ PY
 If the project ships its own richer checker (e.g. a `tools/docs_currency_check.py`), run that too —
 project checkers are authoritative over this generic one; this one is the floor every repo gets.
 
-**(E) Overlay discipline** — if `.claude/local-overlays/` exists: the distributed defaults
-(`start-session.md`, `update-progress.md`, …) must equal **canonical + overlay**, never carry
-hand-edits. Hand-edits do not survive the next `/distribute-defaults`: a file WITH an overlay
-classifies `overlay-stale` and is silently rebaked from canonical+overlay (the edit is lost); a
-file WITHOUT an overlay classifies `divergent` and blocks that file's distribution until resolved.
-Either outcome is a defect. Fix by folding the intended change into the overlay fragment (splice
-blocks) in `.claude/local-overlays/<file>`; the next `/distribute-defaults` rebakes canonical+overlay
-centrally (via the engine's `scripts/apply-overlay.py`) and redistributes — you do not rebake by
-hand in the project. Project-specific session steps belong in the overlay, period. (When auditing
-git history for stray hand-edits, ignore the engine's own sync commits — message
-`chore(playbook): sync default commands` — which legitimately rewrite command files without touching
-overlays.)
+**(E) Overlay discipline — establish provenance BEFORE you classify anything.**
+
+> **Absence of an overlay is not evidence of a hand-edit.** An edited-looking default with no overlay
+> is *exactly as consistent with* a `/distribute-defaults` run that has not been committed yet. In
+> the working tree those two are **byte-identical** — nothing distinguishes them, and you cannot
+> compare against canonical yourself (`syndicate-playbooks-examples` is local-only by policy and is
+> not reachable from the box). A real pass inferred "edited + no overlay = hand-edited", classified
+> two legitimate central updates `divergent`, and recommended **reverting** them. The operator caught
+> it: *"this is not divergent. its simply the centraly managed skills were updated."* Had that been
+> followed, real work would have been destroyed.
+
+**Step 1 — read the delivery record.** `/distribute-defaults` writes
+`.claude/distribution-manifest.json` recording, per file, the sha256 of the exact bytes it delivered:
+
+```bash
+python3 - <<'PY'
+import json, hashlib
+from pathlib import Path
+m = Path(".claude/distribution-manifest.json")
+if not m.exists():
+    print("E: NO PROVENANCE — no distribution manifest. Report the defaults' state; classify NOTHING.")
+else:
+    d = json.loads(m.read_text())
+    print(f"E: manifest from canonical {d.get('canonical_commit','?')[:8]} written {d.get('written_at','?')}")
+    for rel, rec in d.get("files", {}).items():
+        p = Path(rel)
+        if not p.exists():
+            print(f"   {rel}: MISSING — recorded as delivered but not on disk"); continue
+        h = hashlib.sha256(p.read_bytes()).hexdigest()
+        if h == rec["sha256"]:
+            print(f"   {rel}: delivered ({rec['source']}) — matches the manifest, NOT divergent")
+        else:
+            print(f"   {rel}: CHANGED SINCE DELIVERY — investigate; do not assume, and do not revert")
+PY
+```
+
+| What you find | What it means | What you do |
+|---|---|---|
+| Hash **matches** the manifest | The engine delivered these exact bytes | **Delivered. Not divergent — whatever the git state.** Uncommitted is normal: distribution writes, the project commits later. Say nothing. |
+| Hash **differs** from the manifest | The file changed after delivery | A hand-edit is now *plausible*, not proven. Report the file and the difference. **Do not revert it.** Fixing it means folding the intent into the overlay so the next distribution rebakes it. |
+| **No manifest at all** | This project predates the record, or has never been distributed to | **No provenance. Report and stop.** Do not classify, do not infer from overlay presence, and above all do not recommend reverting a default. Recommend a `/distribute-defaults` run, which establishes the record. |
+
+**Never recommend reverting a distributed default.** Distribution is the engine's job and the
+operator's decision. The worst outcome this check can produce is not a missed hand-edit — it is
+destroying a central update that every other repo already has.
+
+**The standing rule when a default genuinely needs project-specific content:** fold it into a splice
+fragment in `.claude/local-overlays/<file>`. The next `/distribute-defaults` rebakes canonical+overlay
+centrally (via the engine's `scripts/apply-overlay.py`) and redistributes — you never rebake by hand
+in the project, and a file WITH an overlay that carries extra hand-edits classifies `overlay-stale`
+and is silently rebaked, losing them. Project-specific session steps belong in the overlay, period.
+(When auditing git history, the engine's own sync commits — message
+`chore(playbook): sync default commands` — legitimately rewrite command files without touching
+overlays. Note this reads *committed history only*, which is exactly why it could never see the
+uncommitted case above; the manifest is what closes that gap.)
 
 ## Step 1 — Per-file sweep (the judgment work)
 
 Go through **every file** in `docs/` (excluding `_archive/`) and **every skill** in
 `.claude/commands/`. For each, assign one disposition:
 
-| Disposition | Meaning | Action |
+> **Before you act on ANY disposition, ask who owns the file.** The distributed defaults — the list
+> is named once, in `/update-progress` § 11.b; do not copy it here, this exact list has gone stale
+> before — are **read-only to you**. Judge them, ground them, and
+> **report** what you find — but never fix, archive, or consolidate one in place. See
+> `/update-progress` § 11.b. Every action column below applies to **project-owned files**; for a
+> default, the action is always *report it and move on*. An in-place edit is either silently
+> overwritten by the next distribution (your fix lost, the defect back everywhere) or it blocks
+> distribution for every project on the host.
+
+| Disposition | Meaning | Action (project-owned files; for a default → report instead) |
 |---|---|---|
 | `current-canonical` | Describes today's system truthfully | none |
 | `needs-update` | Right home, stale substance (paths/tools/procedures drifted) | fix in place, verify claims against the live tree |
@@ -173,9 +251,12 @@ nothing is double-verified.
    the flag exists in the tool's argument parser; the resource name appears in a **fresh** inventory
    (not a remembered one); the payload/query shape matches the deployed definition; the command is
    shell-runnable as written (multi-line commands actually paste-and-run).
-4. **Record per finding**: claim / reality / fix — then fix in place. At scale (many findings, or
-   subagent fan-out), add an independent refutation step before reporting so the worklist stays
-   confirmed-only: a finding that survives an adversarial attempt to refute it is a fact, not a maybe.
+4. **Record per finding**: claim / reality / fix — then act by **ownership**: fix a project-owned
+   file in place; for one of the 10 distributed defaults, **report it and never edit it**
+   (`/update-progress` § 11.b — grounding them is exactly how engine defects get found, but the
+   remedy is a report). At scale (many findings, or subagent fan-out), add an independent refutation
+   step before reporting so the worklist stays confirmed-only: a finding that survives an adversarial
+   attempt to refute it is a fact, not a maybe.
 5. **Advance the cursor.** Update the `grounded` map in Step 5 so the next pass picks the next slice.
 
 Claims that cannot be verified this pass (resource offline, tool unavailable) are deferred with a
@@ -192,9 +273,18 @@ After the sweep, reconcile every index surface to the post-sweep reality:
 
 ## Step 3 — Timeless-canon check (de-phased canonical surfaces)
 
-Grep the **whole canonical tree** — docs, skills, and any externally-served knowledge base — for
-process metadata (`Session N`, `Phase N`, dotted task IDs, dated anchors) that leaked in since the
-last pass (quick check F sizes this). Phase/task/session numbering is never load-bearing content
+Grep the **project-owned canonical tree** — docs, project-specific skills, and any externally-served
+knowledge base — for process metadata (`Session N`, `Phase N`, dotted task IDs, dated anchors) that
+leaked in since the last pass (quick check F sizes this).
+
+> **Scope must match its own gauge.** `.claude/commands/`'s 10 distributed defaults are **excluded**
+> — check F skips them by construction, because `Phase N` / `task 2.3` in a default is the engine's
+> own vocabulary in a worked example, not leakage. Do not de-phase a default: it is read-only to you
+> (§ Step 1), the edit would be overwritten or would block distribution, and F's count — the number
+> that sizes this slice — never counted them in the first place. A step that acts on files its own
+> gauge declares out of bounds will always look like it has work to do.
+
+Phase/task/session numbering is never load-bearing content
 in a canonical surface; phase-scoped working material lives clearly separated (phase dirs /
 `_archive/`). Keep durable tokens (schema versions, § refs, regulation numbers, file names) and
 allow process metadata where the context is explicitly archival or changelog. Fix in place —

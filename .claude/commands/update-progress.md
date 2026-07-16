@@ -51,10 +51,40 @@ Update progress tracking after completing tasks. Follow conservative rules stric
 ```
 
 ### When New Task Discovered Mid-Work:
+
+**First ask one question: does this serve the goal of the phase I am in?** The answer decides the
+number, and the number decides whether the phase can ever close.
+
+**The first digit carries ONE goal.** Every task under phase `N` must be work in service of phase
+`N`'s objective. That is what makes `N` closable: when its goal is met, it is *done*. A phase that
+accumulates whatever happened to be discovered while it was open has no single goal, therefore no
+finish line, therefore never closes — and everything parked in it is never forced to a decision.
+
+| The discovery… | Number it | Why |
+|---|---|---|
+| **is needed to finish 2.3 itself** | `2.3a`, `2.3b` — sub-ID, as below | It *is* the current work. Same goal. |
+| **serves this phase's goal**, but is its own deliverable | `2.7` — next free ID in the phase | Same goal, new task. |
+| **does NOT serve this phase's goal** | **`3.1` — a NEW phase** | However it was found, it is different work. Putting it here is what makes a phase uncloseable. |
+
+**"But I found it while doing 2.3" is not a reason to number it 2.x.** Where work was *discovered*
+says nothing about which goal it *serves*. That single confusion is what turns a focused phase into a
+40-task drawer.
+
 ```json
-// Add with sub-ID to maintain logical order
+// Serves the current work — sub-ID keeps logical order
 {"id": "2.3a", "name": "New task found during 2.3", "status": "pending", "added_reason": "Discovered during implementation of 2.3"}
+
+// Does NOT serve this phase's goal — new phase, and REWRITTEN TO STAND ALONE.
+// Assume the reader has none of this session's context, because they will not.
+{"id": "3.1", "name": "Feed serves stale prices up to 6h after a change (cache TTL: feed/cache.py:44)",
+ "status": "pending",
+ "added_reason": "Found while doing 2.3 (auth refactor); unrelated to that goal, so it starts phase 3 rather than making phase 2 uncloseable. Not investigated further."}
 ```
+
+**A task in a new phase must be rewritten to stand alone.** The session that understood it is gone,
+and by the time anyone reads it the surrounding context has moved. `"fix the thing we discussed"` is
+already worthless. If you cannot restate it so a cold reader can act on it — what is wrong, where,
+and how you know — that is evidence it should be **dropped**, not carried.
 
 ---
 
@@ -143,8 +173,24 @@ cite flags that don't exist.
    doc (`docs/` outside `_archive/`), never-grounded first. Files Step 2a fully verified this
    session count as grounded — stamp them in the map rather than re-picking them.
 3. **Ground it** (claim types and verifications per the Step 2a table): extract the file's
-   operational claims, verify each against the implementation, fix in place, record
-   claim / reality / fix in session_notes.
+   operational claims, verify each against the implementation, record claim / reality / fix in
+   session_notes.
+
+   **What you do with a defect depends on who owns the file — and there are only two answers:**
+
+   | The file is… | Remedy |
+   |---|---|
+   | a **project-specific** skill or doc (anything you own) | **fix it in place.** Normal work. |
+   | a **distributed default** (the 10 named in § 11.b) | **report it. Never fix it in place.** |
+
+   **Keep grounding the defaults — just never edit them.** Reading them against reality is how
+   framework defects get found at all; a real pass grounded them and surfaced four genuine engine
+   bugs. That is this step working. But the remedy for a default is § 11.b's: **report requirements
+   only**, and record it in session_notes and the Step 12 report as *reported, not fixed*.
+   Fixing one in place does two kinds of damage: the next `/distribute-defaults` silently overwrites
+   your edit (the fix is **lost**, and the defect returns to every project), or the engine classifies
+   the file as changed-since-delivery, which **blocks distribution** — potentially for every project
+   on the host, not just yours. Either way you have made things worse than reporting would have.
 4. **Same file, naming + de-phasing**: flag synonyms against the terminology registry (registry
    name wins); strip leaked phase/session/task numbers (statement stays, process token goes).
    If NO registry exists yet, seed a minimal `terminology.md` under `docs/` from this file's
@@ -189,6 +235,48 @@ session_notes. Two consecutive skips make the slice MANDATORY at the next sessio
 
 Repos rot at phase boundaries — a closed phase leaves a working dir, verbose progress bodies, and
 stale index entries behind. When THIS update marks a phase `complete`:
+
+**0. No phase closes with a task left hanging. Do this FIRST — it can stop the close.**
+
+List every task in the closing phase that is not `complete` or `superseded`. **Each one gets an
+explicit disposition. None may be left `pending` in a closed phase.**
+
+> **Why this is a gate and not a tidy-up.** A task left pending is a task that never gets done. It
+> outlives the session that understood it, and by the time anyone picks it up its content is stale —
+> the code moved, the decision was made elsewhere, the reason is gone. It then sits there looking
+> like tracked work while being nothing of the kind, and it makes the phase's completion a lie. The
+> honest options are *finish it*, *re-home it*, or *drop it* — and "leave it" is not one of them.
+
+| Disposition | When | What it takes |
+|---|---|---|
+| **Finished** | It's done | Normal completion + `verify_result`. |
+| **Re-homed** | Real work that does **not** serve this phase's goal | A task in a **new phase**, **rewritten to stand alone** (see § When New Task Discovered Mid-Work). Mark the original `superseded` with `superseded_by`. Never move it verbatim — a note that made sense in-session is worthless out of it. |
+| **Dropped** | Speculative, overtaken, or no longer justified | `superseded` with a **reason someone can disagree with**. "Not needed" is not a reason. "No measured problem; re-raise with a benchmark" is. |
+
+**Propose all dispositions to the operator and get approval before closing the phase.** You may
+recommend — you may not decide. Present them plainly:
+
+```
+### Phase 2 close — 2 tasks still open
+
+2.7  Cache invalidation on the product feed
+     Does NOT serve phase 2's goal (auth refactor).
+     → RE-HOME to new phase 3, rewritten standalone:
+       3.1 "The product feed serves stale prices for up to 6h after a price
+            change. Cache TTL is set in feed/cache.py:44. Found while doing
+            2.3; not investigated further."
+
+2.8  Try the faster JSON parser
+     Speculative, raised in passing, 5 weeks old.
+     → DROP as superseded, reason: "no measured problem; re-raise with a benchmark."
+
+Approve these dispositions to close phase 2?
+```
+
+**If a task cannot be honestly restated for a cold reader, that is evidence to drop it, not to carry
+it.** Carrying it forward only moves the staleness somewhere it will be discovered later.
+
+Then the sweeps:
 
 1. **Working-dir sweep (extract-then-archive).** If `docs/<phase-dir>/` (or any working dir the
    phase created) exists: repoint/extract every live inbound reference FIRST (a "closed" dir can
@@ -320,8 +408,10 @@ _No documents registered yet. Add paths here as project docs are created._
 
 **Purpose**: Continuously improve project-specific skills based on session experience.
 
-**Scope**: Only project-specific skills — everything in `.claude/commands/` EXCEPT the 10 defaults:
-`add-work.md, check-aws.md, generate-architecture.md, generate-phases.md, repo-hygiene.md, syndicate-refresh-remote.md, setup-workflow-only.md, setup.md, start-session.md, update-progress.md`
+**Scope**: Only project-specific skills — everything in `.claude/commands/` EXCEPT the distributed
+defaults, which are named once in § 11.b below. (This list used to be spelled out here too, and went
+stale: it said "9 defaults" and named a `refresh-remote.md` that no longer existed while missing
+`repo-hygiene.md`. One statement, one place.)
 
 If there are no project-specific skills, skip this step.
 
@@ -441,6 +531,49 @@ Mark a repo's `git_repos` status `pushed` only after a confirmed FF-push; a repo
 
 ### 11. Extract Session Knowledge
 
+> **SCOPE — read this before anything else in Step 11.** Everything below governs **knowledge
+> extractions**: things this session *learned*, headed for the Syndicate expert knowledge base. It
+> governs **nothing else**. In particular, the prohibition further down — *"never write the
+> extraction into the current repo as a substitute"* — is about **extractions**, and is **not** a
+> rule about writing to repos in general. It has already been misread as one, with real cost (see
+> § A framework defect is reported, never implemented).
+
+#### 11.a — Two different things travel two different roads. Do not confuse them.
+
+| | **A learning** | **A framework defect** |
+|---|---|---|
+| What it is | something you now know: a pattern, an anti-pattern, a check | a distributed default is *wrong* |
+| Where it goes | the knowledge inbox — this Step 11 | a report to the operator |
+| Who consumes it | the Syndicate experts | the engine repo, as an approved task |
+| What you do | write the extraction (below) | **report it. Nothing else.** |
+
+#### 11.b — A framework defect is reported, never implemented
+
+If you find a defect in a **distributed default** (`add-work.md`, `check-aws.md`,
+`generate-architecture.md`, `generate-phases.md`, `repo-hygiene.md`, `syndicate-refresh-remote.md`,
+`setup-workflow-only.md`, `setup.md`, `start-session.md`, `update-progress.md`) — a wrong claim, a
+dead path, a rule that misfires — **you report it. You do not fix it.**
+
+**You may not:** edit the engine repo (`syndicate-playbooks-examples`); edit the default in place
+here (the next distribution overwrites it, and the edit is *lost*); run `/distribute-defaults`; or
+decide that the framework should change. **Every one of those is the operator's call, not yours.**
+
+**Report requirements only** — the problem, the evidence, and what would have to change. Then stop.
+The operator carries it to the engine, where agents serving that repo implement it as a tracked,
+approved task. That two-step is the long-standing structure and it works: the report is one commit,
+the implementation is another, and a human decides in between.
+
+> **This is not hypothetical.** An agent found a real framework defect, hand-patched the engine
+> **and** filed its own feedback entry — doing both steps in one act, ticking its own
+> `[ ] Reviewed by human` box, and pushing its own conclusions toward every project on the estate.
+> Corrected, it then **deleted its own work** on a misreading of the prohibition below, and reported
+> `"pushed revert ✓"` for a revert that had not run. Two unilateral acts, the second worse than the
+> first. Both were avoidable by stopping at "report".
+
+**Why an extraction is not the channel for this.** An extraction becomes *expert expertise* in the
+knowledge base. A framework fix routed there lands as advice attached to an expert — it will never
+reach the skill file it was about. Right road, wrong vehicle: **say it to the operator.**
+
 > **The inbox is one instance of a general rule — see `/start-session` Step 2.5.** A repo lives in
 > exactly ONE place. `syndicate-playbook` (the inbox) and `mcp-docker-playbook` (the MCP deploy repo)
 > live **on the box** and are developed there; `syndicate-playbooks-examples` and `syndicate-remote`
@@ -479,10 +612,23 @@ backlog by that route now, and **remove only the files that confirmably arrive**
 deliver stays spooled — never deleted, never assumed delivered:
 
 ```bash
+# SELF-CONTAINED ON PURPOSE — re-derives SPOOL and ROUTE instead of inheriting them.
+# Each fenced block runs as its OWN shell: variables set in the block above do NOT survive.
+# This block used to rely on $SPOOL from that block; it arrived empty, `[ -d "" ]` was false,
+# and the flush was skipped SILENTLY with exit 0 — a spooled extraction was never delivered and
+# never reported. The one thing the spool exists for is to fail LOUDLY; that bug made it fail
+# exactly like the silent repo-scatter it replaces. Keep every variable this block needs local.
+SPOOL="$HOME/.syndicate-knowledge-spool"
+if [ -d "$HOME/syndicate-playbook/knowledge_extraction" ]; then ROUTE=direct
+elif [ -f "$HOME/.syndicate-remote-secrets/box.json" ]; then ROUTE=remote
+else ROUTE=spool; fi
+
 if [ -d "$SPOOL" ] && [ -n "$(ls -A "$SPOOL" 2>/dev/null)" ]; then
-  echo "SPOOL: $(ls -1 "$SPOOL" | wc -l) extraction(s) awaiting delivery — flushing via $ROUTE"
-  # deliver each via the resolved route (direct: mv into the inbox; remote: scp — see step 3),
+  echo "SPOOL: $(ls -1 "$SPOOL" | wc -l) extraction(s) awaiting delivery — route=$ROUTE"
+  # deliver each via $ROUTE (direct: mv into the inbox; remote: scp — see step 3),
   # and rm ONLY on confirmed success. If ROUTE=spool, deliver nothing and report the backlog.
+else
+  echo "SPOOL: empty (route=$ROUTE) — nothing awaiting delivery"
 fi
 ```
 
@@ -552,6 +698,21 @@ spooled`. A backlog that nobody reports is a backlog nobody clears.
    > because an outage is visible. If the inbox cannot be reached, **spool and say so**. The spool
    > fails *loudly*; the repo-scatter fails *silently*, and the silent one is the failure class this
    > step exists to prevent.
+   >
+   > **What this rule covers, exactly:** writing **an extraction** somewhere other than the inbox.
+   > "The current repo" means **the project you are working in** — the one whose task you are
+   > closing. That is the whole scope.
+   >
+   > **What it does NOT cover** — it has been read as governing all three, and does not:
+   > it is not a rule about writing to repos in general; it says nothing about the engine repo
+   > (`syndicate-playbooks-examples`), which is not "the current repo" from any project session; and
+   > **a change to a canonical skill is not an extraction**, so this sentence neither permits nor
+   > forbids it — § 11.b does, and the answer there is *report, never implement*.
+   >
+   > A rule read past its scope does damage in the direction the rule never intended. This one was
+   > read as a ban on legitimate work, and the agent's response was to **delete** it. If you are
+   > about to remove content because of this sentence: **stop.** This sentence has never once asked
+   > anyone to delete anything.
 
    The file body, in every case:
    ```markdown
@@ -635,6 +796,13 @@ spooled`. A backlog that nobody reports is a backlog nobody clears.
 
    **Note**: Only include expert sections that have learnings. Omit empty sections.
 
+   **On leibniz — deliberately absent, and not a gap to fix.** The project declares six experts;
+   this template names five. That is **intended**: leibniz is a **meta-expert** and correctly holds
+   no extracted expertise, which is why the live knowledge base shows a profile and zero expertise
+   items across hundreds of extractions. Do **not** add a leibniz section, do not route learnings
+   there, and do not report the absence as a defect — it has been re-discovered and re-raised more
+   than once. If that ever changes, it changes here first, by the operator.
+
 4. **Expert assignment**:
    | Domain | Expert |
    |--------|--------|
@@ -675,6 +843,31 @@ spooled`. A backlog that nobody reports is a backlog nobody clears.
 - Still spooled: 0
 (A backlog is independent of whether this session learned anything. "Nothing extracted" must never
 hide "3 extractions still undelivered" — that is how a waiting room quietly becomes a destination.)
+
+### Open Work (ALWAYS render — same table and same rules as /start-session Step 4)
+
+[The operator is closing this session and opening another project. They do not carry this
+ project's task numbers in their head. An ID alone is not a description — see
+ /start-session § Writing for the Operator, which binds this report too.
+
+ Scope: every open task in the current phase, plus anything stuck in any phase.]
+
+**Phase 2 — [phase name in plain words]** (2 open)
+
+| Task | In plain words | State |
+|------|----------------|-------|
+| 2.4 | [what it actually is, in language needing no other document] | next |
+| 2.5 | [...] | not started |
+
+**Stuck elsewhere** (omit entirely if nothing)
+
+| Task | In plain words | Stuck since | Why it's still here |
+|------|----------------|-------------|---------------------|
+| 1.7 | [...] | 2026-06-02 | [blocked on what, or: nobody has picked it up] |
+
+[A task stuck long enough that its context has gone stale is a candidate for Step 3a's
+ dispositions — re-home it rewritten, or drop it with a reason. Do not just keep listing it
+ session after session; that is how a pending task becomes permanent furniture.]
 
 ### Overall Progress
 Phase 2: 3/5 tasks complete

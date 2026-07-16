@@ -98,11 +98,29 @@ Every task MUST be:
 
 ### 4. Generate Task IDs
 
+**Before choosing any number, apply the goal test: does this work serve the goal of the phase you
+would be putting it in?** The first digit carries **one goal** — that is what lets a phase finish.
+Work that does not serve it does not belong in it, however it was discovered.
+
+| The work… | ID | Why |
+|---|---|---|
+| is needed to finish task 3.4 itself | `3.4a`, `3.4b` | It *is* the current work. |
+| serves phase 3's goal, own deliverable | `3.5`, `3.6` | Same goal, new task. |
+| **does NOT serve phase 3's goal** | **new phase `4.1`, `4.2`** | Different work. Filing it under 3 is what makes phase 3 uncloseable. |
+
+**"I found it while doing 3.4" is not a reason to number it 3.x.** Where work was *discovered* says
+nothing about which goal it *serves* — conflating the two is exactly how a phase becomes a drawer
+that never closes and never forces a decision on anything in it.
+
+**Symptom you can check for right now:** if the phase you are about to extend has a name like
+*"Ongoing Improvements"* or *"Misc"*, or holds tasks that plainly serve different goals, it has
+already lost its finish line. Do not deepen it — start the new phase and say why.
+
 **For tasks in current phase (A):**
 ```
 Current task: 3.4
-New tasks: 3.4a, 3.4b, 3.4c  (sub-tasks)
-   OR: 3.5, 3.6, 3.7  (after current phase tasks)
+New tasks: 3.4a, 3.4b, 3.4c  (sub-tasks — only if they serve phase 3's goal)
+   OR: 3.5, 3.6, 3.7  (after current phase tasks — same test applies)
 ```
 
 **For new phase (B):**
@@ -111,6 +129,10 @@ Last phase: 3
 New phase: 4
 Tasks: 4.1, 4.2, 4.3...
 ```
+
+**A task in a new phase must be written to stand alone.** The session that found it is gone by the
+time anyone reads it. State what is wrong, where, and how you know — never `"the thing we discussed"`.
+If you cannot restate it for a cold reader, that is evidence it should not be tracked at all.
 
 ### 5. Present Summary
 
