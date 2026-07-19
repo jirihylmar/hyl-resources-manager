@@ -642,6 +642,29 @@ for dir in */; do
 done
 ```
 
+**Also check the naming invariant — folder name = origin repo name, orchestration repo included**
+(the convention `/setup` § Naming Convention binds at birth; this is its standing session-time
+check. The framework's own bootstrap once created folders whose origin carried a different name,
+and two live projects still disagree folder-vs-origin — drift you cannot grep for):
+
+```bash
+check_name() {  # $1=dir ('.' for orchestration)
+  local o n
+  o=$(git -C "$1" remote get-url origin 2>/dev/null | sed 's#.*/##; s/\.git$//')
+  n=$(basename "$(cd "$1" && pwd)")
+  [ -n "$o" ] && [ "$o" != "$n" ] && echo "NAMING MISMATCH: folder '$n' vs origin '$o'"
+}
+check_name "."
+for dir in */; do
+  dir="${dir%/}"
+  [ -d "$dir/.git" ] && check_name "$dir"
+done
+```
+
+A repo with no origin is silent (nothing to disagree with yet). Any `NAMING MISMATCH` line goes
+into the Step 9 repos table — report it, do not rename anything: a rename touches every checkout
+on every host and is the operator's call.
+
 Update `git_repos` status in progress.json:
 - `pushed` - clean and in sync with remote
 - `needs_push` - local commits not pushed

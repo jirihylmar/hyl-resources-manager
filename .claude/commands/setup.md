@@ -75,11 +75,33 @@ Use AskUserQuestion to select.
    mcp__aws-<server>__call_aws, and which <server> names exist depends on this host's AWS
    service model (per-account servers, or one central server that needs --profile on every
    call). Detect, never assume — see /check-aws.
-4. **Naming Pattern**: Resource prefix? (e.g., myproject-{service}-{env})
+4. **Project Prefix**: the ONE name every part of this project shares (e.g. myproject).
+   Repos, local folders, and AWS resources all derive from it — see Naming Convention below.
 5. **GitHub Org**: (optional)
 ```
 
 Write to `input/environment.md`.
+
+### 2b. Naming Convention (binding from birth — collect the prefix once, derive everything)
+
+**One prefix drives every name. A name is never invented per-part, and a folder is never named
+differently from its repo.**
+
+| Thing | Name | Rule |
+|---|---|---|
+| Orchestration repo | `<prefix>-orchestration` | **The principal manager.** It governs every other part of this project — sub-repos, resources, workflows all answer to it, and its name must say so unmistakably. |
+| Each sub-repo | `<prefix>-<part>` (e.g. `<prefix>-infrastructure`, `<prefix>-backend`) | The part name says what it is; the prefix says what it belongs to. Never a bare `backend`/`infrastructure` — a generic name carries no ownership. |
+| Local folder of ANY repo | **identical to the repo name** | Folder = repo = origin name, always. A folder named differently from its origin is drift you cannot grep for. |
+| AWS resources | `<prefix>-{service}-{env}` (projects may extend, e.g. with component/account segments) | Holds **whether the resource is provisioned via CDK or created individually** — the convention is about the name, not the tool that made it. |
+| `input/`, `docs/`, `exports/`, `imports/`, … | plain directories **inside the orchestration repo** | Orchestration-repo CONTENT, never repos of their own. The orchestration repo both manages the parts and carries the project's working material. |
+
+**Why folder = repo = origin is a rule and not taste:** this framework's own bootstrap used to run
+`mkdir {repo_name}` but `gh repo create {org}/{project}-{repo_name}` — quietly creating a folder
+named `infrastructure` whose origin was `myproject-infrastructure`. Measured on the estate this
+convention was written against: two projects whose orchestration folder and origin name disagree
+outright, two projects with prefix-less `backend`/`infrastructure` subs, one project mixing three
+naming styles, and a `hub400`/`hub440` typo frozen into two repo names. Names that disagree at
+birth never converge later.
 
 ### 3. Copy from Playbook Template
 
@@ -146,17 +168,42 @@ Must match environment config.
 
 ### 7. Create Sub-Repositories
 
-For each repo in progress.json `git_repos`:
+For each repo in progress.json `git_repos`, the folder, the repo, and the origin all carry the
+SAME name: `<prefix>-<part>` (Naming Convention, Step 2b — the old `mkdir {repo_name}` +
+`gh repo create {project}-{repo_name}` pair created a folder whose origin had a different name,
+manufacturing drift at birth):
 
 ```bash
-mkdir -p {repo_name}
-cd {repo_name}
+mkdir -p {prefix}-{part}
+cd {prefix}-{part}
 git init
 # Create initial files based on type
 git add .
 git commit -m "Initial commit"
-gh repo create {github_org}/{project}-{repo_name} --private --source=. --push
+gh repo create {github_org}/{prefix}-{part} --private --source=. --push
 ```
+
+**Then verify the invariant mechanically — folder name = origin repo name, every repo, including
+the orchestration repo itself** (same check `/start-session` Step 8 runs every session):
+
+```bash
+check_name() {  # $1=dir ('.' for orchestration)
+  local o n
+  o=$(git -C "$1" remote get-url origin 2>/dev/null | sed 's#.*/##; s/\.git$//')
+  n=$(basename "$(cd "$1" && pwd)")
+  [ -z "$o" ] && { echo "NOTE $n: no origin yet — name check deferred until origin exists"; return; }
+  [ "$o" = "$n" ] && echo "OK   $n: folder = origin name" \
+                  || echo "NAMING MISMATCH: folder '$n' vs origin '$o' — fix BEFORE first push"
+}
+check_name "."
+for dir in */; do
+  dir="${dir%/}"
+  [ -d "$dir/.git" ] && check_name "$dir"
+done
+```
+
+A mismatch at this point costs a `git remote set-url` or a folder rename; a mismatch discovered a
+year in costs a coordinated rename across every checkout and host.
 
 ### 8. CDK Bootstrap (if using CDK)
 
