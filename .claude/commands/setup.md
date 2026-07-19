@@ -71,7 +71,10 @@ Use AskUserQuestion to select.
 
 1. **AWS Account ID**:
 2. **AWS Region**: (e.g., eu-west-1)
-3. **MCP Tool**: Which AWS MCP tool? (e.g., mcp__aws-hylmar__call_aws)
+3. **MCP Tool**: Which AWS MCP tool? Read it from the LIVE tool inventory — the handle is
+   mcp__aws-<server>__call_aws, and which <server> names exist depends on this host's AWS
+   service model (per-account servers, or one central server that needs --profile on every
+   call). Detect, never assume — see /check-aws.
 4. **Naming Pattern**: Resource prefix? (e.g., myproject-{service}-{env})
 5. **GitHub Org**: (optional)
 ```

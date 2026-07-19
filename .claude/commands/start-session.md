@@ -208,6 +208,61 @@ done
 
 Report each repo's armed/absent result in the Step 9 "Session Ready" block. (Re-running this is a no-op once `core.hooksPath` is set.)
 
+### 0.7. Delivered-Defaults Drift Check (vs the distribution manifest; any host, no network)
+
+**Why this step exists — 17 projects ran hand-edited defaults indefinitely while every check said
+clean.** Delivery to remote hosts goes via origin (push, then FF-pull), so the delivering engine
+never sees a remote working tree — and an FF-pull leaves a locally-modified file alone whenever
+upstream did not touch it. A hand-edit to a delivered default therefore survives every sync,
+silently, on the host that made it. The one artifact that can see this from ANYWHERE is
+`.claude/distribution-manifest.json`: the engine writes it beside every delivery and it records the
+sha256 of the exact bytes delivered (post-overlay bake), travelling with the files on every route.
+
+Run the comparison every session start (read-only, no network, correct on any host):
+
+```bash
+python3 - <<'PY'
+import json, hashlib
+from pathlib import Path
+m = Path(".claude/distribution-manifest.json")
+if not m.exists():
+    print("DEFAULTS DRIFT: n/a — no distribution manifest (not a distributed project, or never delivered by the engine)")
+    raise SystemExit
+man = json.loads(m.read_text())
+drifted, missing, checked = [], [], 0
+for rel, meta in sorted(man.get("files", {}).items()):
+    checked += 1
+    p = Path(rel)
+    if not p.exists():
+        missing.append(rel); continue
+    if hashlib.sha256(p.read_bytes()).hexdigest() != meta.get("sha256"):
+        drifted.append(rel)
+if not drifted and not missing:
+    print(f"DEFAULTS DRIFT: ok — all {checked} manifest-listed files carry their delivered bytes "
+          f"(delivered {man.get('written_at','?')}, canonical {str(man.get('canonical_commit','?'))[:12]})")
+else:
+    for f in drifted: print(f"DEFAULTS DRIFT: DRIFTED  {f} — bytes differ from what the engine delivered")
+    for f in missing: print(f"DEFAULTS DRIFT: MISSING  {f} — manifest says delivered; file is absent")
+PY
+```
+
+**Why this cannot cry wolf on legitimate variance:** the manifest records *delivered* bytes, so a
+file customized via `.claude/local-overlays/` hash-matches (its baked result IS what was delivered),
+and a file forked via `.skip` — or ever classified divergent — is *absent from the manifest by
+design* and is not checked at all. What remains is exactly one thing: **a file the engine delivered
+whose bytes have since changed on this host.**
+
+**Act on the result:**
+
+- `ok` / `n/a` → proceed; omit from the handoff.
+- `DRIFTED` / `MISSING` → **surface every named file in the Session Handoff (⚠ section) — and do
+  NOT silently revert it.** The edit may encode true local knowledge the canonical file lacks
+  (measured case: hand-edits on a remote host were the only written record of that host's AWS
+  service model). The honest moves are: report it as a framework defect per `/update-progress`
+  § 11.b if canonical is wrong; propose a `.claude/local-overlays/` entry if the variance is
+  legitimately local; or restore delivered bytes if it was an accident — the operator picks.
+  A stale manifest is not among the explanations: the engine rewrites it on every apply.
+
 ### 1. Read Orchestration Files
 
 - Read `CLAUDE.md` for project context, rules, and conventions
@@ -456,9 +511,15 @@ Proceed to session handoff (Step 4).
 several projects and does not carry this one's task numbers in their head. See § Writing for the
 Operator: an ID alone is not a description.
 
- Scope: every open task in the CURRENT phase, plus anything stuck in ANY phase.
- "Stuck" = in_progress, blocked, or pending in a phase that is not the current one —
- those are precisely the ones that go stale and are never resolved.
+ Scope: ALL open work, in three distinct buckets — current, stuck, deferred. Every open task
+ and every backlog item appears in exactly one of them; nothing tracked is ever invisible at
+ session start.
+ "Stuck"    = in_progress or blocked in a phase that is not the current one — started (or
+              obstructed) and then abandoned; precisely the ones that go stale unnoticed.
+ "Deferred" = pending in a phase that is not the current one, plus every progress.json
+              `backlog` item. Deferred is BY DESIGN — rendering it as "stuck" miscasts
+              planned work as neglect, and not rendering it at all is how a 5-item backlog
+              sat structurally invisible for months until the operator asked where it was.
 
  "In plain words" is not the task's name repeated. It is what it MEANS, in language that
  needs no other document open. If you cannot write it, you do not understand the task yet.]
@@ -474,11 +535,23 @@ Operator: an ID alone is not a description.
 
 | Task | In plain words | Stuck since | Why it's still here |
 |------|----------------|-------------|---------------------|
-| A.B | [...] | YYYY-MM-DD | [blocked on what, or: nobody has picked it up] |
+| A.B | [...] | YYYY-MM-DD | [blocked on what, or: abandoned mid-flight] |
 
 [If a stuck task has been pending long enough that its context is likely stale, say so —
  that is a candidate for the disposition rules in /update-progress Step 3a, not a task to
  quietly keep carrying.]
+
+**Deferred work** (omit ONLY if there are no non-current-phase pending tasks AND the backlog
+is empty — an empty section is noise, but a silently omitted non-empty one is invisible work)
+
+| Where | In plain words | Open |
+|-------|----------------|------|
+| Phase A — [phase name in plain words] | [what the phase is for, one line] | N tasks |
+| Backlog | [each backlog item, in plain words — these have no task IDs and no other surface] | — |
+
+[Phases summarize to one line each; backlog items are listed individually — the backlog has no
+ phase file, no task IDs, and no other rendering surface, so this table is the only place the
+ operator ever sees it.]
 
 ### ⚠ Remote-resident repos  (omit ONLY if Step 2.5 found none needing action)
 [repo → REMOTE (box): this project's skills reference it by a local path that is DEAD.
@@ -493,6 +566,12 @@ Operator: an ID alone is not a description.
 
 ### ⚠ Repo hygiene  (omit if Step 2.7 reported ok)
 [due / OVERDUE x2 / never recorded — recommend /repo-hygiene accordingly]
+
+### ⚠ Delivered-defaults drift  (omit if Step 0.7 reported ok or n/a)
+[Name every DRIFTED / MISSING file verbatim from the Step 0.7 output. Do not revert anything
+ here — the edit may encode true local knowledge; the operator picks the remedy (report per
+ /update-progress § 11.b / local-overlay / restore). A drift line that appears session after
+ session with no decision is itself a finding — say so.]
 
 ---
 **What would you like to do?**

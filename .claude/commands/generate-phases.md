@@ -200,14 +200,22 @@ tasks/
 **IMPORTANT:** Use actual environment values from config:
 
 ```json
-// BAD - placeholder
+// BAD - the generated task still carries an unresolved placeholder
 {"verify": "aws dynamodb describe-table --table-name {TABLE_NAME}"}
 
-// GOOD - actual value from environment
-{"verify": "mcp__aws-hylmar__call_aws aws dynamodb describe-table --table-name syndicate-experts-exp1-dev"}
+// GOOD - the generated task carries values RESOLVED from THIS project's environment.
+// Illustration for a project whose naming pattern is myproject-{service}-{env}:
+{"verify": "mcp__aws-<server>__call_aws aws dynamodb describe-table --table-name myproject-experts-dev"}
 ```
 
-Reference naming convention from environment config to construct resource names.
+Resolve both halves at generation time, from the project you are generating for:
+- **The MCP handle**: read it from the LIVE tool inventory — never copy a server name from this
+  file or from another project. Which `<server>` names exist depends on the host's AWS service
+  model (per-account servers, or one central server); on a central-server host the command must
+  also carry `--profile <account>`. Detect, never assume — see /check-aws.
+- **The resource name**: construct it from the project's own naming convention in
+  `input/environment.md`. A real resource name belonging to some other project is wrong even if
+  the command would run.
 
 ### 7. Write Phase Task Files
 

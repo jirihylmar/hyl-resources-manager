@@ -149,6 +149,7 @@ implementation before marking the task complete:
 | Deployed-resource name | Appears in a **fresh** inventory, not a remembered one |
 | Payload / query shape | Matches the deployed definition (schema, table model, API) |
 | Command presented as runnable | Actually shell-runnable as written (multi-line included) |
+| Tool handle / resource name inside a fenced EXAMPLE | Same verification as if it were prose — or visibly neutral (a `<placeholder>`, `{braces}`, or the reserved fictional `myproject-` prefix). Agents copy examples as the pattern, and nobody "touches" an illustration, so a retired handle or another project's real resource name survives every gate while teaching every reader the wrong thing. An example is an operational claim, not decoration. |
 
 Also at touch: new/edited content uses the project's terminology-registry names if a registry
 exists (no new synonyms, no banned bare words), and adds no phase/task/session numbers as
