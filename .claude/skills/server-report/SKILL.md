@@ -36,7 +36,11 @@ project-level, or in a plugin. **Never hardcode a path to `report.py`**: an earl
 file said `~/.claude/skills/server-report/report.py`, which breaks in a project checkout and, worse,
 silently runs a *stale* copy on a host where that path happens to exist.
 
-The script reads `/proc`, `/sys` and cgroup files directly — no sudo, no dependencies, no network.
+The script reads `/proc`, `/sys` and cgroup files directly — no sudo, no third-party dependencies.
+It shells out only for the OOM detail sources (`dmesg`, `journalctl -k`), both local and both
+optional. It touches the network in exactly one place: `imds_az()` under `--az`, which the code
+labels *"the only probe permitted to touch the network"* — off by default, and gated on the firmware
+declaring the vendor.
 
 ## What it reports
 

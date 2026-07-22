@@ -191,8 +191,9 @@ Re-run the resolver above; it must now print `remote`. `box.json` is per-machine
 lives **outside every git repo** — never commit it, and never put the key inside a repo either.
 
 > **Do not clone the inbox to make `direct` true instead.** `syndicate-playbook` lives in exactly
-> ONE place; a second live copy accumulates untracked extraction files that git never reconciles
-> (`docs/syndicate-playbook-remote-only-instruction.md`). The key is the whole answer.
+> ONE place; a second live copy accumulates untracked extraction files that git never reconciles —
+> and untracked files never cross hosts, so the two copies diverge permanently. The key is the whole
+> answer.
 
 ### 6. Verify AWS Access
 
