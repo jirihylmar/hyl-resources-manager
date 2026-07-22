@@ -165,6 +165,39 @@ Ask user for:
 - MCP tool name (if applicable)
 - Any project-specific rules
 
+### 4.4 Verify This Host Can Report Knowledge (the syndicate inbox)
+
+An existing project being put on the workflow is usually on a host that has never run one — so
+check the knowledge path here, at injection, not months later. `/update-progress` § 11 writes every
+extraction to the **one** inbox, `<workspace>/syndicate-playbook/knowledge_extraction/`, resolving
+the route by **presence**:
+
+```bash
+if   [ -d "$HOME/syndicate-playbook/knowledge_extraction" ]; then echo "direct — this host holds the inbox"
+elif [ -f "$HOME/.syndicate-remote-secrets/box.json" ];      then echo "remote — reaches the inbox over ssh"
+else echo "NO ROUTE — this host cannot deliver; extractions would spool forever"; fi
+```
+
+**`NO ROUTE` is a setup gap, not a runtime condition.** Neither condition becomes true on its own:
+extractions land in `~/.syndicate-knowledge-spool/` and stay there, because the spool is drained
+only by a run that *does* resolve an inbox.
+
+**The fix is one ssh key.** Ask the operator for a key with access to the box, then:
+
+```bash
+mkdir -p ~/.syndicate-remote-secrets && chmod 700 ~/.syndicate-remote-secrets
+cat > ~/.syndicate-remote-secrets/box.json <<'JSON'
+{"host":"<box host or ip>","user":"<box user>","workspace":"/home/<box user>","ssh_key":"<absolute path to the key>"}
+JSON
+chmod 600 ~/.syndicate-remote-secrets/box.json
+ssh -i <absolute path to the key> -o ConnectTimeout=15 <box user>@<box host> true && echo reachable
+```
+
+Re-run the resolver; it must print `remote`. `box.json` is per-machine, mode 600, and lives
+**outside every git repo** — never commit it, and never put the key inside a repo either.
+Do **not** clone the inbox to make `direct` true instead: it lives in exactly ONE place, and a
+second live copy accumulates untracked files git never reconciles.
+
 ---
 
 ## Step 5: Create progress.json

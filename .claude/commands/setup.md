@@ -158,6 +158,42 @@ cdk --version     # >= 2
 gh --version
 ```
 
+### 5b. Verify This Host Can Report Knowledge (the syndicate inbox)
+
+`/update-progress` § 11 writes every session's knowledge extraction to the **one** inbox,
+`<workspace>/syndicate-playbook/knowledge_extraction/`, resolving the route by **presence**:
+
+```bash
+if   [ -d "$HOME/syndicate-playbook/knowledge_extraction" ]; then echo "direct — this host holds the inbox"
+elif [ -f "$HOME/.syndicate-remote-secrets/box.json" ];      then echo "remote — reaches the inbox over ssh"
+else echo "NO ROUTE — this host cannot deliver; extractions would spool forever"; fi
+```
+
+**`NO ROUTE` is a setup gap, not a runtime condition — resolve it here, before any work starts.**
+A host that resolves neither has no way to reach the inbox and will never gain one on its own:
+each extraction it writes lands in `~/.syndicate-knowledge-spool/` and stays there, because the
+spool is drained only by a run that *does* resolve an inbox. That failure is invisible until the
+knowledge already exists — which is exactly too late.
+
+**The fix is one ssh key.** Ask the operator for a key with access to the box, then make `remote`
+resolvable:
+
+```bash
+mkdir -p ~/.syndicate-remote-secrets && chmod 700 ~/.syndicate-remote-secrets
+cat > ~/.syndicate-remote-secrets/box.json <<'JSON'
+{"host":"<box host or ip>","user":"<box user>","workspace":"/home/<box user>","ssh_key":"<absolute path to the key>"}
+JSON
+chmod 600 ~/.syndicate-remote-secrets/box.json
+ssh -i <absolute path to the key> -o ConnectTimeout=15 <box user>@<box host> true && echo reachable
+```
+
+Re-run the resolver above; it must now print `remote`. `box.json` is per-machine, mode 600, and
+lives **outside every git repo** — never commit it, and never put the key inside a repo either.
+
+> **Do not clone the inbox to make `direct` true instead.** `syndicate-playbook` lives in exactly
+> ONE place; a second live copy accumulates untracked extraction files that git never reconciles
+> (`docs/syndicate-playbook-remote-only-instruction.md`). The key is the whole answer.
+
 ### 6. Verify AWS Access
 
 ```
