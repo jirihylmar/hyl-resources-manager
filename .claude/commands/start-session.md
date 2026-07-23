@@ -487,6 +487,49 @@ Proceed to session handoff (Step 4).
 
 ### 4. Present Session Handoff
 
+#### 4.0 — Render the open-work tables FIRST, mechanically. This is a step, not a suggestion.
+
+**Run this before you write a word of the handoff:**
+
+```bash
+python3 .claude/skills/open-work/open_work.py     # from the project root
+```
+
+Paste its output verbatim where the template below says `{{OPEN_WORK_TABLES}}`, then replace
+**every** `<FILL: …>` token with what that task MEANS — language needing no other document open.
+`"In plain words"` is never the task's name repeated; if you cannot write it, you do not yet
+understand the task. Exit code `2` means `progress.json` is missing, unreadable, or has no
+recognisable phases: **report that verbatim to the operator** — it is a real defect, not a reason
+to skip the tables. If the skill is not installed in this project, render the three tables by hand
+to the same shape (`§ 4.0a`) and report the missing skill.
+
+**Why this is mechanical.** These tables were once specified in prose inside the template block
+below, and sessions rendered them as prose instead — an 11-task phase collapsed to one sentence,
+deferred phases printed as bare numbers (`Phase 66 (1)`), which is exactly the *"an ID alone is not
+a description"* failure the tables exist to prevent. The hosts had the correct file; one had zero
+drift. **A row a script emits cannot be dropped for brevity.**
+
+#### 4.0a — What the three tables are (the shape the renderer emits)
+
+Scope: **ALL open work, in three buckets — current, stuck, deferred.** Every open task and every
+backlog item appears in exactly one of them; nothing tracked is ever invisible at session start.
+
+| Bucket | Contains |
+|---|---|
+| **Current phase** | every task in the current phase that is not complete/superseded, one row each |
+| **Stuck elsewhere** | `in_progress` or `blocked` in a phase that is *not* current — started or obstructed, then abandoned; precisely the ones that go stale unnoticed |
+| **Deferred work** | `pending` in a non-current phase (one row per phase, with its open count), **plus every open `backlog` item, listed individually** — the backlog has no phase file, no task ids, and no other rendering surface, so this table is the only place the operator ever sees it |
+
+Deferred is **by design**: rendering it as "stuck" miscasts planned work as neglect, and not
+rendering it at all is how a 5-item backlog sat structurally invisible for months until the
+operator asked where it was. A stuck task old enough that its context has gone stale is a candidate
+for the disposition rules in `/update-progress` Step 3a — say so rather than carrying it silently.
+
+The renderer also emits a **pointer check** when `current_task`/`current_phase` is stale, absent,
+or not an id. Report those lines; do not quietly fix `progress.json` here.
+
+#### 4.1 — Present the handoff
+
 ```
 ## Session Handoff
 
@@ -507,51 +550,12 @@ Proceed to session handoff (Step 4).
      development and broke 4 anchors in a live project, which would have halted distribution
      estate-wide. Add sections; never rename one. -->
 
-**Open Work — ALWAYS render this table. It is the default, not an extra.** The operator runs
-several projects and does not carry this one's task numbers in their head. See § Writing for the
-Operator: an ID alone is not a description.
+{{OPEN_WORK_TABLES}}
 
- Scope: ALL open work, in three distinct buckets — current, stuck, deferred. Every open task
- and every backlog item appears in exactly one of them; nothing tracked is ever invisible at
- session start.
- "Stuck"    = in_progress or blocked in a phase that is not the current one — started (or
-              obstructed) and then abandoned; precisely the ones that go stale unnoticed.
- "Deferred" = pending in a phase that is not the current one, plus every progress.json
-              `backlog` item. Deferred is BY DESIGN — rendering it as "stuck" miscasts
-              planned work as neglect, and not rendering it at all is how a 5-item backlog
-              sat structurally invisible for months until the operator asked where it was.
-
- "In plain words" is not the task's name repeated. It is what it MEANS, in language that
- needs no other document open. If you cannot write it, you do not understand the task yet.]
-
-**Phase X — [phase name in plain words]** (N open)
-
-| Task | In plain words | State |
-|------|----------------|-------|
-| X.Y | [what it actually is — no jargon, no invented labels] | working on it now |
-| X.Z | [...] | not started |
-
-**Stuck elsewhere** (omit this block entirely if there is nothing)
-
-| Task | In plain words | Stuck since | Why it's still here |
-|------|----------------|-------------|---------------------|
-| A.B | [...] | YYYY-MM-DD | [blocked on what, or: abandoned mid-flight] |
-
-[If a stuck task has been pending long enough that its context is likely stale, say so —
- that is a candidate for the disposition rules in /update-progress Step 3a, not a task to
- quietly keep carrying.]
-
-**Deferred work** (omit ONLY if there are no non-current-phase pending tasks AND the backlog
-is empty — an empty section is noise, but a silently omitted non-empty one is invisible work)
-
-| Where | In plain words | Open |
-|-------|----------------|------|
-| Phase A — [phase name in plain words] | [what the phase is for, one line] | N tasks |
-| Backlog | [each backlog item, in plain words — these have no task IDs and no other surface] | — |
-
-[Phases summarize to one line each; backlog items are listed individually — the backlog has no
- phase file, no task IDs, and no other rendering surface, so this table is the only place the
- operator ever sees it.]
+[Replace the line above with the verbatim output of § 4.0's renderer, every <FILL: …> token
+ filled in. Three tables: current phase, "Stuck elsewhere" (omit if empty), "Deferred work"
+ (omit ONLY if there are no non-current-phase pending tasks AND no open backlog item). Do not
+ summarise them into prose, and do not drop rows.]
 
 ### ⚠ Remote-resident repos  (omit ONLY if Step 2.5 found none needing action)
 [repo → REMOTE (box): this project's skills reference it by a local path that is DEAD.

@@ -845,30 +845,23 @@ spooled`. A backlog that nobody reports is a backlog nobody clears.
 (A backlog is independent of whether this session learned anything. "Nothing extracted" must never
 hide "3 extractions still undelivered" — that is how a waiting room quietly becomes a destination.)
 
-### Open Work (ALWAYS render — same table and same rules as /start-session Step 4)
+### Open Work (rendered mechanically — run it, do not compose it)
 
-[The operator is closing this session and opening another project. They do not carry this
- project's task numbers in their head. An ID alone is not a description — see
- /start-session § Writing for the Operator, which binds this report too.
+{{OPEN_WORK_TABLES}}
 
- Scope: every open task in the current phase, plus anything stuck in any phase.]
+[Produced by:  python3 .claude/skills/open-work/open_work.py   — run from the project root,
+ output pasted verbatim, every <FILL: …> token replaced. Same three tables and same rules as
+ /start-session § 4.0/4.0a, which is where they are explained; this is the same renderer, not a
+ second copy of the spec. Exit 2 = progress.json unreadable: report that verbatim rather than
+ omitting the tables. Skill absent = render by hand to the same shape and say the skill is
+ missing.
 
-**Phase 2 — [phase name in plain words]** (2 open)
+ The operator is closing this session and opening another project. They do not carry this
+ project's task numbers in their head, and a task that renders as an ID alone has not been
+ reported. Do not summarise the tables into prose, and do not drop rows for brevity — a stuck
+ or deferred row surviving session after session with no decision is itself the finding, and it
+ belongs in Step 3a's dispositions rather than in another silent listing.]
 
-| Task | In plain words | State |
-|------|----------------|-------|
-| 2.4 | [what it actually is, in language needing no other document] | next |
-| 2.5 | [...] | not started |
-
-**Stuck elsewhere** (omit entirely if nothing)
-
-| Task | In plain words | Stuck since | Why it's still here |
-|------|----------------|-------------|---------------------|
-| 1.7 | [...] | 2026-06-02 | [blocked on what, or: nobody has picked it up] |
-
-[A task stuck long enough that its context has gone stale is a candidate for Step 3a's
- dispositions — re-home it rewritten, or drop it with a reason. Do not just keep listing it
- session after session; that is how a pending task becomes permanent furniture.]
 
 ### Overall Progress
 Phase 2: 3/5 tasks complete
