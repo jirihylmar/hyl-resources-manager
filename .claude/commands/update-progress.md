@@ -608,6 +608,26 @@ fi
 echo "$ROUTE"
 ```
 
+**If this host resolves `spool`, say the remedy — do not just report the backlog.** An outage clears
+on its own; a host that has never been given credentials does not. On such a machine both conditions
+above stay false forever, every extraction accumulates undelivered, and the flush block below prints
+`SPOOL: empty` — which reads as health. Name it as a **setup gap** and give the one command that
+closes it:
+
+```bash
+bash .claude/skills/syndicate-connect/connect.sh --host <box address>   # then paste the PEM, Ctrl-D
+```
+
+Per **machine**, once — never per project: the resolver above reads `$HOME` and nothing else, so
+afterwards every project on the host reports regardless of where it lives on disk. The operator
+supplies the address (a stop/start reassigns it, so it is in no distributed file) and the key. The
+script installs the key at mode 600 on the **Linux** filesystem, proves the connection, and only then
+writes `box.json` — on failure it writes nothing, so a host never trades `spool` (loud) for `remote`
+(confident, and wrong). Whatever is already spooled flushes on the next run of this step.
+
+Do **not** clone the inbox to make `direct` true instead — it lives in exactly ONE place, and a
+second live copy accumulates untracked extraction files that git never reconciles.
+
 **Then flush the spool.** If `ROUTE` is `direct` or `remote` and `$SPOOL` is non-empty, deliver the
 backlog by that route now, and **remove only the files that confirmably arrive**. A file that fails to
 deliver stays spooled — never deleted, never assumed delivered:
@@ -883,6 +903,7 @@ Total: 8/20 tasks complete (40%)
 - Offline / local-only repos: re-push when origin is reachable / after adding an origin.
 - Deploy expected but not run: run the deploy command and verify it separately — pushing did not perform it.
 - Spooled extractions: the inbox was unreachable; files are safe in `~/.syndicate-knowledge-spool/` and will flush on the next session that reaches it, or run `/syndicate-refresh-remote`. Nothing is lost — but nothing is curated either until they land.
+- Spooled **because this host has no route at all** (`route=spool`, no `box.json`, no local inbox): that is a **setup gap, not an outage** — it will not clear by waiting, and every future session adds to the pile. Say so, and give the fix: `bash .claude/skills/syndicate-connect/connect.sh --host <box address>` (per machine, once; the operator supplies address + key).
 - (If every repo shows pushed / nothing-to-push, the spool is empty, and no deploy is pending: no action required.)
 ```
 
