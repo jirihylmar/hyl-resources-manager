@@ -182,21 +182,28 @@ else echo "NO ROUTE — this host cannot deliver; extractions would spool foreve
 extractions land in `~/.syndicate-knowledge-spool/` and stay there, because the spool is drained
 only by a run that *does* resolve an inbox.
 
-**The fix is one ssh key.** Ask the operator for a key with access to the box, then:
+**The fix is one ssh key, and there is a script for it.** Ask the operator for a key with access to
+the box and for the box's current address, then:
 
 ```bash
-mkdir -p ~/.syndicate-remote-secrets && chmod 700 ~/.syndicate-remote-secrets
-cat > ~/.syndicate-remote-secrets/box.json <<'JSON'
-{"host":"<box host or ip>","user":"<box user>","workspace":"/home/<box user>","ssh_key":"<absolute path to the key>"}
-JSON
-chmod 600 ~/.syndicate-remote-secrets/box.json
-ssh -i <absolute path to the key> -o ConnectTimeout=15 <box user>@<box host> true && echo reachable
+bash .claude/skills/syndicate-connect/connect.sh --host <box address>
+# paste the whole -----BEGIN ... END----- block, then Ctrl-D
 ```
 
-Re-run the resolver; it must print `remote`. `box.json` is per-machine, mode 600, and lives
-**outside every git repo** — never commit it, and never put the key inside a repo either.
-Do **not** clone the inbox to make `direct` true instead: it lives in exactly ONE place, and a
-second live copy accumulates untracked files git never reconciles.
+It installs the key at mode 600, proves the connection, and writes `box.json` only after the proof.
+Re-run the resolver; it must print `remote`. (No skill present? See `/setup` § 5b for the same steps
+by hand — and prove the connection **before** writing the config.)
+
+> **On WSL the key must NOT live under `/mnt/c` or any Windows mount.** Those mounts report `0777`
+> and `chmod` there is a **no-op**, so ssh refuses the key: *"UNPROTECTED PRIVATE KEY FILE"*. Copy
+> it into `~/.ssh` and `chmod 600` there. A key pasted from a Windows clipboard also arrives
+> CRLF-terminated, which ssh calls *"invalid format"* — strip with `tr -d '\r'`.
+
+**Where the project lives is irrelevant** — the resolver reads `$HOME` only, so this is machine-level
+setup done once, and a project under `/mnt/c/Users/...` reports exactly like one under `~`.
+`box.json` and the key are per-machine, mode 600, and live **outside every git repo** — never commit
+either. Do **not** clone the inbox to make `direct` true instead: it lives in exactly ONE place, and
+a second live copy accumulates untracked files git never reconciles.
 
 ---
 

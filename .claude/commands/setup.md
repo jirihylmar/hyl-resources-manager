@@ -175,20 +175,46 @@ each extraction it writes lands in `~/.syndicate-knowledge-spool/` and stays the
 spool is drained only by a run that *does* resolve an inbox. That failure is invisible until the
 knowledge already exists — which is exactly too late.
 
-**The fix is one ssh key.** Ask the operator for a key with access to the box, then make `remote`
-resolvable:
+**The fix is one ssh key, and there is a script for it.** Ask the operator for a key with access to
+the box and for the box's current address, then:
 
 ```bash
-mkdir -p ~/.syndicate-remote-secrets && chmod 700 ~/.syndicate-remote-secrets
-cat > ~/.syndicate-remote-secrets/box.json <<'JSON'
-{"host":"<box host or ip>","user":"<box user>","workspace":"/home/<box user>","ssh_key":"<absolute path to the key>"}
-JSON
-chmod 600 ~/.syndicate-remote-secrets/box.json
-ssh -i <absolute path to the key> -o ConnectTimeout=15 <box user>@<box host> true && echo reachable
+bash .claude/skills/syndicate-connect/connect.sh --host <box address>
+# paste the whole -----BEGIN ... END----- block, then Ctrl-D
 ```
 
-Re-run the resolver above; it must now print `remote`. `box.json` is per-machine, mode 600, and
-lives **outside every git repo** — never commit it, and never put the key inside a repo either.
+It installs the key at mode 600, **proves** the connection, and only then writes `box.json` — a
+config recording an unproven route is worse than none, because it flips this host from `spool`
+(loud) to `remote` (confident, and wrong when it matters). Re-run the resolver above; it must print
+`remote`.
+
+If the skill is not present, do the same by hand — proving the connection **before** writing the
+config:
+
+```bash
+mkdir -p ~/.ssh && chmod 700 ~/.ssh                       # the key must live on the LINUX filesystem
+cp <key wherever it arrived> ~/.ssh/box.pem && chmod 600 ~/.ssh/box.pem
+ssh -i ~/.ssh/box.pem -o ConnectTimeout=15 <box user>@<box host> true && echo reachable
+mkdir -p ~/.syndicate-remote-secrets && chmod 700 ~/.syndicate-remote-secrets
+cat > ~/.syndicate-remote-secrets/box.json <<JSON
+{"host":"<box host>","user":"<box user>","workspace":"/home/<box user>","ssh_key":"$HOME/.ssh/box.pem"}
+JSON
+chmod 600 ~/.syndicate-remote-secrets/box.json
+```
+
+> **On WSL, the key must NOT live under `/mnt/c` (or any Windows mount).** Such a mount reports
+> `0777` for every file and `chmod` there is a **no-op**, so ssh refuses the key outright —
+> *"UNPROTECTED PRIVATE KEY FILE … Permissions 0777 are too open"*. Copy it into `~/.ssh` first;
+> chmod-in-place will appear to work and change nothing. The same applies to `$HOME` itself: if your
+> home is on a Windows mount, no amount of configuration will produce a usable key.
+>
+> A key pasted from a Windows clipboard also arrives CRLF-terminated, which ssh reports as
+> *"invalid format"* — naming the format, never the line endings. `tr -d '\r' < key > key.fixed`.
+
+**Where the project lives is irrelevant.** The resolver reads `$HOME` and nothing else, so this is
+machine-level setup done once — a project under `/mnt/c/Users/...` reports exactly like one under
+`~`. `box.json` and the key are per-machine, mode 600, and live **outside every git repo** — never
+commit either.
 
 > **Do not clone the inbox to make `direct` true instead.** `syndicate-playbook` lives in exactly
 > ONE place; a second live copy accumulates untracked extraction files that git never reconciles —
