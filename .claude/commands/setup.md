@@ -160,66 +160,47 @@ gh --version
 
 ### 5b. Verify This Host Can Report Knowledge (the syndicate inbox)
 
-`/update-progress` § 11 writes every session's knowledge extraction to the **one** inbox,
-`<workspace>/syndicate-playbook/knowledge_extraction/`, resolving the route by **presence**:
+`/update-progress` § 11 delivers every session's knowledge extraction to the **one** inbox by HTTPS
+POST to the ingest endpoint, resolving the route by **presence**:
 
 ```bash
-if   [ -d "$HOME/syndicate-playbook/knowledge_extraction" ]; then echo "direct — this host holds the inbox"
-elif [ -f "$HOME/.syndicate-remote-secrets/box.json" ];      then echo "remote — reaches the inbox over ssh"
+if   [ -d "$HOME/syndicate-playbook/knowledge_extraction" ]; then echo "direct — this host holds the inbox (the box)"
+elif [ -f "$HOME/.syndicate-remote-secrets/ingest.json" ];   then echo "ingest — POSTs to the endpoint over HTTPS"
 else echo "NO ROUTE — this host cannot deliver; extractions would spool forever"; fi
 ```
 
 **`NO ROUTE` is a setup gap, not a runtime condition — resolve it here, before any work starts.**
-A host that resolves neither has no way to reach the inbox and will never gain one on its own:
-each extraction it writes lands in `~/.syndicate-knowledge-spool/` and stays there, because the
-spool is drained only by a run that *does* resolve an inbox. That failure is invisible until the
-knowledge already exists — which is exactly too late.
+A host that resolves neither will never gain a route on its own: each extraction it writes lands in
+`~/.syndicate-knowledge-spool/` and stays there, because the spool is drained only by a run that
+*does* resolve a route. That failure is invisible until the knowledge already exists — too late.
 
-**The fix is one ssh key, and there is a script for it.** Ask the operator for a key with access to
-the box and for the box's current address, then:
-
-```bash
-bash .claude/skills/syndicate-connect/connect.sh --host <box address>
-# paste the whole -----BEGIN ... END----- block, then Ctrl-D
-```
-
-It installs the key at mode 600, **proves** the connection, and only then writes `box.json` — a
-config recording an unproven route is worse than none, because it flips this host from `spool`
-(loud) to `remote` (confident, and wrong when it matters). Re-run the resolver above; it must print
-`remote`.
-
-If the skill is not present, do the same by hand — proving the connection **before** writing the
-config:
+**The fix is one command with two inputs — the ingest URL and a per-host token.** Ask the operator
+for both, then:
 
 ```bash
-mkdir -p ~/.ssh && chmod 700 ~/.ssh                       # the key must live on the LINUX filesystem
-cp <key wherever it arrived> ~/.ssh/box.pem && chmod 600 ~/.ssh/box.pem
-ssh -i ~/.ssh/box.pem -o ConnectTimeout=15 <box user>@<box host> true && echo reachable
-mkdir -p ~/.syndicate-remote-secrets && chmod 700 ~/.syndicate-remote-secrets
-cat > ~/.syndicate-remote-secrets/box.json <<JSON
-{"host":"<box host>","user":"<box user>","workspace":"/home/<box user>","ssh_key":"$HOME/.ssh/box.pem"}
-JSON
-chmod 600 ~/.syndicate-remote-secrets/box.json
+bash .claude/skills/syndicate-connect/connect.sh --url <ingest url> --token <host token>
 ```
 
-> **On WSL, the key must NOT live under `/mnt/c` (or any Windows mount).** Such a mount reports
-> `0777` for every file and `chmod` there is a **no-op**, so ssh refuses the key outright —
-> *"UNPROTECTED PRIVATE KEY FILE … Permissions 0777 are too open"*. Copy it into `~/.ssh` first;
-> chmod-in-place will appear to work and change nothing. The same applies to `$HOME` itself: if your
-> home is on a Windows mount, no amount of configuration will produce a usable key.
+It **proves** the token against the endpoint (a probe POST with an empty body: `400` = token good,
+`401` = bad — no file is delivered) and only then writes `ingest.json` — a config recording an
+unproven route is worse than none, because it flips this host from `spool` (loud) to `ingest`
+(confident, and wrong when it matters). Re-run the resolver above; it must print `ingest`.
+
+No skill present? By hand: `mkdir -p ~/.syndicate-remote-secrets && chmod 700 ~/.syndicate-remote-secrets`,
+write `{"url":"<ingest url>","token":"<host token>"}` to `~/.syndicate-remote-secrets/ingest.json`,
+`chmod 600` it.
+
+**Where the project lives is irrelevant** — the resolver reads `$HOME` only, so this is machine-level
+setup done once, and a project under `/mnt/c/Users/...` reports exactly like one under `~`. Delivery
+is outbound HTTPS, so it works behind any firewall — **no ssh key, no `box.json`, no security-group
+entry, no static IP.** `ingest.json` is per-machine, mode 600, and lives **outside every git repo** —
+never commit it.
+
+> **On WSL, keep `$HOME` off `/mnt/c`.** A Windows mount reports `0777` and `chmod` there is a no-op,
+> so `ingest.json` (which holds a token) would be world-readable. Use a real `/home/<user>` home.
 >
-> A key pasted from a Windows clipboard also arrives CRLF-terminated, which ssh reports as
-> *"invalid format"* — naming the format, never the line endings. `tr -d '\r' < key > key.fixed`.
-
-**Where the project lives is irrelevant.** The resolver reads `$HOME` and nothing else, so this is
-machine-level setup done once — a project under `/mnt/c/Users/...` reports exactly like one under
-`~`. `box.json` and the key are per-machine, mode 600, and live **outside every git repo** — never
-commit either.
-
-> **Do not clone the inbox to make `direct` true instead.** `syndicate-playbook` lives in exactly
-> ONE place; a second live copy accumulates untracked extraction files that git never reconciles —
-> and untracked files never cross hosts, so the two copies diverge permanently. The key is the whole
-> answer.
+> **Do not clone the inbox to make `direct` true instead.** `syndicate-playbook` lives in exactly ONE
+> place; a second live copy accumulates untracked files git never reconciles. The token is the answer.
 
 ### 6. Verify AWS Access
 

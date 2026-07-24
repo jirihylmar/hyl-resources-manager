@@ -168,42 +168,38 @@ Ask user for:
 ### 4.4 Verify This Host Can Report Knowledge (the syndicate inbox)
 
 An existing project being put on the workflow is usually on a host that has never run one — so
-check the knowledge path here, at injection, not months later. `/update-progress` § 11 writes every
-extraction to the **one** inbox, `<workspace>/syndicate-playbook/knowledge_extraction/`, resolving
-the route by **presence**:
+check the knowledge path here, at injection, not months later. `/update-progress` § 11 delivers every
+extraction to the **one** inbox by HTTPS POST to the ingest endpoint, resolving the route by
+**presence**:
 
 ```bash
-if   [ -d "$HOME/syndicate-playbook/knowledge_extraction" ]; then echo "direct — this host holds the inbox"
-elif [ -f "$HOME/.syndicate-remote-secrets/box.json" ];      then echo "remote — reaches the inbox over ssh"
+if   [ -d "$HOME/syndicate-playbook/knowledge_extraction" ]; then echo "direct — this host holds the inbox (the box)"
+elif [ -f "$HOME/.syndicate-remote-secrets/ingest.json" ];   then echo "ingest — POSTs to the endpoint over HTTPS"
 else echo "NO ROUTE — this host cannot deliver; extractions would spool forever"; fi
 ```
 
-**`NO ROUTE` is a setup gap, not a runtime condition.** Neither condition becomes true on its own:
-extractions land in `~/.syndicate-knowledge-spool/` and stay there, because the spool is drained
-only by a run that *does* resolve an inbox.
+**`NO ROUTE` is a setup gap, not a runtime condition.** Neither becomes true on its own: extractions
+land in `~/.syndicate-knowledge-spool/` and stay there, because the spool is drained only by a run
+that *does* resolve a route.
 
-**The fix is one ssh key, and there is a script for it.** Ask the operator for a key with access to
-the box and for the box's current address, then:
+**The fix is one command with two inputs — the ingest URL and a per-host token.** Ask the operator
+for both, then:
 
 ```bash
-bash .claude/skills/syndicate-connect/connect.sh --host <box address>
-# paste the whole -----BEGIN ... END----- block, then Ctrl-D
+bash .claude/skills/syndicate-connect/connect.sh --url <ingest url> --token <host token>
 ```
 
-It installs the key at mode 600, proves the connection, and writes `box.json` only after the proof.
-Re-run the resolver; it must print `remote`. (No skill present? See `/setup` § 5b for the same steps
-by hand — and prove the connection **before** writing the config.)
-
-> **On WSL the key must NOT live under `/mnt/c` or any Windows mount.** Those mounts report `0777`
-> and `chmod` there is a **no-op**, so ssh refuses the key: *"UNPROTECTED PRIVATE KEY FILE"*. Copy
-> it into `~/.ssh` and `chmod 600` there. A key pasted from a Windows clipboard also arrives
-> CRLF-terminated, which ssh calls *"invalid format"* — strip with `tr -d '\r'`.
+It proves the token against the endpoint (empty-body probe: `400` = good, `401` = bad; no file
+delivered) and writes `ingest.json` only after the proof. Re-run the resolver; it must print
+`ingest`. (No skill? `mkdir -p ~/.syndicate-remote-secrets && chmod 700` it, write
+`{"url":"...","token":"..."}` to `~/.syndicate-remote-secrets/ingest.json`, `chmod 600`.)
 
 **Where the project lives is irrelevant** — the resolver reads `$HOME` only, so this is machine-level
-setup done once, and a project under `/mnt/c/Users/...` reports exactly like one under `~`.
-`box.json` and the key are per-machine, mode 600, and live **outside every git repo** — never commit
-either. Do **not** clone the inbox to make `direct` true instead: it lives in exactly ONE place, and
-a second live copy accumulates untracked files git never reconciles.
+setup done once, and a project under `/mnt/c/Users/...` reports exactly like one under `~`. Delivery
+is outbound HTTPS — no ssh key, no `box.json`, no firewall entry. `ingest.json` is per-machine, mode
+600, outside every git repo — never commit it. Keep `$HOME` off `/mnt/c` (a Windows mount can't hold
+0600, so the token would be world-readable). Do **not** clone the inbox to make `direct` true — it
+lives in exactly ONE place.
 
 ---
 
