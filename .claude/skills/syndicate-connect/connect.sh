@@ -53,9 +53,32 @@ case "$HOME" in
   /mnt/*) fail "\$HOME is $HOME — a Windows mount, which cannot hold 0600 permissions.
         Run this inside WSL (a normal /home/<user> home), not from a C: drive shell." 1 ;;
 esac
+
+# Refuse sudo/root. This writes the key and box.json into $HOME, and /update-progress § 11.0
+# resolves the route from the SESSION user's $HOME — never /root. Under sudo, $HOME becomes /root,
+# so a "successful" run installs everything where the resolver will never look, and the host keeps
+# resolving spool while every check says it is set up. Measured on exactly this handover.
+if [ "$(id -u)" -eq 0 ]; then
+  fail "running as root${SUDO_USER:+ (sudo, invoked by $SUDO_USER)} — \$HOME is $HOME.
+        This only ever writes inside your own home, so it needs no privilege. Under sudo the key
+        and box.json land in /root, where the resolver that runs your sessions never looks — it
+        reads YOUR \$HOME. Re-run as your normal user, WITHOUT sudo." 1
+fi
+
 command -v ssh >/dev/null 2>&1 || fail "ssh not found — install openssh-client" 1
 [ -n "$HOST" ] || fail "no --host given. The box address changes when it is stopped and started,
         so it is not baked into this file; the operator supplies it with the command." 1
+
+# --host is the box's ADDRESS (IP or DNS), never a file. A path here is the common slip — someone
+# points it at box.json or a key — and ssh then tries to resolve the path as a hostname and fails
+# with a message about the path, not the mistake. Catch it before the probe.
+case "$HOST" in
+  */*|*" "*) fail "--host is '$HOST', which is a path, not a box address.
+        Pass the box's IP or DNS name (e.g. --host 203.0.113.10). The KEY goes on stdin or via
+        --pem; --host wants only the address." 1 ;;
+esac
+[ -e "$HOST" ] && fail "--host is '$HOST', which is an existing file, not a box address.
+        Pass the box's IP or DNS name; the key goes on stdin or via --pem." 1
 
 # --- 1. read the key --------------------------------------------------------------------------
 if [ -n "$PEM" ]; then
@@ -94,10 +117,15 @@ PERMS="$(stat -c %a "$KEYPATH" 2>/dev/null || echo '?')"
 say "key installed: $KEYPATH (mode 600)"
 
 # --- 3. PROVE the route before recording it ---------------------------------------------------
+# Per-run temp file — a fixed /tmp path is world-writable-directory bait: created by one user (or a
+# stray earlier sudo run) it becomes unwritable to the next, and the probe dies on the error file
+# instead of the network. mktemp gives a unique file owned by whoever runs this.
+ERRFILE="$(mktemp 2>/dev/null || printf '%s' "$HOME/.syndicate-connect.$$.err")"
+trap 'rm -f "$ERRFILE"' EXIT
 say "probing ${BUSER}@${HOST} ..."
 if ! ssh -i "$KEYPATH" -o BatchMode=yes -o StrictHostKeyChecking=accept-new \
-         -o ConnectTimeout=15 "${BUSER}@${HOST}" true 2>/tmp/syndicate-connect.err; then
-  say "--- ssh said: ---"; cat /tmp/syndicate-connect.err >&2
+         -o ConnectTimeout=15 "${BUSER}@${HOST}" true 2>"$ERRFILE"; then
+  say "--- ssh said: ---"; cat "$ERRFILE" >&2
   fail "cannot reach ${BUSER}@${HOST} with this key. Nothing was recorded.
         Timeout        -> the box is stopped, or its address changed (stop/start reassigns it)
         Permission denied -> wrong key for this box, or wrong --user
