@@ -107,6 +107,13 @@ if [ ! -d ".claude/commands" ] || [ -z "$(ls .claude/commands/ 2>/dev/null)" ]; 
 else
   echo "Commands already present"
 fi
+
+# Skills (each a directory: SKILL.md + its files). Without these, § 4.4's
+# syndicate-connect, /start-session § 4.0 and /update-progress § 12 (open_work.py) reference
+# files that do not exist until the next /distribute-defaults.
+mkdir -p .claude/skills
+cp -r $EXAMPLES_PATH/_project-template/.claude/skills/* .claude/skills/
+echo "Skills copied ($(ls -1d .claude/skills/*/ | wc -l) present)"
 ```
 
 ### 4.2 Session Notes (if missing)

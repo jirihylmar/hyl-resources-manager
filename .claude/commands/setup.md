@@ -120,6 +120,13 @@ done
 mkdir -p .claude/commands
 cp syndicate-playbooks-examples/_project-template/.claude/commands/*.md .claude/commands/
 
+# Copy skills (each a directory: SKILL.md + its files). WITHOUT this, § 5b's
+# `bash .claude/skills/syndicate-connect/...`, /start-session § 4.0 and /update-progress § 12
+# (`open_work.py`) all reference files that would not exist until the next /distribute-defaults —
+# a fresh project would be broken for those the moment it is created.
+mkdir -p .claude/skills
+cp -r syndicate-playbooks-examples/_project-template/.claude/skills/* .claude/skills/
+
 # Copy CLAUDE.md template
 cp syndicate-playbooks-examples/_project-template/CLAUDE.md.template ./CLAUDE.md
 
@@ -293,8 +300,12 @@ Check what exists:
 ### 2. Copy Commands
 
 ```bash
-mkdir -p .claude/commands .claude/hooks
+mkdir -p .claude/commands .claude/hooks .claude/skills
 cp syndicate-playbooks-examples/_project-template/.claude/commands/*.md .claude/commands/
+
+# Skills (each a directory). Without these, § 5b, /start-session § 4.0 and /update-progress § 12
+# reference files that would not exist until the next /distribute-defaults.
+cp -r syndicate-playbooks-examples/_project-template/.claude/skills/* .claude/skills/
 
 # Commit guard (mechanical protection against `git add -A` sweeping build artifacts)
 cp syndicate-playbooks-examples/_project-template/.claude/hooks/pre-commit .claude/hooks/
