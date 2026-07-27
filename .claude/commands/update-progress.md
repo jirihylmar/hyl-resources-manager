@@ -599,10 +599,19 @@ route (see `docs/knowledge-ingest-lambda-instruction.md`). Resolve by **presence
 
 ```bash
 SPOOL="$HOME/.syndicate-knowledge-spool"        # used by 11.0 and by step 3 below
+INGEST="$HOME/.syndicate-remote-secrets/ingest.json"
+# Trust a config only if it PARSES and carries its required non-empty fields — NEVER by mere
+# existence. Measured 2026-07-24: a 0-byte box.json passed an existence check, resolved a "healthy"
+# route, then failed every delivery while reporting health. An empty/corrupt ingest.json must
+# resolve spool with a DISTINCT warning, not a route.
+ingest_ok() { [ -s "$INGEST" ] && python3 -c "import json,sys;d=json.load(open('$INGEST'));sys.exit(0 if d.get('url') and d.get('token') else 1)" 2>/dev/null; }
 if [ -d "$HOME/syndicate-playbook/knowledge_extraction" ]; then
   ROUTE=direct         # this host literally holds the inbox (the box) — write straight to it
-elif [ -f "$HOME/.syndicate-remote-secrets/ingest.json" ]; then
+elif ingest_ok; then
   ROUTE=ingest         # POST the extraction to the ingest endpoint over HTTPS (below)
+elif [ -f "$INGEST" ]; then
+  ROUTE=spool          # present but EMPTY/INVALID — do NOT trust it into a route
+  echo "WARNING: $INGEST exists but is empty or missing url|token — treating as NO route (spool). Re-run syndicate-connect."
 else
   ROUTE=spool          # no ingest config on this host yet — spool it, loudly
 fi
@@ -644,8 +653,10 @@ never assumed delivered:
 # never reported. The one thing the spool exists for is to fail LOUDLY; that bug made it fail
 # exactly like the silent repo-scatter it replaces. Keep every variable this block needs local.
 SPOOL="$HOME/.syndicate-knowledge-spool"
+INGEST="$HOME/.syndicate-remote-secrets/ingest.json"
+ingest_ok() { [ -s "$INGEST" ] && python3 -c "import json,sys;d=json.load(open('$INGEST'));sys.exit(0 if d.get('url') and d.get('token') else 1)" 2>/dev/null; }
 if [ -d "$HOME/syndicate-playbook/knowledge_extraction" ]; then ROUTE=direct
-elif [ -f "$HOME/.syndicate-remote-secrets/ingest.json" ]; then ROUTE=ingest
+elif ingest_ok; then ROUTE=ingest
 else ROUTE=spool; fi
 
 if [ -d "$SPOOL" ] && [ -n "$(ls -A "$SPOOL" 2>/dev/null)" ]; then

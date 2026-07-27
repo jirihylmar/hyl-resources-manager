@@ -75,6 +75,14 @@ your reasoning first. A report they have to decode is a report that has not been
 
 ## Two Environments (this file ships to both — nothing in it may assume one)
 
+> **A third environment: the independent remote.** If this machine cloned the examples itself and is
+> not the operator's workstation or the box, it is **not in the distribution topology** —
+> `/distribute-defaults` never reaches it, so its defaults are current only as often as it refreshes
+> *itself* (`git pull` the examples clone, then run `scripts/distribute-defaults.sh --apply --commit`
+> locally). Stale defaults here are expected, not a fault. Full lifecycle: README § *Running on an
+> independent / third-party remote*, and the `syndicate-connect` skill. Reporting knowledge from such
+> a host is the `ingest` route (§ that skill), never inbound SSH.
+
 **Which machine you are running on is not knowable from this file.** Every default command ships
 unchanged to two environments — the local workstation and the remote dev box — and they differ in
 ways that matter:
@@ -346,7 +354,17 @@ REFS=$(grep -rhoE '(/home/[A-Za-z0-9._-]+|\$HOME|~)/[A-Za-z0-9._-]+' .claude/com
 # ON the box and it is correctly absent. Collapsing that into an empty list is what made a correct
 # state report as a blocker.
 BOXLIST=""; BOXPROBE="unavailable — no box.json (this may BE the box, or a host with no box configured)"
-if [ -f "$CFG" ]; then
+# Trust box.json only if it PARSES and carries non-empty host/user/ssh_key — never by mere existence.
+# An empty/corrupt file (measured: a 0-byte box.json, 2026-07-24) must read as "no box configured",
+# NOT as a false "box unreachable" (which invites chasing a network fault that is really a bad file).
+CFG_OK=""
+if [ -s "$CFG" ]; then
+  CFG_OK=$(python3 -c "import json,sys;d=json.load(open('$CFG'));print('ok' if d.get('host') and d.get('user') and d.get('ssh_key') else '')" 2>/dev/null)
+fi
+if [ -f "$CFG" ] && [ -z "$CFG_OK" ]; then
+  BOXPROBE="unavailable — box.json present but empty/unparseable or missing host|user|ssh_key (treat as no box configured; fix or remove it)"
+fi
+if [ -n "$CFG_OK" ]; then
   H=$(python3 -c "import json;print(json.load(open('$CFG'))['host'])")
   U=$(python3 -c "import json;print(json.load(open('$CFG'))['user'])")
   K=$(python3 -c "import json;print(json.load(open('$CFG'))['ssh_key'])")

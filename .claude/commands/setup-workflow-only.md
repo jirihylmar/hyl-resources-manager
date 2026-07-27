@@ -99,13 +99,20 @@ Set `$EXAMPLES_PATH` to the found/specified path.
 
 Commands should already be copied (per README instructions). Verify and copy if missing:
 
+> **This copies commands only when they are ABSENT — it is not a refresh.** Re-running
+> `/setup-workflow-only` on a project that already has commands leaves them as they are. To *update*
+> an existing project's defaults on a host that distribution does not reach (an independent remote),
+> run the engine locally: `bash ~/syndicate-playbooks-examples/scripts/distribute-defaults.sh --apply
+> --commit` (README § *Running on an independent / third-party remote*). The skills copy below is
+> unconditional precisely because a missing skill silently breaks § 4.4 and the open-work render.
+
 ```bash
 if [ ! -d ".claude/commands" ] || [ -z "$(ls .claude/commands/ 2>/dev/null)" ]; then
   mkdir -p .claude/commands
   cp $EXAMPLES_PATH/_project-template/.claude/commands/*.md .claude/commands/
   echo "Commands copied"
 else
-  echo "Commands already present"
+  echo "Commands already present (to UPDATE, run the distribute engine locally — see note above)"
 fi
 
 # Skills (each a directory: SKILL.md + its files). Without these, § 4.4's

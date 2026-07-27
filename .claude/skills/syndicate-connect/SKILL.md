@@ -46,6 +46,27 @@ only requirement, so it works behind any firewall.
 | `1` | usage error, or an environment that cannot work (`$HOME` on a Windows mount, sudo, no `curl`, no/`http` URL) |
 | `3` | token rejected, or endpoint unreachable — **nothing written** |
 
+## If you are an independent / third-party remote
+
+You are one if this machine **cloned the examples itself** and is not the operator's workstation or
+the box. Two facts follow, and an agent here should act on them without waiting for chat:
+
+1. **`/distribute-defaults` never reaches you** — updates do not arrive on their own. If your command
+   or skill files look older than the operator's, that is expected, not broken.
+2. **You refresh yourself** by running the engine locally from your examples clone (same engine the
+   operator uses, just run by you):
+   ```bash
+   cd ~/syndicate-playbooks-examples && git pull
+   bash ~/syndicate-playbooks-examples/scripts/distribute-defaults.sh --apply --commit
+   ```
+   This updates every project under `$HOME` (overlay-aware, scoped commits). Re-running
+   `/setup-workflow-only` does **not** refresh commands — this engine run does. Full lifecycle:
+   README § *Running on an independent / third-party remote*.
+
+If this host is stuck on a stale delivery route (e.g. it still tries `scp`/`box.json` and spools),
+the fix is that refresh — it pulls in the current `/update-progress` that knows the `ingest` route —
+followed by the `connect.sh` command above.
+
 ## What retired with the SSH model
 
 `box.json`, the PEM, the ssh key install, the security-group `/32` allowlisting, and the `/mnt/c`
