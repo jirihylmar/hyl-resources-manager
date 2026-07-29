@@ -595,7 +595,9 @@ become the destination it is explicitly not allowed to be.
 `hub440-syndicate/syndicate-playbook` on GitHub, drained onto the box by the `git pull` it already
 does. Every host delivers the same way: **POST to the ingest endpoint over HTTPS.** No host uses
 inbound SSH, a firewall entry, a static IP, `box.json`, or a PEM — those retired with the `remote`
-route (see `docs/knowledge-ingest-lambda-instruction.md`). Resolve by **presence**, never by hostname:
+route (see `syndicate-playbooks-examples/docs/knowledge-ingest-lambda-instruction.md` — that doc lives
+in the **engine** repo, which is local-only; it is deliberately NOT distributed, so do not expect a
+bare `docs/…` copy of it inside a project). Resolve by **presence**, never by hostname:
 
 ```bash
 SPOOL="$HOME/.syndicate-knowledge-spool"        # used by 11.0 and by step 3 below

@@ -322,7 +322,7 @@ tasks or fields that identify/verify them**. Bodies move to committed sidecars w
 
 ```bash
 python3 - <<'PY'
-import json, shutil, sys, time
+import json, re, shutil, sys, time
 from pathlib import Path
 APPLY = "--apply" in sys.argv
 KEEP_RECENT = 2           # newest N completed phases keep verbose bodies
@@ -330,7 +330,21 @@ MIN_LEN = 300             # only bodies longer than this move
 root = Path.cwd(); pj = root/"progress.json"
 data = json.loads(pj.read_text())
 phases = data.get("phases", {})
-completed = [(k,v) for k,v in phases.items() if isinstance(v,dict) and v.get("status")=="complete" and v.get("completed_at")]
+# `phases` is a DICT in some projects ({"phase_2": {...}}) and a LIST in others ([{...}, ...]).
+# Normalise to (key, phase) pairs before touching it. This block used to call phases.items()
+# unconditionally, so on a list-shaped progress.json the whole compaction died with
+# AttributeError the first time it was due — and because the weight gate (D) fires only above
+# 300KB, it could sit latent for the entire life of a repo and then fail exactly when it was
+# finally needed. Same failure class as the last_pass-is-null crash in check A. Do not "simplify".
+if isinstance(phases, dict):
+    items = list(phases.items())
+elif isinstance(phases, list):
+    # No keys in a list — synthesise a stable sidecar filename from id/name, falling back to index.
+    items = [(re.sub(r"[^a-z0-9._-]+", "-", str(p.get("id") or p.get("name") or f"phase_{i}").lower()).strip("-") or f"phase_{i}", p)
+             for i, p in enumerate(phases) if isinstance(p, dict)]
+else:
+    items = []
+completed = [(k,v) for k,v in items if isinstance(v,dict) and v.get("status")=="complete" and v.get("completed_at")]
 completed.sort(key=lambda kv: str(kv[1].get("completed_at")))
 targets = completed[:-KEEP_RECENT] if len(completed)>KEEP_RECENT else []
 side_dir = root/"docs/_archive/progress-sidecars"; moved = 0
