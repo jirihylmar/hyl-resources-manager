@@ -116,6 +116,26 @@ ways that matter:
 > exists on the *other* machine — the probe artifact, not the behaviour. It is recorded here because
 > the mistake is instructive: it is the same error the rule exists to prevent.
 
+> **DECIDED 2026-07-30 — a central server carries NO default account, and that is a safety property,
+> not an omission.** The recurring question is whether the unbound central server should be given a
+> default profile so a bare call "just works". The answer is **no**, and the reason is the paragraph
+> directly above: `--profile` silently overrides, returning `200 OK` for whatever account it names.
+> With no default, a call that forgets to name its account **returns nothing** — the failure is
+> immediate, local, and obvious. With a default, the same forgetful call **succeeds against the
+> default account**, and you find out when you read a resource list from the wrong place, or write to
+> it. A default profile does not remove the wrong-account hazard; it makes the hazard quiet. Naming
+> the account per call is the cost of having the mistake be loud. Revisit only with a measured case
+> where naming it cost more than a silent wrong-account write would.
+
+> **A session should cost memory only for the AWS access it actually needs.** Servers belong in the
+> projects that use them, not in a global block every project inherits. Measured on the workstation
+> 2026-07-30: seven servers were declared globally, so **every session spawned all seven** — about
+> 590 MB — including sessions in projects that touch no AWS at all. Scoping each server to the
+> projects that declare its account took the per-session average from 7.00 servers to 0.62, and 15 of
+> 34 projects now spawn none. If you are configuring a host, declare a server where it is used.
+> **Assign by account number, never by server name** — a name is exactly the thing that can lie, and
+> `sts get-caller-identity` is what settles it.
+
 **The rule — and it is one rule, not four:**
 
 > **Verify identity. Resolve location. Never declare a nickname.**
