@@ -99,6 +99,48 @@ while IFS= read -r -d '' path; do
 "
 done < <(git diff --cached --name-only -z --diff-filter=A "$BASE" 2>/dev/null)
 
+# ---------------------------------------------------------------------------
+# progress.json integrity — runs ONLY when progress.json is staged.
+#
+# Scoped to the moment of writing, deliberately: a project whose file is ALREADY
+# damaged can still commit everything else, and is stopped only when someone next
+# writes that file. A guard that blocked every commit in an already-broken repo
+# would be switched off within a day.
+#
+# Measured 2026-07-30 across 34 live projects: FIVE were already damaged and no
+# check anywhere could see it — two with a whole phase appended outside the JSON
+# document (committed in March, invisible for four months), three with duplicate
+# keys that parse cleanly while silently dropping the other value. One of those
+# reads a month-old state as current because two merges collided.
+#
+# Fails OPEN on missing tooling (no python3, no checker) and CLOSED on real
+# corruption: blocking every commit because an interpreter is absent would be a
+# worse failure than the one being prevented.
+# ---------------------------------------------------------------------------
+if git diff --cached --name-only 2>/dev/null | grep -qx 'progress.json'; then
+  PG_CHECK="$(git rev-parse --show-toplevel 2>/dev/null)/.claude/skills/progress-check/progress_check.py"
+  if [ -f "$PG_CHECK" ] && command -v python3 >/dev/null 2>&1; then
+    if ! pg_out="$(python3 "$PG_CHECK" --staged --file progress.json --quiet 2>&1)"; then
+      {
+        echo "COMMIT BLOCKED by .claude/hooks/pre-commit — progress.json integrity."
+        printf '%s\n' "$pg_out"
+        echo ""
+        echo "This checks the STAGED bytes, which is what would enter history."
+        echo "It reports only things that DESTROY data — a file that does not parse, a"
+        echo "duplicate key (valid JSON that silently drops the other value), a repeated"
+        echo "task id, or a task/phase that existed in the last commit and is now gone."
+        echo "Shape, vocabulary and style are never enforced."
+        echo ""
+        echo "Fix the file, re-stage it, and commit again. Re-check by hand with:"
+        echo "  python3 .claude/skills/progress-check/progress_check.py"
+        echo "Override (audited, and you are committing known-damaged state):"
+        echo "  git commit --no-verify"
+      } >&2
+      exit 1
+    fi
+  fi
+fi
+
 if [ -n "$violations" ]; then
   {
     echo "COMMIT BLOCKED by .claude/hooks/pre-commit (framework commit guard)."
