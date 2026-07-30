@@ -617,12 +617,22 @@ or not an id. Report those lines; do not quietly fix `progress.json` here.
 
 ---
 **What would you like to do?**
-1. **Continue** - proceed with Task X.Y
-2. **Redirect** - work on different task
-3. **Discuss** - talk about something first (may lead to new tasks)
+1. **Continue** — [what Task X.Y actually is, in plain words] (Task X.Y)
+2. **Redirect** — work on a different task
+3. **Discuss** — talk about something first (may lead to new tasks)
 ```
 
 **Use AskUserQuestion tool.**
+
+> **Option 1 must say what the task IS — the bare ID is not an option, it is a lookup.** This is the
+> one line the operator has to act on, and they are running several projects with none of this one's
+> numbers in working memory. `Continue — proceed with Task 6.7` asks them to go and find out what
+> they are agreeing to before they can agree to it; `Continue — stop every session loading all seven
+> AWS servers (Task 6.7)` can be answered on sight. Keep the ID — it is how they refer back to it —
+> but never let it stand alone. Same rule for the option *descriptions*: state the consequence of
+> choosing, not a restatement of the label. (This prompt violated the rule that § Writing for the
+> Operator states in this very file, for as long as both have shipped together — a rule and its
+> counter-example in one document. If you find another, treat it the same way.)
 
 **If user chooses Discuss:**
 - Have the discussion

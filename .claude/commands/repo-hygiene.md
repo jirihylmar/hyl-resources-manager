@@ -194,8 +194,17 @@ destroying a central update that every other repo already has.
 **The standing rule when a default genuinely needs project-specific content:** fold it into a splice
 fragment in `.claude/local-overlays/<file>`. The next `/distribute-defaults` rebakes canonical+overlay
 centrally (via the engine's `scripts/apply-overlay.py`) and redistributes — you never rebake by hand
-in the project, and a file WITH an overlay that carries extra hand-edits classifies `overlay-stale`
-and is silently rebaked, losing them. Project-specific session steps belong in the overlay, period.
+in the project.
+
+> **`overlay-stale`** — the state a file is in when it *has* an overlay fragment but its content is
+> not the current canonical+overlay bake, either because canonical moved on or because someone edited
+> the baked result directly. The next distribution **rebakes it from canonical + the overlay
+> fragment**, so anything living only in the baked file — and not in the fragment — is gone at that
+> moment, with no warning and no error. The term is the engine's; this is what it means for you.
+> **The practical consequence:** an edit is durable only if it is in the overlay fragment. Editing
+> the delivered file directly, even correctly, is a change with an expiry date.
+
+Project-specific session steps belong in the overlay, period.
 (When auditing git history, the engine's own sync commits — message
 `chore(playbook): sync default commands` — legitimately rewrite command files without touching
 overlays. Note this reads *committed history only*, which is exactly why it could never see the

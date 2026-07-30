@@ -576,12 +576,17 @@ knowledge base. A framework fix routed there lands as advice attached to an expe
 reach the skill file it was about. Right road, wrong vehicle: **say it to the operator.**
 
 > **The inbox is one instance of a general rule — see `/start-session` Step 2.5.** A repo lives in
-> exactly ONE place. `syndicate-playbook` (the inbox) and `mcp-docker-playbook` (the MCP deploy repo)
-> live **on the box** and are developed there; `syndicate-playbooks-examples` and `syndicate-remote`
-> are **local-only** and must never appear on the box. Any `/home/<user>/<repo>/…` path in a skill is
-> a **claim about location that may already be false** — resolve by presence before acting on it, and
-> if the repo turned out to be remote, do the work there and say so. Never let a dead path become an
-> excuse to improvise locally. The rest of this step applies that rule to the knowledge inbox.
+> exactly ONE place, and **this file cannot tell you which one** — it ships unchanged to every
+> machine, so any location printed here would be a claim that expires the moment a repo moves,
+> silently and with no error. **Resolve location by presence; never read it off a list.**
+>
+> Two things are safe to state here, because they are host-independent facts rather than locations:
+> `syndicate-playbooks-examples` and `syndicate-remote` are **local-only by policy** and must never
+> appear on a box — their absence there is the intent, not a fault; and any `/home/<user>/<repo>/…`
+> path written into a skill is a **claim that may already be false**. Resolve it before acting on it,
+> and if the repo turns out to live elsewhere, do the work there and say so. Never let a dead path
+> become an excuse to improvise locally. That is exactly why 11.0 below resolves the inbox by probing
+> for it rather than by naming a machine.
 
 #### 11.0 — ALWAYS FIRST: resolve the inbox, then flush the spool
 
