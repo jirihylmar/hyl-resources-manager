@@ -102,19 +102,32 @@ def tasks_of(phase):
     return good, len(raw) - len(good)
 
 
+def _label_reads_closed(label):
+    """A backlog entry that OPENS by announcing its own resolution is closed. The convention
+    in these files is to keep the item and rewrite it as a record — 'RESOLVED <date> by ...' —
+    rather than delete it, precisely so the history survives. Anchored to the start so an item
+    that merely MENTIONS a resolution ('blocked until X is resolved') stays open."""
+    return str(label).lstrip("*_# ").upper().startswith(("RESOLVED", "SUPERSEDED", "CLOSED", "DONE"))
+
+
 def backlog_entry(item):
     """-> (label, is_open). A backlog item may be a plain string or an object. Objects
     carry their own closure signals; rendering a resolved item as open work is a false
-    alarm, and false alarms train a reader to skim past the whole section."""
+    alarm, and false alarms train a reader to skim past the whole section.
+
+    STRINGS GET THE SAME TEST AS OBJECTS. They used to return (item, True) unconditionally —
+    open, always, no matter what they said — so an entry rewritten to 'RESOLVED 2026-08-01 by
+    phase 16' kept rendering as open work in every session handoff forever. The closure test
+    below already existed; strings simply returned before reaching it."""
     if isinstance(item, str):
-        return item, True
+        return item, not _label_reads_closed(item)
     if not isinstance(item, dict):
         return str(item), True
     label = item.get("title") or item.get("name") or json.dumps(item)[:160]
     status = str(item.get("status") or "").lower()
     closed = bool(item.get("resolved") or item.get("resolution")) or any(
         w in status for w in ("resolved", "superseded", "closed", "complete")
-    ) or "resolved" in str(label).lower()
+    ) or _label_reads_closed(label)
     return label, not closed
 
 

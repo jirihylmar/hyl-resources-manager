@@ -418,8 +418,21 @@ while IFS=$'\t' read -r U H K; do
   [ -z "${H:-}" ] && continue
   TOTAL=$((TOTAL+1))
   # -n is mandatory: without it the first ssh consumes the remaining host rows as its own stdin.
-  if L=$(ssh -n -i "$K" -o ConnectTimeout=15 -o BatchMode=yes "$U@$H" \
-         'for d in ~/*/; do [ -d "$d/.git" ] && basename "$d"; done' 2>/dev/null); then
+  #
+  # THE TRAILING `; :` IS LOad-BEARING, NOT TIDINESS. A `for` loop exits with the status of its
+  # LAST iteration, and the body `[ -d "$d/.git" ] && basename "$d"` is FALSE for any directory
+  # that is not a git repo. So a perfectly healthy host whose home directory happens to end with
+  # `venv/`, `tmp/`, `snap/` — anything sorting last without a .git — returned rc 1, and this
+  # probe reported "did not answer" for a host that had just answered in full. `; :` makes the
+  # remote program's status mean "the program ran", which is the only question ssh's rc should
+  # be answering; a genuine connection failure still surfaces as ssh's own 255.
+  #
+  # ServerAlive* bounds the connection AFTER the handshake. ConnectTimeout does not: a host that
+  # authenticates and then stalls (memory pressure, full disk) would hang this block, and this
+  # block runs at the start of EVERY session in every project. 5s x 3 = a ~15s ceiling per host.
+  if L=$(ssh -n -i "$K" -o ConnectTimeout=15 -o ServerAliveInterval=5 -o ServerAliveCountMax=3 \
+             -o BatchMode=yes "$U@$H" \
+         'for d in ~/*/; do [ -d "$d/.git" ] && basename "$d"; done; :' 2>/dev/null); then
     ASKED=$((ASKED+1)); REMOTELIST="$REMOTELIST
 $L"
   else
@@ -427,10 +440,21 @@ $L"
   fi
 done <<< "$HOSTS"
 
+# A BROKEN CONFIG IS AN UNASKED HOST, whether or not some OTHER host answered. This used to be
+# reported only when TOTAL was 0, so one good config beside one unusable one printed
+# "ok — asked 1 of 1" — true of the hosts it managed to parse, false as a statement about the
+# machine — and then sent every unfound repo to UNRESOLVABLE, whose whole meaning is "every
+# configured host was asked and said no". A host we could not even read was never asked.
+if [ "${BAD:-0}" -gt 0 ]; then
+  echo "HOST CONFIG UNUSABLE: $BAD file(s) in \$HOME/.syndicate-remote-secrets are host-shaped but empty, unparseable, or missing host|user|workspace|ssh_key. Those hosts were NOT asked; fix or remove them."
+fi
+
 if   [ "${BAD:-0}" -gt 0 ] && [ "$TOTAL" = 0 ]; then
-  PROBE="unavailable — $BAD host config(s) present but empty/unparseable or missing host|user|workspace|ssh_key (treat as no host configured; fix or remove them)"
+  PROBE="unavailable — $BAD host config(s) present but unusable (treat as no host configured; fix or remove them)"
 elif [ "$TOTAL" = 0 ]; then
   PROBE="unavailable — no host configured (this may BE the host, or a machine that syncs with none)"
+elif [ "${BAD:-0}" -gt 0 ]; then
+  PROBE="partial — asked $ASKED of $TOTAL readable host(s), and $BAD further config(s) are unusable so those hosts were never asked"
 elif [ "$ASKED" = "$TOTAL" ]; then
   PROBE="ok — asked $ASKED of $TOTAL configured host(s)"
 elif [ "$ASKED" = 0 ]; then
@@ -449,7 +473,7 @@ for r in $REFS; do
     printf 'REPO %-34s local-only by policy, absent here — EXPECTED, not a blocker\n' "$r"
   elif printf '%s\n' "$REMOTELIST" | grep -qx "$r"; then
     printf 'REPO %-34s REMOTE (host) — local paths to it are DEAD\n' "$r"
-  elif [ "$TOTAL" -gt 0 ] && [ "$ASKED" = "$TOTAL" ]; then
+  elif [ "$TOTAL" -gt 0 ] && [ "$ASKED" = "$TOTAL" ] && [ "${BAD:-0}" = 0 ]; then
     printf 'REPO %-34s UNRESOLVABLE — not local, and every configured host answered that it is not there either\n' "$r"
   else
     printf 'REPO %-34s UNKNOWN — not local; at least one host could not be asked. Do NOT conclude it is missing.\n' "$r"
