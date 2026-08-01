@@ -21,14 +21,37 @@ Bidirectional git-based sync between your local repos and a single configured re
 
 This skill is a **playbook default** distributed by `/distribute-defaults` from `~/syndicate-playbooks-examples/_project-template/.claude/commands/syndicate-refresh-remote.md` to every playbook project (i.e. any directory with both `progress.json` and `.claude/commands/`). Edits to the skill happen in the `_project-template/` canonical and then `/distribute-defaults` propagates them.
 
-The skill itself is markdown-only. The deterministic backend is a CLI binary `syndicate-refresh-remote`, installed from `~/syndicate-remote/scripts/syndicate-refresh-remote.sh` via `~/syndicate-remote/scripts/install.sh` (one install per machine; binary lands in `~/.local/bin/`). The binary is configured per-machine by `~/.syndicate-remote-secrets/box.json` (host, user, workspace, ssh_key).
+The skill itself is markdown-only. The deterministic backend is a CLI binary `syndicate-refresh-remote`, installed from `~/syndicate-remote/scripts/syndicate-refresh-remote.sh` via `~/syndicate-remote/scripts/install.sh` (one install per machine; binary lands in `~/.local/bin/`). It is configured per-machine from `~/.syndicate-remote-secrets/` (host, user, workspace, ssh_key).
 
 So:
 - **`syndicate-playbooks-examples`** owns the skill `.md` (the conversational front-end). Distributed to all projects.
 - **`syndicate-remote`** owns the binary source + installer (the runtime). Installed per-machine.
-- **`~/.syndicate-remote-secrets/box.json`** owns the per-machine config.
+- **`~/.syndicate-remote-secrets/`** owns the per-machine config. Never in any git repo.
 
-If you ever read this skill markdown in any project and the binary isn't installed, run `~/syndicate-remote/scripts/install.sh` once. If the binary IS installed but `box.json` is missing/empty, the binary will surface the exact stub to fill in.
+> ### ⚠ Which file you edit, and which one you must not
+>
+> The host is described by a **device-named** file — `~/.syndicate-remote-secrets/<device>.json`
+> (e.g. one named for the laptop or box it describes). **That is the file you edit.**
+>
+> `box.json` still exists on machines that were set up earlier, and the **binary still reads it by
+> name**, but it is a **generated shim**: `~/syndicate-remote/scripts/install.sh` rewrites it from the
+> device-named file. So:
+>
+> | | |
+> |---|---|
+> | **Edit** | `~/.syndicate-remote-secrets/<device>.json` — then run `~/syndicate-remote/scripts/install.sh` to regenerate the shim |
+> | **Never edit** | `box.json` — the next install silently overwrites your change, and you will debug a config that is not being read |
+>
+> Why it is named after a **device** and not a role: `box.json` was named for one EC2 instance that no
+> longer exists, and this estate has more than one host. A filename that names a machine has to be
+> chased every time the machine changes; a file named for the device it describes does not.
+>
+> **This division is not cosmetic.** The skill `.md` you are reading is owned by
+> `syndicate-playbooks-examples`; the binary that reads the shim is owned by `syndicate-remote`. If
+> the two ever disagree about which file is authoritative, the **binary** decides what actually
+> happens — so regenerate rather than hand-edit.
+
+If you ever read this skill markdown in any project and the binary isn't installed, run `~/syndicate-remote/scripts/install.sh` once. If the binary IS installed but no config resolves, the binary will surface the exact stub to fill in.
 
 ---
 
@@ -63,12 +86,19 @@ When user input is ambiguous or incomplete, the skill **asks** rather than assum
 
 ### Step 1 — Pre-flight (always run, never skipped)
 
-1. **Hostname check.** If `hostname -s` matches the box's pattern (typically `ip-172-31-*` for AWS-launched boxes), abort with "this is the box; syndicate-refresh-remote is local-only". The box-side hostname is one of the few things hardcoded.
+1. **Am I the host?** This tool is local-only: run it *on* the machine it syncs *to* and it is
+   meaningless. **Resolve by presence, not by a hostname pattern.** If `~/.syndicate-remote-secrets/`
+   holds no host config, or the one it holds names this machine's own `workspace` as its target,
+   abort with "this looks like the host itself; syndicate-refresh-remote is local-only".
+   > An earlier version matched `hostname -s` against `ip-172-31-*`, the pattern AWS gives instances
+   > it launches. On any host that is not an AWS instance that pattern matches **nothing**, so the
+   > guard stops guarding without ever saying so. A check that silently becomes a no-op is worse than
+   > no check, because the report still reads as though it ran.
 2. **Binary check.** `command -v syndicate-refresh-remote` must succeed. If not, surface:
    > "syndicate-refresh-remote not installed. Run `~/syndicate-remote/scripts/install.sh` once on this machine, then retry."
-3. **Config check.** `~/.syndicate-remote-secrets/box.json` must exist and have non-empty `host`, `user`, `workspace`, `ssh_key`. If missing fields, surface:
-   > "box.json missing fields X, Y. Resolve current values and update the file. If `box.json` is missing entirely, running `syndicate-refresh-remote` prints the exact seed command (an `echo '{...}' > ~/.syndicate-remote-secrets/box.json && chmod 600` line with the full schema)."
-4. **SSH probe.** The binary's first pre-flight step does this. If it fails, ask the user what likely changed: box IP / SG / box stopped / key file missing — and offer the matching remediation.
+3. **Config check.** A host config must resolve with non-empty `host`, `user`, `workspace`, `ssh_key`. If fields are missing, surface:
+   > "Host config missing fields X, Y. Fix them in `~/.syndicate-remote-secrets/<device>.json` — the device-named file, **not** the generated `box.json` shim — then run `~/syndicate-remote/scripts/install.sh` to regenerate. If no config exists at all, running `syndicate-refresh-remote` prints the exact seed command with the full schema."
+4. **SSH probe.** The binary's first pre-flight step does this. If it fails, ask the user what likely changed: the host is down, the network path is down, or the key file is missing — and offer the matching remediation from *Failure modes* below.
 
 ### Step 2 — Gather the repo list (if not provided as args)
 
@@ -184,7 +214,7 @@ SPOOL="$HOME/.syndicate-knowledge-spool"
   && echo "SPOOL: $(ls -1 "$SPOOL" | wc -l) extraction(s) awaiting delivery"
 ```
 
-If non-empty, `scp` each file to the box inbox using the same `box.json` values the binary just used,
+If non-empty, `scp` each file to the box inbox using the same host-config values the binary just used,
 and **remove only the files that arrive**. A file that fails to copy **stays spooled** — never deleted,
 never assumed delivered. Report the result: `N flushed, M still spooled`.
 
@@ -274,10 +304,10 @@ The skill above is the conversational front-end that:
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | `syndicate-refresh-remote: command not found` | Binary not installed on this machine | `~/syndicate-remote/scripts/install.sh` |
-| `no remote configured at ~/.syndicate-remote-secrets/box.json` | First-time setup not done | Run install.sh; it creates a stub. Fill in `host` (and other fields if defaults don't match). |
-| `ssh: connect to host … port 22: Operation timed out` | Box public IP changed (stop/start) | Update `host` in `~/.syndicate-remote-secrets/box.json` with the new IP. |
-| `Connection refused` | Your home IP changed; SG blocks you | `aws ec2 authorize-security-group-ingress --group-id sg-... --protocol tcp --port 22 --cidr <new-ip>/32` (use the admin profile for the deployment account). |
-| `Permission denied (publickey)` | `.pem` not in `~/.ssh/` or wrong mode | Verify `ssh_key` value in `box.json` and the file's mode (must be 0400 or 0600). |
+| `no remote configured at ~/.syndicate-remote-secrets/box.json` | First-time setup not done | Run install.sh; it creates a stub. Fill in the **device-named** file, then re-run install.sh to regenerate the shim the binary reads. |
+| `ssh: connect to host … port 22: Operation timed out` | The host is down, or the network path to it is | Check the host is up. **Do NOT "fix" this by putting an IP in `host`** — see the ⚠ below. |
+| `Connection refused` | Something is listening-but-refusing, or a firewall on the host rejects your source address | Check the host's own firewall (e.g. `ufw status`) and that sshd is running. This is a host-side answer, not a config edit. |
+| `Permission denied (publickey)` | Key not in `~/.ssh/`, wrong mode, or not authorised on the host | Verify the `ssh_key` value in the **device-named** config and the file's mode (must be 0400 or 0600), and that the matching public key is in the host's `~/.ssh/authorized_keys`. |
 | `fatal: not a git repository` on box | Repo never cloned on box | Binary auto-clones; if it fails, check `gh auth status` on the box. |
 | `! [rejected] main -> main (non-fast-forward)` | Local and box diverged | Skill's conflict-resolution dialog handles this. |
 | `unexpected status:  — treating as failure` (blank status), exit 2 | **Repo has no `origin` remote.** The binary does **not** skip it — `git fetch origin` fails, execution continues, and the empty box status falls through to `HALT_UNKNOWN` → **exit 2**, which is the same code as a real conflict. Misleading twice over: it prints `local synced with origin` first, for a repo that has no origin. | Add an origin, then re-run. Do not hunt for a conflict — there isn't one. |
@@ -285,6 +315,19 @@ The skill above is the conversational front-end that:
 | Work disappeared from the **box** tree after `--keep-side local` on a diverged repo | `git reset --hard origin/<branch>` ran on the box. **There is no box-side dirty check in the tool at all.** | Box-only **commits**: recover via `git reflog` on the box. Box-only **uncommitted/staged changes to tracked files**: **unrecoverable** — no stash was taken. Untracked files survive. Check `ssh <box> "git -C '<box_path>' status --porcelain"` *before* choosing this, every time. |
 | A typo'd or never-cloned repo name reports **success** | `SKIP_NOT_GIT` exits **0**. A no-op is indistinguishable from a sync. | Read the Summary table rows — do not trust the exit code alone. Check the repo name spelling. |
 | Command hangs forever, no output, no timeout | `--keep-side` was passed as the **final** argument — the parser spins (see the ⚠ under Step 4). | Ctrl-C. Re-run with `--keep-side` **before** the repo list. |
+
+> ### ⚠ Never put a bare IP in `host` — it is the failure that looks like success
+>
+> `host` may be an **ssh_config alias**, not an address. When it is, the `Host` block it names carries
+> the routing (a `ProxyCommand`, a jump host, a tunnel) that makes the machine reachable from
+> anywhere. Replace the alias with the IP and ssh **bypasses that block entirely**: the connection
+> falls back to whatever direct path happens to exist, which on a home network is the LAN.
+>
+> The result is a machine that works where you tested it and **nowhere else** — and it reports
+> success the whole time. This is why a connection timeout is diagnosed on the host, not repaired by
+> editing `host`. If you genuinely need the direct address (because the routing itself is what is
+> broken), the device-named config carries it separately as `host_lan`; use that deliberately, and
+> put it back afterwards.
 
 ---
 
@@ -295,5 +338,5 @@ The skill above is the conversational front-end that:
 - **Binary source:** `~/syndicate-remote/scripts/syndicate-refresh-remote.sh`
 - **Binary installer:** `~/syndicate-remote/scripts/install.sh`
 - **Binary installed at:** `~/.local/bin/syndicate-refresh-remote`
-- **Per-machine config:** `~/.syndicate-remote-secrets/box.json` (mode 0600, never in any git repo)
-- **Box-deployment project:** `~/syndicate-remote/` (`README.md` is the maintainers' entry point; provisions the EC2 box that this skill targets)
+- **Per-machine config:** `~/.syndicate-remote-secrets/<device>.json`, mode 0600, never in any git repo. The binary reads the generated `box.json` shim; `install.sh` rewrites it from the device-named file. **Edit the device-named file.**
+- **Host-deployment project:** `~/syndicate-remote/` (`README.md` is the maintainers' entry point; it provisions and maintains the host this skill targets)

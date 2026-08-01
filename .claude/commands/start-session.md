@@ -92,7 +92,7 @@ ways that matter:
 | `HOME` | `/home/<user>` | `/home/ubuntu` |
 | AWS **service model** | one server **per account**, each carrying its own profile | **one central** server, bound to no account |
 | A bare call (no `--profile`) | returns that server's bound account | returns nothing — name the account per call |
-| `box.json` | present (it is the local pointer *to* the box) | absent, and that is correct |
+| A host config in `~/.syndicate-remote-secrets/` | present (it is the local pointer *to* the box) | absent, and that is correct |
 | Which repos exist | some live only here, by policy | some live only there, and are developed there |
 
 > **The AWS row is a deliberate design difference, not drift — and the box is AHEAD, not broken.**
@@ -161,7 +161,7 @@ it succeeds wrongly, and the report reads as though all was well:
 - A `/home/<user>/<repo>/…` path to a repo that moved to the box resolves to nothing, and the agent
   does not stop. It improvises — writes into the current repo, "recreates" the missing tree — and
   reports success.
-- A missing `box.json` yields an empty list, not a failure, so everything downstream reads as
+- A missing host config yields an empty list, not a failure, so everything downstream reads as
   "nothing is on the box."
 
 **You find out by resolving, or you do not find out.**
@@ -179,7 +179,7 @@ When you meet a fifth, it is still this rule.
 
 **Run this FIRST — before reading orchestration files, before the capability inventory, before AWS verify (Step 5), and before pre-work verify (Step 6).** Those steps all read code or `progress.json`, and a pull can change them; syncing first means every downstream step operates on origin-latest, not a stale tree.
 
-**Why this is a different axis from Multi-Agent Discipline above.** That section governs many agents sharing ONE checkout. This step governs the SAME repo checked out in multiple LOCATIONS — local WSL, the remote dev box (synced via `/syndicate-refresh-remote`, configured by `box.json`), and occasionally-online offline machines — all sharing ONE origin. A commit pushed from any location lands in origin; a checkout that has not pulled is now stale. Surgical Edits cannot save you if the whole file you are editing is three commits behind origin.
+**Why this is a different axis from Multi-Agent Discipline above.** That section governs many agents sharing ONE checkout. This step governs the SAME repo checked out in multiple LOCATIONS — local WSL, the remote dev box (synced via `/syndicate-refresh-remote`, configured by a per-machine host config in `~/.syndicate-remote-secrets/`), and occasionally-online offline machines — all sharing ONE origin. A commit pushed from any location lands in origin; a checkout that has not pulled is now stale. Surgical Edits cannot save you if the whole file you are editing is three commits behind origin.
 
 **Policy — identical to `/distribute-defaults`: fast-forward only, skip + report, never force.** Never merge, never rebase, never reset, never `--force`. Any repo that cannot fast-forward (dirty tree, diverged, detached HEAD, no upstream, or origin unreachable/offline) is left untouched and reported; resolve divergence with `/syndicate-refresh-remote`. If the repo carrying your task cannot fast-forward, STOP and surface it in the Step 9 report before doing the task — working a stale/diverged checkout risks an unpushable divergence.
 
@@ -356,7 +356,7 @@ repos.** Resolve by presence; never by hostname, `$USER`, or a hardcoded list. T
 there and not restated here; if this step and that section ever disagree, that section wins.
 
 ```bash
-CFG="$HOME/.syndicate-remote-secrets/box.json"
+SECRETS="$HOME/.syndicate-remote-secrets"
 SELF="$(basename "$PWD")"
 
 # Repos that are local-only BY POLICY. This is not a nickname and not a location claim: it is a
@@ -369,33 +369,76 @@ REFS=$(grep -rhoE '(/home/[A-Za-z0-9._-]+|\$HOME|~)/[A-Za-z0-9._-]+' .claude/com
        | sed -E 's#^(/home/[A-Za-z0-9._-]+|\$HOME|~)/##; s/[.,:;)]+$//' \
        | grep -vE '^\.?$|^\.' | sort -u)
 
-# Probe the box's repo list. CRITICAL: "I could not ask" is NOT "the box does not have it".
-# box.json is a LOCAL WORKSTATION artifact — it is this machine's pointer TO the box. Run this step
-# ON the box and it is correctly absent. Collapsing that into an empty list is what made a correct
-# state report as a blocker.
-BOXLIST=""; BOXPROBE="unavailable — no box.json (this may BE the box, or a host with no box configured)"
-# Trust box.json only if it PARSES and carries non-empty host/user/ssh_key — never by mere existence.
-# An empty/corrupt file (measured: a 0-byte box.json, 2026-07-24) must read as "no box configured",
-# NOT as a false "box unreachable" (which invites chasing a network fault that is really a bad file).
-CFG_OK=""
-if [ -s "$CFG" ]; then
-  CFG_OK=$(python3 -c "import json,sys;d=json.load(open('$CFG'));print('ok' if d.get('host') and d.get('user') and d.get('ssh_key') else '')" 2>/dev/null)
+# Discover the configured host(s) BY SHAPE, never by filename. A host config is any *.json in the
+# secrets dir carrying non-empty host + user + workspace + ssh_key. This probe does not itself need
+# `workspace` (it enumerates ~/*/ on the far side), but it requires it anyway so that ONE predicate
+# decides what a host is: a file that is a host here and "broken" to the estate tools — or the
+# reverse — is a split-brain, and split-brains are what this whole discovery change removes.
+# The file that used to be read by name was
+# `box.json`, named for one machine that no longer exists; naming its successor would just move the
+# problem. Emits "user host" per line — nothing else in this block knows a filename.
+#
+# CRITICAL: "I could not ask" is NOT "the host does not have it". These configs are a LOCAL
+# WORKSTATION artifact — this machine's pointer TO a host. Run this step ON that host and they are
+# correctly absent. Collapsing that into an empty list is what made a correct state report a blocker.
+#
+# Trust a config only if it PARSES and carries the three fields — never by mere existence. An
+# empty/corrupt file (measured: a 0-byte config, 2026-07-24) must read as "no host configured", NOT
+# as a false "unreachable", which invites chasing a network fault that is really a bad file.
+HOSTS=""; BAD=0
+if [ -d "$SECRETS" ]; then
+  HOSTS=$(python3 - "$SECRETS" <<'PY' 2>/dev/null
+import json, os, sys
+d = sys.argv[1]; bad = 0; seen = set()
+for n in sorted(os.listdir(d)):
+    if not n.endswith(".json"): continue
+    try:
+        with open(os.path.join(d, n)) as fh: data = json.load(fh)
+    except Exception:
+        bad += 1; continue
+    for o in (data if isinstance(data, list) else [data]):
+        if not isinstance(o, dict): continue
+        got = [k for k in ("host","user","workspace","ssh_key") if o.get(k)]
+        if not got: continue                       # not a host config at all — silent, by design
+        if len(got) < 4: bad += 1; continue        # host-shaped and unusable — say so, do not ignore
+        if o["host"] in seen: continue             # one machine described twice is still one machine
+        seen.add(o["host"])
+        print("%s\t%s\t%s" % (o["user"], o["host"], os.path.expanduser(o["ssh_key"])))
+print("BAD\t%d\t-" % bad)
+PY
+)
+  BAD=$(printf '%s\n' "$HOSTS" | awk -F'\t' '$1=="BAD"{print $2}')
+  HOSTS=$(printf '%s\n' "$HOSTS" | awk -F'\t' '$1!="BAD"')
 fi
-if [ -f "$CFG" ] && [ -z "$CFG_OK" ]; then
-  BOXPROBE="unavailable — box.json present but empty/unparseable or missing host|user|ssh_key (treat as no box configured; fix or remove it)"
-fi
-if [ -n "$CFG_OK" ]; then
-  H=$(python3 -c "import json;print(json.load(open('$CFG'))['host'])")
-  U=$(python3 -c "import json;print(json.load(open('$CFG'))['user'])")
-  K=$(python3 -c "import json;print(json.load(open('$CFG'))['ssh_key'])")
-  if BOXLIST=$(ssh -n -i "$K" -o ConnectTimeout=15 -o BatchMode=yes "$U@$H" \
-               'for d in ~/*/; do [ -d "$d/.git" ] && basename "$d"; done' 2>/dev/null); then
-    BOXPROBE="ok"
+
+# Ask EVERY configured host. ASKED counts the ones that answered, TOTAL the ones we meant to ask —
+# their difference is the whole reason UNKNOWN exists below.
+REMOTELIST=""; TOTAL=0; ASKED=0
+while IFS=$'\t' read -r U H K; do
+  [ -z "${H:-}" ] && continue
+  TOTAL=$((TOTAL+1))
+  # -n is mandatory: without it the first ssh consumes the remaining host rows as its own stdin.
+  if L=$(ssh -n -i "$K" -o ConnectTimeout=15 -o BatchMode=yes "$U@$H" \
+         'for d in ~/*/; do [ -d "$d/.git" ] && basename "$d"; done' 2>/dev/null); then
+    ASKED=$((ASKED+1)); REMOTELIST="$REMOTELIST
+$L"
   else
-    BOXPROBE="unreachable — box did not answer (offline? maintenance?)"
+    echo "HOST $H did not answer (offline? maintenance?) — its repos are NOT in this probe."
   fi
+done <<< "$HOSTS"
+
+if   [ "${BAD:-0}" -gt 0 ] && [ "$TOTAL" = 0 ]; then
+  PROBE="unavailable — $BAD host config(s) present but empty/unparseable or missing host|user|workspace|ssh_key (treat as no host configured; fix or remove them)"
+elif [ "$TOTAL" = 0 ]; then
+  PROBE="unavailable — no host configured (this may BE the host, or a machine that syncs with none)"
+elif [ "$ASKED" = "$TOTAL" ]; then
+  PROBE="ok — asked $ASKED of $TOTAL configured host(s)"
+elif [ "$ASKED" = 0 ]; then
+  PROBE="unreachable — none of $TOTAL configured host(s) answered"
+else
+  PROBE="partial — asked $ASKED of $TOTAL; anything not found may live on the host that did not answer"
 fi
-echo "BOX PROBE: $BOXPROBE"
+echo "HOST PROBE: $PROBE"
 
 for r in $REFS; do
   [ "$r" = "$SELF" ] && continue
@@ -404,12 +447,12 @@ for r in $REFS; do
     printf 'REPO %-34s local\n' "$r"
   elif [ "$POLICY" = yes ]; then
     printf 'REPO %-34s local-only by policy, absent here — EXPECTED, not a blocker\n' "$r"
-  elif [ "$BOXPROBE" = "ok" ] && printf '%s\n' "$BOXLIST" | grep -qx "$r"; then
-    printf 'REPO %-34s REMOTE (box) — local paths to it are DEAD\n' "$r"
-  elif [ "$BOXPROBE" = "ok" ]; then
-    printf 'REPO %-34s UNRESOLVABLE — not local, and the box answered that it is not there either\n' "$r"
+  elif printf '%s\n' "$REMOTELIST" | grep -qx "$r"; then
+    printf 'REPO %-34s REMOTE (host) — local paths to it are DEAD\n' "$r"
+  elif [ "$TOTAL" -gt 0 ] && [ "$ASKED" = "$TOTAL" ]; then
+    printf 'REPO %-34s UNRESOLVABLE — not local, and every configured host answered that it is not there either\n' "$r"
   else
-    printf 'REPO %-34s UNKNOWN — not local; could not ask the box. Do NOT conclude it is missing.\n' "$r"
+    printf 'REPO %-34s UNKNOWN — not local; at least one host could not be asked. Do NOT conclude it is missing.\n' "$r"
   fi
 done
 ```
@@ -419,23 +462,28 @@ done
 | Verdict | What it means | What you do |
 |---|---|---|
 | `local` | The repo is here. | Use it directly. Normal case; say nothing. |
-| `local-only by policy` | It is one of the repos policy keeps off the box, and you are not on the machine that holds it. **Its absence is the intent.** | **Nothing.** This is a correct state, not a finding — do not surface it, do not "fix" it, and above all do not clone it here. If your task genuinely needs it, that task belongs on the workstation, and *that* is what you say. |
-| `REMOTE (box)` | It lives on the box and is **developed there**. Every `/home/<user>/<repo>/…` path in this project's skills is **dead**. | **Surface it in the handoff.** Work touching that repo must run **on the box** (`ssh`, or a session started there) — reading its files, running its scripts, and committing in it all happen there. Do **not** clone it locally to "fix" the path: that creates a second copy, and the box copy is the real one. |
-| `UNRESOLVABLE` | Not local, **and the box answered that it does not have it either.** Genuinely nowhere. | **Report it and stop** before doing work that depends on it. Do not invent a path, do not recreate the tree, do not substitute the current repo. |
-| `UNKNOWN` | Not local, and **you could not ask the box** — no `box.json`, or it did not answer. | **Report it; do not conclude anything.** You have no evidence about the box, and no evidence is not evidence of absence. Say "could not resolve" and why. Never upgrade this to `UNRESOLVABLE`. |
+| `local-only by policy` | It is one of the repos policy keeps off the remote host, and you are not on the machine that holds it. **Its absence is the intent.** | **Nothing.** This is a correct state, not a finding — do not surface it, do not "fix" it, and above all do not clone it here. If your task genuinely needs it, that task belongs on the workstation, and *that* is what you say. |
+| `REMOTE (host)` | It lives on a configured host and is **developed there**. Every `/home/<user>/<repo>/…` path in this project's skills is **dead**. | **Surface it in the handoff.** Work touching that repo must run **on that host** (`ssh`, or a session started there) — reading its files, running its scripts, and committing in it all happen there. Do **not** clone it locally to "fix" the path: that creates a second copy, and the remote copy is the real one. |
+| `UNRESOLVABLE` | Not local, **and every configured host answered that it does not have it either.** Genuinely nowhere. | **Report it and stop** before doing work that depends on it. Do not invent a path, do not recreate the tree, do not substitute the current repo. |
+| `UNKNOWN` | Not local, and **at least one host could not be asked** — none is configured, or one did not answer. | **Report it; do not conclude anything.** You have no evidence about that host, and no evidence is not evidence of absence. Say "could not resolve" and why. Never upgrade this to `UNRESOLVABLE`. |
 
 > **Why `UNKNOWN` exists at all.** This step used to treat "the probe returned nothing" and "the probe
-> could not run" as the same answer. `box.json` is a **local workstation artifact** — this machine's
-> pointer *to* the box — so running this step **on the box** finds it correctly absent, produced an
-> empty box list, and routed **every** referenced repo to `UNRESOLVABLE → stop`. The two repos it hit
+> could not run" as the same answer. A host config is a **local workstation artifact** — this machine's
+> pointer *to* a host — so running this step **on that host** finds it correctly absent, produced an
+> empty repo list, and routed **every** referenced repo to `UNRESOLVABLE → stop`. The two repos it hit
 > hardest were the two the paragraph above declares local-only by policy: their absence was the
 > intent, reported as a blocker. An empty answer and an unasked question are different facts, and a
 > step that conflates them manufactures blockers out of correct states.
+>
+> **With more than one host configured there is a fourth state, and it is not cosmetic.** `partial`
+> means some hosts answered and some did not: a repo found on none of them might still live on the
+> one that stayed silent, so it is `UNKNOWN`, never `UNRESOLVABLE`. `UNRESOLVABLE` requires that
+> **every** configured host was asked and every one said no.
 
 > **The one thing you must never do:** treat a dead absolute path as an invitation to improvise. A
-> skill that says `/home/<user>/<repo>/…` for a repo that now lives on the box is **stale
-> documentation, not an instruction** — resolve where the repo actually is, and if that is the box,
-> say so plainly rather than quietly doing the work somewhere else.
+> skill that says `/home/<user>/<repo>/…` for a repo that now lives on another host is **stale
+> documentation, not an instruction** — resolve where the repo actually is, and if that is a remote
+> host, say so plainly rather than quietly doing the work somewhere else.
 
 **Cross-host work is a real constraint, not a detail.** A skill whose *source* repo is local and whose
 *target* repo is remote cannot run wholly on either host. When you hit one, surface the split to the
@@ -596,11 +644,11 @@ or not an id. Report those lines; do not quietly fix `progress.json` here.
  summarise them into prose, and do not drop rows.]
 
 ### ⚠ Remote-resident repos  (omit ONLY if Step 2.5 found none needing action)
-[repo → REMOTE (box): this project's skills reference it by a local path that is DEAD.
- Work touching it must run on the box. Name every one — an agent that does not know this
+[repo → REMOTE (host): this project's skills reference it by a local path that is DEAD.
+ Work touching it must run on that host. Name every one — an agent that does not know this
  will improvise into the current repo and report success.]
-[repo → UNRESOLVABLE: not local, and the box answered that it is not there. Do not start
- work that depends on it.]
+[repo → UNRESOLVABLE: not local, and every configured host answered that it is not there.
+ Do not start work that depends on it.]
 [repo → UNKNOWN: not local, and the box could not be asked. Say so and say why. Do NOT
  present this as missing — you have no evidence either way.]
 [repo → local-only by policy: OMIT ENTIRELY. Its absence is the intent, not a finding.
