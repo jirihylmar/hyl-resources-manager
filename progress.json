@@ -13,7 +13,9 @@
       "vsb-299": { "id": "299025166536", "region": "eu-central-1", "mcp_tool": "mcp__aws-vsb-299__call_aws" },
       "d4m-975": { "id": "975050190402", "region": "eu-central-1", "mcp_tool": "mcp__aws-d4m-975__call_aws" },
       "vsb-030": { "id": "030062527147", "region": "eu-west-1", "mcp_tool": "mcp__aws-vsb-030__call_aws" },
-      "brm-734": { "id": "734468801561", "region": "eu-central-1", "mcp_tool": "mcp__aws-brm-734__call_aws" }
+      "brm-734": { "id": "734468801561", "region": "eu-central-1", "mcp_tool": "mcp__aws-brm-734__call_aws" },
+      "hylmar-oa-287": { "id": "287773673380", "region": "eu-central-1", "role": "organization management account (hylmar_OA); cross-account ops originate here" },
+      "cag-126": { "id": "126697143436", "region": "eu-central-1", "mcp_tool": "mcp__aws-cag__call_aws", "role": "member account CAG, provisioned under hylmar-oa-287 in Phase 7" }
     },
     "primary_domain": "hub440.cz"
   },
