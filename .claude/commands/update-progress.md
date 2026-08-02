@@ -40,6 +40,23 @@ Update progress tracking after completing tasks. Follow conservative rules stric
 - ❌ Rename task names (add note instead)
 - ❌ Change task IDs
 - ❌ Delete from `artifacts` array
+- ❌ Remove the `estate_notice` key from a task (see below)
+
+### Tasks that arrive from the central estate survey
+
+A task carrying **`estate_notice: <marker>`** was appended by `syndicate-playbooks-examples`, not
+raised by this project. It is a **request to verify**, not a finding and not a fix: the centre
+matched a pattern across every project and does not own your files — some items will be correct
+exactly as they stand.
+
+- **The body is in the task's `detail`.** `/open-work` renders `id`/`name`/`status` only, so read
+  the task itself, not the table.
+- **Do not remove the `estate_notice` key.** It is what makes re-notification a no-op; delete it
+  and the next central run appends a second copy. The text may legitimately be replaced in place
+  under the same task id if the central rule is corrected.
+- **To decline** a given check, list its probe name (or `*`) in `.claude/estate-align.skip`, one
+  per line. It must exist **before** delivery — once a notice is committed here, `progress-check`
+  blocks removing the task. A refusal is reported as REFUSED and is never overridden.
 
 ### When Task Scope Changed During Work:
 ```json
