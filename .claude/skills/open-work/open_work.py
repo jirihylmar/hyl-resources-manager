@@ -107,7 +107,11 @@ def _label_reads_closed(label):
     in these files is to keep the item and rewrite it as a record — 'RESOLVED <date> by ...' —
     rather than delete it, precisely so the history survives. Anchored to the start so an item
     that merely MENTIONS a resolution ('blocked until X is resolved') stays open."""
-    return str(label).lstrip("*_# ").upper().startswith(("RESOLVED", "SUPERSEDED", "CLOSED", "DONE"))
+    # DROPPED is a disposition, not a loose end: /update-progress § 3a gives exactly three ways to
+    # close a task — finished, re-homed, dropped — and an item dropped WITH a stated reason is
+    # decided. Leaving it rendering as open work is how a decision gets re-litigated every session.
+    return str(label).lstrip("*_# ").upper().startswith(
+        ("RESOLVED", "SUPERSEDED", "CLOSED", "DONE", "DROPPED"))
 
 
 def backlog_entry(item):

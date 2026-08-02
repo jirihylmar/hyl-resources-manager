@@ -1,10 +1,10 @@
 {
   "_comment": "Written by /distribute-defaults. Proves the engine delivered these exact bytes. /repo-hygiene reads this BEFORE classifying any default as hand-edited. A hash match here means DELIVERED, whatever the git state. Never edit by hand.",
-  "written_at": "2026-08-01T21:32:18Z",
-  "canonical_commit": "e5fed2e64fa29de778f911e862bd958f86dc0c55",
+  "written_at": "2026-08-02T08:44:03Z",
+  "canonical_commit": "46966b3c7169c38e665a740be2541db091dd4e3a",
   "files": {
     ".claude/commands/add-work.md": { "sha256": "8ac7f1d1faad66c173735ae9ff7726d5e5fa159f0b8e49dea79e00a32103da3d", "source": "canonical" },
-    ".claude/commands/check-aws.md": { "sha256": "252d430058d1d9fd39438e7213f11a643e4bec678e98d53320c3d956077f8668", "source": "canonical" },
+    ".claude/commands/check-aws.md": { "sha256": "24178c91d34397b4deb7714d8779e7db28d4fa288a4cdccbf79512b4c9a8818c", "source": "canonical" },
     ".claude/commands/generate-architecture.md": { "sha256": "b1151f41dcc4b4146d59f995d18686f044c0010f821b1e40d6fb283d8c665caf", "source": "canonical" },
     ".claude/commands/generate-phases.md": { "sha256": "a55de2000fa4c3e3d159c9bf94f2a92ec41774a8fedcbb74b24e8fcdad12500e", "source": "canonical" },
     ".claude/commands/repo-hygiene.md": { "sha256": "80d224f2f85c7685da98b0e9f4e21d606106b02b75b8cd0e857a1da44c097133", "source": "canonical" },
@@ -20,6 +20,6 @@
     ".claude/skills/progress-check/progress_check.py": { "sha256": "dd791042fdf010ec9bec73966e33aa5e4cd6e7d0f3c191948dcc66599fb176b5", "source": "canonical" },
     ".claude/skills/progress-check/SKILL.md": { "sha256": "52b48622f0bf837626af9cf3e6491137c83591995957dcf5f5efdcb39a3b79c9", "source": "canonical" },
     ".claude/skills/open-work/SKILL.md": { "sha256": "db4688a1d92df8e1d61047759ef973c48a3dc6d317f5efba2cda219458e6c28b", "source": "canonical" },
-    ".claude/skills/open-work/open_work.py": { "sha256": "4888bc8262c248d6dbac35377a24f6144b4f51045cd47ea99622f0c7ddcdb290", "source": "canonical" }
+    ".claude/skills/open-work/open_work.py": { "sha256": "fce4b8333a404600df004f8472ca8e2468f90d507ba10e9cdb7fa1242571007a", "source": "canonical" }
   }
 }

@@ -110,9 +110,22 @@ list written down anywhere, including this file.** The set differs per machine a
 
 **Central server — match a profile by account number, never by name:**
 
-First, list the profiles this host actually has. **Read `$HOME/.aws/config`** (with the Read tool —
-`Read` is in this command's `allowed-tools` for exactly this) and take the names from its
-`[profile <name>]` headers.
+First, list the profiles this host actually has. **Read BOTH `$HOME/.aws/config` and
+`$HOME/.aws/credentials`** (with the Read tool — `Read` is in this command's `allowed-tools` for
+exactly this). Take the names from `config`'s `[profile <name>]` headers **and** from `credentials`'
+`[<name>]` section headers, and use the union.
+
+> **Both files, or you will report a reachable account as unreachable.** A profile whose keys live in
+> `credentials` with no matching `config` stanza is completely valid and works — `config` carries
+> region and settings, not existence. Measured on one workstation: `config` had **5** profile headers,
+> `credentials` had **29**, so **24** profiles were invisible to a config-only listing — including the
+> organization-management credential that had demonstrably run `organizations create-account` from
+> that machine. Two profiles backing *working* MCP servers were among the 24.
+>
+> Do not "fix" this by writing the missing stanzas. Profiles arrive by many routes — the console, SSO,
+> another machine, a provisioning script, by hand — so no single writer can be corrected into
+> covering them all. **Enumerate both files here**, which is correct however the profile was born.
+> **Never read a key, a secret, or a token value out of either file** — you want section *names*.
 
 > **Read it, never write it.** You are reading a list of *names* to find which one reaches your
 > account. `/check-aws` never modifies AWS configuration, never adds a profile, and never edits
@@ -157,7 +170,7 @@ This project's AWS account {aws_account} is not reachable from this host.
   Host model:  per-account servers  (or: one central server)
   Tried:       {each candidate/profile and what it returned}
   Gap:         no server is bound to {aws_account}
-               (central model: no profile in ~/.aws/config reaches it)
+               (central model: no profile in ~/.aws/config OR ~/.aws/credentials reaches it)
 
 This is a host-configuration matter, not something to work around. Either the account
 belongs on another host — run /check-aws where it lives — or this host is missing the
