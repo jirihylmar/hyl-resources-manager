@@ -187,9 +187,28 @@ cite flags that don't exist.
 1. **Read the rotation state**: `.claude/hygiene-state.json` → `grounded` map
    (`{"<file>": "<YYYY-MM-DD>"}`). If the file or map is absent, self-bootstrap: create it with
    `{"grounded": {}}` — and recommend the one-time `/repo-hygiene` baseline in the Step 12 report.
-2. **Pick ONE file**: the least-recently-grounded live skill (`.claude/commands/*.md`) or canonical
-   doc (`docs/` outside `_archive/`), never-grounded first. Files Step 2a fully verified this
-   session count as grounded — stamp them in the map rather than re-picking them.
+2. **Pick ONE file**: the least-recently-grounded file in the rotation set, never-grounded first.
+   Files Step 2a fully verified this session count as grounded — stamp them in the map rather than
+   re-picking them.
+
+   **The rotation set is every file a reader would take as current** — not just the ones under
+   `docs/`:
+
+   ```
+   .claude/commands/*.md          # live skills (defaults included — ground them, report, never edit)
+   docs/**/*.md                   # excluding _archive/
+   ops/**/*.md                    # runbooks: read at the worst possible moment, so rot costs most
+   README.md  CLAUDE.md  IMPLEMENTATION_PLAN.md     # root canonical docs, if present
+   ```
+
+   **Why the root docs are named explicitly.** This step's selection rule used to be
+   `.claude/commands/*.md` ∪ `docs/**`, which silently excluded `README.md`, `CLAUDE.md`,
+   `IMPLEMENTATION_PLAN.md` and every runbook in `ops/`. Measured consequence: a project migrated
+   off its EC2 host, deleted the instance, its volume, its security group and its key pair — and
+   its `README.md` went on describing that machine's instance type, RAM and monthly cost in five
+   places for days. A session *noticed*, and left it, because no gate had the file in scope. The
+   README is the first thing a new reader opens. A rotation that cannot reach it is not a
+   currency mechanism, it is a currency mechanism for the files that were already fine.
 3. **Ground it** (claim types and verifications per the Step 2a table): extract the file's
    operational claims, verify each against the implementation, record claim / reality / fix in
    session_notes.
@@ -216,6 +235,26 @@ cite flags that don't exist.
 5. **Stamp the map**: `"<file>": "<today>"` for the sliced file and any 2a-verified files. If the
    file was too large to finish, record `"partial": {"<file>": "<where you stopped>"}` in
    `hygiene-state.json` and stamp the map only when the file completes.
+
+   **A `partial` entry and a `grounded` stamp for the same file are contradictory, and the
+   contradiction is self-concealing.** A stamp means "verified on this date"; the rotation sorts
+   by it, so a file stamped today goes to the BACK of the queue. Stamp a file you only partly
+   ground and you have not merely mis-recorded it — you have hidden the unverified remainder
+   behind a fresh date, and the rotation will not return to it for months. Measured: one project
+   carried `"README.md": "<date>"` in `grounded` *and* an open `partial` saying most of the file
+   was still unverified; that single inconsistency is why the stale hardware description above
+   survived every session. So: **when both exist, the stamp is void.** Delete it, leave the
+   `partial`, and treat the file as never-grounded — front of the queue, not the back.
+
+**Found it? Then fix it. Do not bring it back as a question.** A defect you discovered in a file
+you own is ordinary work — the same session that found it closes it, in the same commit. Listing
+it in the handoff as an option the operator may choose costs them a decision they have no context
+for, and buys nothing: they cannot evaluate a stale sentence they have not read, and *"the README
+describes a machine that no longer exists"* has exactly one sensible answer. Surface a finding as
+a **question** only when the remedy is genuinely contested (it changes behaviour, it is expensive,
+or two corrections are equally defensible), and as a **report** when the file is a distributed
+default you may not edit (§ 11.b). Otherwise: fix it, say you fixed it, move on. Rot survives by
+being repeatedly noticed and never owned.
 
 **Bounds and skips** (the bound is the point — this must stay cheap enough to never be worth
 skipping): one file per session, roughly small-task effort. Skip ONLY when context is already

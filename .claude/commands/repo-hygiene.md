@@ -88,7 +88,14 @@ for d in sorted((root/"docs").glob("*")) if (root/"docs").exists() else []:
 
 # (C) broken repo-relative doc refs from live surfaces (docs + commands)
 ref_re = re.compile(r"(?<![\w/])(docs/[A-Za-z0-9_\-./]+\.(?:md|tsv|json|py|png|html))")
-surfaces = list((root/"docs").rglob("*.md")) + list((root/".claude/commands").glob("*.md"))
+# The rotation set must be every file a reader takes as current — see
+# /update-progress Step 2b. Restricting it to docs/ + .claude/commands/ silently
+# excluded README.md, CLAUDE.md, IMPLEMENTATION_PLAN.md and every ops/ runbook,
+# which is how one project's README went on describing a deleted host for days.
+surfaces = (list((root/"docs").rglob("*.md")) + list((root/".claude/commands").glob("*.md"))
+            + list((root/"ops").rglob("*.md"))
+            + [root/n for n in ("README.md", "CLAUDE.md", "IMPLEMENTATION_PLAN.md")])
+surfaces = [p for p in surfaces if p.exists() and "_archive" not in p.parts]
 seen = set()
 for f in surfaces:
     if "_archive" in f.parts: continue
