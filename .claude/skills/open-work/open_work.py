@@ -39,7 +39,27 @@ import collections
 import json
 import sys
 
-DONE = ("complete", "superseded")
+# Terminal statuses — every spelling that means "this is finished", because the estate uses
+# several and identity must not depend on spelling. MEASURED across 27 progress.json files
+# (2026-08-06): `complete` and `completed` are both live, one project carrying 100 tasks spelt
+# `completed`. With only two spellings terminal, those 100 finished tasks rendered as OPEN WORK
+# in that project's current phase. The inverse cost the estate more: bucket 3 asked for
+# `status == "pending"` and so hid 19 genuinely-open tasks spelt `postponed` or `deferred`.
+DONE = ("complete", "completed", "superseded", "done", "closed", "dropped",
+        "cancelled", "canceled", "resolved", "obsolete", "abandoned")
+
+# Statuses bucket 2 owns. Named once, so bucket 3 can exclude exactly what bucket 2 took and
+# the two cannot drift into double-rendering or into a gap between them.
+ACTIVE = ("in_progress", "blocked")
+
+
+def _st(obj):
+    """A status, normalised. Spelling and whitespace vary across the estate; identity does not."""
+    return str((obj or {}).get("status") or "").strip().lower()
+
+
+def is_terminal(obj):
+    return _st(obj) in DONE
 
 
 def die(message):
@@ -144,7 +164,7 @@ def phase_of(phases, task_id):
 
 
 def state_of(task, current_task):
-    status = task.get("status", "pending")
+    status = _st(task) or "pending"
     if status == "blocked":
         return "blocked"
     if status == "in_progress":
@@ -213,14 +233,14 @@ def main():
     if current_phase and current_phase not in phases:
         notes.append("current_phase '%s' does not exist in phases" % short(current_phase, 60))
         current_phase = None
-    if current_phase and phases[current_phase].get("status") in DONE:
+    if current_phase and is_terminal(phases[current_phase]):
         notes.append("current_phase '%s' is marked %s — the pointer is stale"
                      % (current_phase, phases[current_phase]["status"]))
     if current_task and resolved is None:
         notes.append("current_task '%s' matches no task in any phase" % current_task)
     elif current_task:
         task = next(t for t in tasks_of(phases[resolved])[0] if t.get("id") == current_task)
-        if task.get("status") in DONE:
+        if is_terminal(task):
             notes.append("current_task '%s' is already %s — the pointer is stale"
                          % (current_task, task["status"]))
         if current_phase and resolved != current_phase:
@@ -241,7 +261,7 @@ def main():
     # --- bucket 1: the current phase ---
     if current_block:
         phase = phases[current_phase]
-        rows = [t for t in tasks_of(phase)[0] if t.get("status") not in DONE]
+        rows = [t for t in tasks_of(phase)[0] if not is_terminal(t)]
         out.append("**%s — %s** (%d open)"
                    % (phase_label(current_phase),
                       short(phase.get("name", current_phase)), len(rows)))
@@ -264,7 +284,7 @@ def main():
 
     # --- bucket 2: stuck elsewhere ---
     stuck = [(t, p) for k, p in phases.items() if k != current_phase
-             for t in tasks_of(p)[0] if t.get("status") in ("in_progress", "blocked")]
+             for t in tasks_of(p)[0] if _st(t) in ACTIVE]
     if stuck:
         out.append("**Stuck elsewhere**")
         out.append("")
@@ -281,13 +301,24 @@ def main():
         out.append("")
 
     # --- bucket 3: deferred (pending elsewhere + every open backlog item) ---
+    # EVERY non-current phase is examined, INCLUDING the ones marked complete. § 4.0a promises
+    # "nothing tracked is ever invisible at session start"; skipping closed phases broke that
+    # promise for 28 task rows across 7 projects, and in the no-current-phase case the renderer
+    # went on to print "No open work in progress.json" while holding some. A phase that claims
+    # completion while a child claims otherwise is not deferred work — it is a CONTRADICTION,
+    # and it is labelled as one rather than folded in beside ordinary planned work.
     deferred = []
     for key, phase in phases.items():
-        if key == current_phase or phase.get("status") in DONE:
+        if key == current_phase:
             continue
-        pending = [t for t in tasks_of(phase)[0] if t.get("status") == "pending"]
-        if pending:
-            deferred.append((phase_label(key), short(phase.get("name", key)), len(pending)))
+        open_tasks = [t for t in tasks_of(phase)[0]
+                      if not is_terminal(t) and _st(t) not in ACTIVE]
+        if not open_tasks:
+            continue
+        label = phase_label(key)
+        if is_terminal(phase):
+            label += " ⚠ phase says %s" % _st(phase)
+        deferred.append((label, short(phase.get("name", key)), len(open_tasks)))
 
     backlog, closed_backlog = [], 0
     for item in (data.get("backlog") or []):
@@ -322,8 +353,8 @@ def main():
 
     if rendered_rows == 0 and not current_block:
         # Explicit, because an empty render and a broken render must not look alike.
-        out.append("_No open work in progress.json: every phase complete or superseded, "
-                   "and no open backlog item._")
+        out.append("_No open work in progress.json: every task carries a terminal status "
+                   "and no backlog item is open._")
 
     print("\n".join(out).rstrip())
     print()

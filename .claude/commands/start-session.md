@@ -385,9 +385,15 @@ REFS=$(grep -rhoE '(/home/[A-Za-z0-9._-]+|\$HOME|~)/[A-Za-z0-9._-]+' .claude/com
 # Trust a config only if it PARSES and carries the three fields — never by mere existence. An
 # empty/corrupt file (measured: a 0-byte config, 2026-07-24) must read as "no host configured", NOT
 # as a false "unreachable", which invites chasing a network fault that is really a bad file.
-HOSTS=""; BAD=0
+HOSTS=""; BAD=0; PARSER_RC=0
 if [ -d "$SECRETS" ]; then
-  HOSTS=$(python3 - "$SECRETS" <<'PY' 2>/dev/null
+  # THE EXIT STATUS IS CAPTURED, and that is not defensive habit — it is the difference between
+  # two opposite answers. With `2>/dev/null` and no rc check, a python3 that exists but FAILS
+  # (a broken install, a partial upgrade, an interpreter killed by the OOM killer) empties HOSTS
+  # exactly as a machine with no host config does, and this step then prints the all-clear for a
+  # correct state while the configured hosts were never asked. lib/estate-reach.sh:211-216 makes
+  # this same argument for the same reason and propagates rc; the defaults did not.
+  HOSTS=$(python3 - "$SECRETS" <<'PY' 2>/tmp/secrets-parse.err
 import json, os, sys
 d = sys.argv[1]; bad = 0; seen = set()
 for n in sorted(os.listdir(d)):
@@ -407,8 +413,16 @@ for n in sorted(os.listdir(d)):
 print("BAD\t%d\t-" % bad)
 PY
 )
+  PARSER_RC=$?
   BAD=$(printf '%s\n' "$HOSTS" | awk -F'\t' '$1=="BAD"{print $2}')
   HOSTS=$(printf '%s\n' "$HOSTS" | awk -F'\t' '$1!="BAD"')
+  if [ "$PARSER_RC" -ne 0 ]; then
+    # NOT "no host configured". We could not look, so every configured host is UNKNOWN — the same
+    # distinction Step 0.7 and the estate runners make, and the one this step was missing.
+    echo "HOST CONFIGS UNREAD: the parser exited $PARSER_RC — the hosts in $SECRETS were NOT asked."
+    echo "  cause: $(head -c 300 /tmp/secrets-parse.err 2>/dev/null || echo '(no stderr captured)')"
+    HOSTS=""
+  fi
 fi
 
 # Ask EVERY configured host. ASKED counts the ones that answered, TOTAL the ones we meant to ask —

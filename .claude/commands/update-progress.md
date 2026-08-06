@@ -251,8 +251,10 @@ you own is ordinary work — the same session that found it closes it, in the sa
 it in the handoff as an option the operator may choose costs them a decision they have no context
 for, and buys nothing: they cannot evaluate a stale sentence they have not read, and *"the README
 describes a machine that no longer exists"* has exactly one sensible answer. Surface a finding as
-a **question** only when the remedy is genuinely contested (it changes behaviour, it is expensive,
-or two corrections are equally defensible), and as a **report** when the file is a distributed
+a **question** only when the remedy is genuinely contested (it changes behaviour, or two
+corrections are equally defensible). **Cost is not a reason to ask** — the operator ruled on that
+framing on 2026-07-28, where the agent's own defence was "cost, not correctness". Surface it as a
+**report** when the file is a distributed
 default you may not edit (§ 11.b). Otherwise: fix it, say you fixed it, move on. Rot survives by
 being repeatedly noticed and never owned.
 
@@ -414,15 +416,23 @@ section above** (`## Session: YYYY-MM-DD - Task X.Y`, inserted after the `---` b
 
 | File | Sync With | Check |
 |------|-----------|-------|
-| `CLAUDE.md` | `.claude/commands/*.md` | Command count and list matches |
+| `CLAUDE.md` | `.claude/commands/` | Points at the directory — see below |
 | `README.md` | Actual playbooks, commands | Catalog and features accurate |
 
+> **`CLAUDE.md` must NOT carry a command count or an enumerated command list.** The canonical
+> shape of that section is **list-free prose pointing at `.claude/commands/`**, and it is defined
+> in exactly one place — `/start-session` Step 2, which *heals* an enumerated list away at the
+> start of the same session this step runs at the end of. This step used to assert the opposite
+> ("Command count and list matches", "Should match *Commands Available (N total)*"), so the two
+> defaults spent every session undoing each other. A hand-maintained list is the disease Step 2
+> cures; do not re-introduce it here. Reported upstream 2026-08-05 as framework defect 5.
+
 **When commands were added/removed this session:**
-1. Count files in `.claude/commands/`
-2. Compare to command list in CLAUDE.md
-3. If mismatch → update CLAUDE.md
-4. Check README.md references same commands
-5. If mismatch → update README.md
+1. Confirm `CLAUDE.md`'s commands section still points at the directory rather than listing it —
+   if a list or a count has crept back in, remove it (that is Step 2's canonical shape, not a
+   competing one defined here)
+2. Check README.md references the commands that actually exist
+3. If mismatch → update README.md
 
 **When new features/playbooks added:**
 1. Check README.md Playbook Catalog
@@ -430,25 +440,28 @@ section above** (`## Session: YYYY-MM-DD - Task X.Y`, inserted after the `---` b
 
 **Verification command:**
 ```bash
-# Count actual commands
+# What is actually there. A DISPLAY of live state — never a number CLAUDE.md must be synced to.
 ls -1 .claude/commands/*.md | wc -l
-
-# Should match "Commands Available (N total)" in CLAUDE.md
 ```
 
 ### 7. Update Project Documentation (If Registered)
 
-**Project-specific documents to review and update each session:**
+**The registry is PROJECT-OWNED and lives outside this file.** This step used to hold the list
+itself and told you to *"Commit this command file with the addition"* — an edit the header eleven
+lines above forbids, which `distribute-defaults.sh` classifies `divergent` (exit 3, **nothing
+delivered to any project on the host**), and which makes `/start-session` Step 0.7 report
+`DRIFTED` in every session thereafter. So the correct agent declined, the registry stayed empty in
+**27 of 27 projects for seven months** — including one with 781 documents under `docs/` — and the
+step became a no-op nobody noticed. Reported upstream 2026-08-05 as framework defect 1.
 
-<!--
-INSTRUCTIONS: When a project establishes docs/, add each document path here.
-Remove this comment block and add entries like:
+Registration goes in **`.claude/local-overlays/update-progress.md`**, the sanctioned
+project-owned mechanism (6 projects already use it for other steps), as a splice block:
 
-- `docs/ARCHITECTURE.md` - Update when: infrastructure changes
-- `docs/API.md` - Update when: endpoints added/modified
--->
-
-_No documents registered yet. Add paths here as project docs are created._
+```markdown
+<!-- splice-after: "**The registry is PROJECT-OWNED and lives outside this file.** This step used to hold the list" -->
+- `docs/ARCHITECTURE.md` — update when: infrastructure changes
+- `docs/API.md` — update when: endpoints added/modified
+```
 
 **For each registered document:**
 1. Read current content
@@ -456,10 +469,22 @@ _No documents registered yet. Add paths here as project docs are created._
 3. If yes: update relevant section, add date
 4. If no: skip
 
-**When adding new docs to project:**
+**With no registry — which is the normal case — sweep by diff instead of skipping.**
+A project that registered nothing still has documentation that this session may have falsified:
+
+```bash
+# Only what THIS session actually changed, so the sweep is bounded by the work, not by the tree.
+git diff --name-only HEAD~1 2>/dev/null | head -50
+```
+Then: for each **canonical surface** (`README.md`, `CLAUDE.md`, `docs/**` outside `_archive/`)
+that describes something in that diff, bring it into line — the same *found it, then fix it*
+rule as Step 2b. Do not open documents the session did not touch the subject of.
+
+**When adding a new document to the project:**
 1. Create the document
-2. Add its path to this section with "Update when" trigger
-3. Commit this command file with the addition
+2. If it needs a per-session review trigger, add it to `.claude/local-overlays/update-progress.md`
+3. **Never edit this file to register it.** It is a distributed default; the next distribution
+   overwrites your edit and the drift check flags the project until a human adjudicates it.
 
 ### 8. Maintain Project-Specific Skills
 
