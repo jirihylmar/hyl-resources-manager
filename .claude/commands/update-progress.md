@@ -32,6 +32,11 @@ Update progress tracking after completing tasks. Follow conservative rules stric
 - Update `current_task` pointer
 - Update `last_updated` timestamp
 - Update `last_session_summary`
+- **Set a phase's `status` — but ONLY as the reconciliation in Step 3b, never as a free edit.**
+  This entry exists because its absence made Step 3a unreachable: 3a is triggered by a phase's
+  status flipping to `complete`, and nothing was permitted to flip it. Measured on one host as an
+  **83-day lie** in the single source of truth — a phase sat `in_progress` with all 17 of its
+  tasks complete since 2026-05-13, and future sessions kept re-reading it as live work.
 
 ### NEVER Do:
 - ❌ Remove tasks (mark as `superseded` instead)
@@ -289,6 +294,47 @@ session_notes. Two consecutive skips make the slice MANDATORY at the next sessio
   }
 }
 ```
+
+### 3b. Reconcile every phase's status against its own tasks (before 3a, every session)
+
+A phase's status is a **derived** fact. Nothing in a session updates it, so it drifts silently in
+both directions, and the drift is invisible precisely because the file still parses and every task
+row is correct.
+
+Run this after the task updates above, over **every** phase, not only the current one:
+
+```bash
+python3 - <<'PY'
+import json
+d = json.load(open("progress.json"))
+DONE = ("complete","completed","superseded","done","closed","dropped","cancelled","canceled",
+        "resolved","obsolete","abandoned")
+ph = d.get("phases") or {}
+items = ph.items() if isinstance(ph, dict) else enumerate(ph)
+for key, p in items:
+    if not isinstance(p, dict): continue
+    tasks = p.get("tasks") or []
+    tasks = tasks.values() if isinstance(tasks, dict) else tasks
+    tasks = [t for t in tasks if isinstance(t, dict)]
+    if not tasks: continue
+    st = str(p.get("status") or "").strip().lower()
+    open_n = sum(1 for t in tasks if str(t.get("status") or "").strip().lower() not in DONE)
+    if open_n == 0 and st not in DONE:
+        print(f"READY-TO-CLOSE  {key}: all {len(tasks)} tasks terminal, phase says '{st}'")
+    elif open_n and st in DONE:
+        print(f"CONTRADICTION   {key}: phase says '{st}' but {open_n} task(s) are open")
+PY
+```
+
+**The two findings are not symmetric, and treating them alike is the trap:**
+
+| Finding | What to do |
+|---|---|
+| `READY-TO-CLOSE` | **Set the phase to `complete` and run Step 3a.** Every task is terminal, so 3a's disposition gate has nothing to decide. This is the flip 3a was always waiting for. |
+| `CONTRADICTION` | **Report it. Do not auto-reopen.** A phase's *goal* may genuinely be met while a child task is stale or superseded-in-fact — that judgement is not derivable from the task list. Surface it in the Step 12 report and let the operator rule. `/open-work` already renders it with a `⚠ phase says …` marker. |
+
+**Why the reconciliation runs at close and not at start.** The session that finished the last task
+is the one that knows whether the phase's goal is met; the next session inherits only the file.
 
 ### 3a. Phase-Close Hygiene (runs whenever a phase's status flips to `complete`)
 
@@ -594,7 +640,7 @@ push_ff() {  # $1=dir, $2=label; commit BEFORE calling
   if git -C "$1" push --quiet 2>/dev/null; then
     echo "OK   $2: pushed to origin (commits published; NOT built or deployed)"
   else
-    echo "SKIP $2: non-fast-forward — DO NOT force, DO NOT 'git pull'/merge to make it succeed; commit is safe locally; resolve with /syndicate-refresh-remote, then re-push"
+    echo "SKIP $2: non-fast-forward — DO NOT force, DO NOT 'git pull'/merge to make it succeed; commit is safe locally; resolve per /start-session § 0a (runs on ANY host), then re-push"
   fi
 }
 push_ff "." orchestration
@@ -999,7 +1045,7 @@ Total: 8/20 tasks complete (40%)
 | Repo | Pushed to origin? | Notes |
 |------|-------------------|-------|
 | orchestration | yes (FF) | commits published; not built/deployed |
-| backend | SKIPPED (non-FF) | diverged — committed locally, resolve via /syndicate-refresh-remote then re-push |
+| backend | SKIPPED (non-FF) | diverged — committed locally, resolve per /start-session § 0a then re-push |
 
 "Pushed to origin" means the commits reached the shared origin and other machines can now FF-pull them. The pushes above updated origin only — no CI ran, nothing was built, and no live system changed. A build/deploy is a SEPARATE step, claimed only if you ran it and verified it (state it explicitly, or say "no build/deploy was run").
 
@@ -1007,7 +1053,7 @@ Total: 8/20 tasks complete (40%)
 - Task 2.4: [name] (repo: [repo])
 
 ### Action Required (only if something could not be published, or a deploy is expected)
-- Diverged repos: resolve with /syndicate-refresh-remote, then re-push. (Your commit is safe locally.)
+- Diverged repos: resolve per /start-session § 0a (runs on ANY host), then re-push. (Your commit is safe locally.)
 - Offline / local-only repos: re-push when origin is reachable / after adding an origin.
 - Deploy expected but not run: run the deploy command and verify it separately — pushing did not perform it.
 - Spooled extractions: the inbox was unreachable; files are safe in `~/.syndicate-knowledge-spool/` and will flush on the next session that reaches it, or run `/syndicate-refresh-remote`. Nothing is lost — but nothing is curated either until they land.

@@ -181,7 +181,7 @@ When you meet a fifth, it is still this rule.
 
 **Why this is a different axis from Multi-Agent Discipline above.** That section governs many agents sharing ONE checkout. This step governs the SAME repo checked out in multiple LOCATIONS — local WSL, the remote dev box (synced via `/syndicate-refresh-remote`, configured by a per-machine host config in `~/.syndicate-remote-secrets/`), and occasionally-online offline machines — all sharing ONE origin. A commit pushed from any location lands in origin; a checkout that has not pulled is now stale. Surgical Edits cannot save you if the whole file you are editing is three commits behind origin.
 
-**Policy — identical to `/distribute-defaults`: fast-forward only, skip + report, never force.** Never merge, never rebase, never reset, never `--force`. Any repo that cannot fast-forward (dirty tree, diverged, detached HEAD, no upstream, or origin unreachable/offline) is left untouched and reported; resolve divergence with `/syndicate-refresh-remote`. If the repo carrying your task cannot fast-forward, STOP and surface it in the Step 9 report before doing the task — working a stale/diverged checkout risks an unpushable divergence.
+**Policy — identical to `/distribute-defaults`: fast-forward only, skip + report, never force.** Never merge, never reset, never `--force` **in this step**. Any repo that cannot fast-forward (dirty tree, diverged, detached HEAD, no upstream, or origin unreachable/offline) is left untouched and reported; resolve divergence per **§ 0a below**, which runs on any host. If the repo carrying your task cannot fast-forward, STOP and surface it in the Step 9 report before doing the task — working a stale/diverged checkout risks an unpushable divergence.
 
 For the orchestration repo and each present sub-repo, fetch then fast-forward only:
 
@@ -191,11 +191,11 @@ sync_ff() {  # $1=dir ('.' for orchestration), $2=label
   git -C "$1" rev-parse --abbrev-ref --symbolic-full-name @{u} >/dev/null 2>&1 \
     || { echo "SKIP $2: no upstream (local-only) — nothing to pull"; return; }
   [ -z "$(git -C "$1" status --porcelain)" ] \
-    || { echo "SKIP $2: working tree dirty — commit/stash or use /syndicate-refresh-remote first"; return; }
+    || { echo "SKIP $2: working tree dirty — commit it, or leave it and skip this repo (see § 0a)"; return; }
   if git -C "$1" merge-base --is-ancestor HEAD @{u} 2>/dev/null; then
     git -C "$1" merge --ff-only @{u} && echo "OK   $2: fast-forwarded to origin-latest"
   else
-    echo "SKIP $2: diverged / non-fast-forward — DO NOT force; resolve with /syndicate-refresh-remote"
+    echo "SKIP $2: diverged / non-fast-forward — DO NOT force; resolve per § 0a below (runs on ANY host)"
   fi
 }
 sync_ff "." orchestration
@@ -208,6 +208,54 @@ done
 A brand-new Phase-0 project whose orchestration repo has no upstream yet is local-only — that is normal; `no upstream` means nothing to pull, so proceed. Carry each repo's sync result into the Step 9 "Session Ready" report.
 
 **Why the sub-repo list is discovered, not hardcoded.** This loop used to read `for dir in infrastructure backend frontend testing` — a fixed list that silently matched **nothing** in any project whose sub-repos are named otherwise (`mcp-docker-playbook`'s are `mcp-infrastructure`, `mcp-connectors`, `mcp-solutions`, `mcp-audit`). Because each iteration is guarded by `[ -d "$dir/.git" ]`, a non-matching name produced **no error and no output** — the step reported success having synced zero sub-repos, and multi-location drift accumulated unseen. Discovery by glob is ground truth for the thing this loop actually asks ("which sub-repos are *present*?"), needs no parser, and cannot drift. `progress.json` `git_repos` remains the **declarative registry** (Step 8 reports status into it); a future refinement could cross-check the two and warn on a declared-but-absent repo. With no subdirectories the glob is a safe no-op.
+
+### 0a. Resolving a divergence — this procedure runs on EVERY host
+
+Both this file and `/update-progress` used to answer a non-fast-forward with one remedy:
+*"resolve with `/syndicate-refresh-remote`"*. **That command is local-only by policy** — it is the
+workstation's tool for syncing *to* the box — so on the box, the framework's only stated remedy
+resolved to nothing, while forbidding the two moves that would have worked. And the box is the
+machine that diverges **most**: concurrent sessions, a continuous stream of incoming commits on the
+same branch. Found by being hit (2026-08-05: a box session at ahead 2 / behind 2 with **zero file
+overlap** — no conflict of any kind — and no legal move).
+
+```bash
+git fetch --quiet
+U=$(git rev-parse --abbrev-ref --symbolic-full-name @{u}) || echo "no upstream — local-only repo"
+git rev-list --left-right --count "$U"...HEAD    # -> "<behind>  <ahead>"
+```
+
+> **`@{u}`, never `origin/HEAD`.** `origin/HEAD` is a convenience ref that many clones simply do
+> not have — measured on a real project in this estate, where `git rev-parse origin/HEAD` fails and
+> every command built on it fails with it. The tracked upstream is the branch this checkout is
+> actually measured against, and it exists wherever a push has ever been possible.
+
+| State | Move |
+|---|---|
+| behind only | fast-forward: `git merge --ff-only "$U"` |
+| ahead only | `git push` |
+| **diverged** | test for overlap first — the next block |
+
+```bash
+# Do the two sides touch any of the same files? Nothing else decides whether a rebase is safe.
+comm -12 <(git diff --name-only HEAD..."$U" | sort) \
+         <(git diff --name-only "$U"...HEAD | sort)
+```
+
+- **No output — the sides are disjoint.** A rebase cannot conflict, because there is no file for it
+  to conflict over. `git pull --rebase` then `git push`. This is the common case on a shared box and
+  it is not "improvising": it is the one move whose safety you have just *measured*.
+- **Any output — the sides overlap.** STOP. Do not rebase, do not merge, do not force. Name the
+  overlapping files in the report and leave the commit where it is; it is safe locally and nothing
+  is lost. Resolving it is a content decision, and content decisions are the operator's.
+
+**Never resolve a divergence in a checkout holding someone else's uncommitted work.** If
+`git status --porcelain` shows changes you did not make this session, leave the repo alone entirely
+and report it — a rebase would stash or refuse, and a stash of another agent's work is a deletion
+with extra steps.
+
+> On the authority host, `/syndicate-refresh-remote` remains available as an interactive helper for
+> the same job. It is a convenience there, **not** the remedy, and it is not available anywhere else.
 
 ### 0.5. Ensure the Commit Guard Is Armed (idempotent; never creates files)
 
