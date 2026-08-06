@@ -1019,6 +1019,52 @@ spooled`. A backlog that nobody reports is a backlog nobody clears.
 (A backlog is independent of whether this session learned anything. "Nothing extracted" must never
 hide "3 extractions still undelivered" — that is how a waiting room quietly becomes a destination.)
 
+### Documentation swept (Step 7) — an empty section here means the step did not run
+
+**Measured 2026-08-06, and this block exists because of it.** Reminders to update README /
+CLAUDE.md / docs appear in **130 prompts across 38 projects** and rise **6x** across a session
+(0.3% of prompts in the first quarter to 1.8% in the last) — while general corrections stay flat
+at ~11%. So this is not the rules fading; it is one step being skipped, and the reason it survived
+seven months of being skipped in 27 of 27 projects is that **skipping it produced nothing to see.**
+Steps whose omission is visible — the commit, the push, this report — are not skipped. So it gets
+an artifact.
+
+```bash
+git diff --name-only HEAD~1 2>/dev/null | head -50     # what this session actually changed
+```
+
+| Files this session changed | Canonical surfaces checked | Brought into line |
+|---|---|---|
+| N | `README.md`, `CLAUDE.md`, `docs/…` — or the explicit words *none: nothing this session touched their subject* | the files you edited, or *none needed* |
+
+**A new document that no canonical surface points at is not shipped, it is buried.** If this
+session created a doc, the row must show where it is now referenced from.
+
+### Completed without evidence (Step 2) — an empty section means every completion carried one
+
+```bash
+python3 - <<'PY'
+import json
+d = json.load(open("progress.json"))
+ph = d.get("phases") or {}
+for key, p in (ph.items() if isinstance(ph, dict) else enumerate(ph)):
+    if not isinstance(p, dict): continue
+    ts = p.get("tasks") or []
+    for t in (ts.values() if isinstance(ts, dict) else ts):
+        if not isinstance(t, dict): continue
+        if str(t.get("status") or "").lower() not in ("complete", "completed"): continue
+        if t.get("completed_at") != "TODAY": continue          # <- this session's date
+        if not str(t.get("verify_result") or "").strip():
+            print(f"NO EVIDENCE  {t.get('id')}  {str(t.get('name'))[:60]}")
+PY
+```
+
+Rule 6 (*"Verify Against Real Data Before Completion"*) has existed in prose for months and is
+violated at a flat rate; **53.3% of terminal tasks estate-wide (1,538 of 2,884) carry no
+`verify_result` at all**, five projects at 100%. Prose did not move that number because nothing
+ever printed it. This section prints it, for **this session's** completions only — the ones you
+can still fix.
+
 ### Open Work (rendered mechanically — run it, do not compose it)
 
 {{OPEN_WORK_TABLES}}
