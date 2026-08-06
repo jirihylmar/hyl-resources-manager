@@ -60,8 +60,20 @@ exactly as they stand.
   and the next central run appends a second copy. The text may legitimately be replaced in place
   under the same task id if the central rule is corrected.
 - **To decline** a given check, list its probe name (or `*`) in `.claude/estate-align.skip`, one
-  per line. It must exist **before** delivery — once a notice is committed here, `progress-check`
-  blocks removing the task. A refusal is reported as REFUSED and is never overridden.
+  per line. A refusal is reported as REFUSED and is never overridden.
+  - **Before delivery** — stops the notice arriving at all. Only possible for a probe you have
+    already met.
+  - **After delivery**, which is the normal case and used to be described as impossible: you
+    cannot know a new probe's name until its notice arrives. So decline in two steps — add the
+    probe name to the skip file (that stops every future run), and mark the delivered task
+    **`superseded`** with the reason. Do **not** delete the task and do **not** strip its
+    `estate_notice` key: `progress-check` blocks the first and, since 2026-08-06, the second.
+    Superseding is the framework's own way to close work you are not doing, and it keeps the
+    marker that makes re-notification a no-op.
+
+  *Reported by a receiving project 2026-08-06: the previous wording said the skip file "must exist
+  before delivery", which made declining structurally impossible for any genuinely new probe. The
+  mechanism always allowed the two-step path; only the sentence forbade it.*
 
 ### When Task Scope Changed During Work:
 ```json
@@ -599,6 +611,15 @@ done
 ### 10. Commit and Push Your Work (every repo you changed this session)
 
 Commit and **FF-push only the work YOU did this session — the repos and files you changed for your task, and nothing else.** This is Axis B (cross-checkout publication): other machines (the box, offline computers) only see your work once it reaches the shared origin, so leaving a repo you changed committed-but-unpushed is exactly the stale-checkout trap that `/start-session` Step 0 then has to skip on the next machine. It is distinct from the same-checkout Multi-Agent Discipline above.
+
+**Commit on the branch you are already on. Do not create one.** This step commits by named paths
+and fast-forward-pushes; it has never created a branch and, until 2026-08-06, never said not to —
+so a generic agent-harness default ("start a feature branch") filled the silence, and a receiving
+project reported exactly that outcome. A new branch here strands the work: `/start-session` Step 0
+fast-forwards the *tracked* branch, `/distribute-defaults` reads and writes the branch each project
+tracks, and neither follows you onto a side branch. If a change genuinely warrants a branch and a
+review, that is the operator's call, made explicitly — never a harness default filling a gap in
+this file.
 
 **Two firewalls govern this step:**
 1. **Scope to your own work.** Commit by named paths only — never `git add -A` / `git add .` — and only in repos you actually modified for your task. Do not sweep unrelated dirty files, and do not commit or push a repo you did not touch. This is the Multi-Agent Discipline rule "commit only files related to your task," applied across repos. _This rule is now also enforced **mechanically**: a pre-commit guard (`.claude/hooks/pre-commit`, armed by `/start-session` Step 0.5) blocks any commit that newly adds a build artifact or an oversized blob, regardless of how you staged — so `git add -A` cannot silently sweep a build zip into history. The prose here is the intent; the hook is the backstop. If the guard blocks a legitimately-intended large file, allowlist it in `.claude/hooks/artifact-guard.allow` rather than reaching for `--no-verify`._

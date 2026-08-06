@@ -92,6 +92,22 @@ def iter_tasks(phase_obj):
             yield t
 
 
+def notice_markers(doc):
+    """{(phase_key, task_id): estate_notice value or None} for every task that has an id.
+
+    None means "the task is present and carries no marker", which is how a STRIPPED key is told
+    apart from a task that never had one: the comparison is against the same key in the base
+    version, so only a marker that existed and then vanished can fail.
+    """
+    out = {}
+    for pk, po in iter_phases(doc):
+        for t in iter_tasks(po):
+            if t.get("id") is None:
+                continue
+            out[(pk, str(t["id"]))] = t.get("estate_notice")
+    return out
+
+
 def task_ids(doc):
     """{phase_key: [task ids]} — the append-only invariant operates on these."""
     out = {}
@@ -162,6 +178,28 @@ def check(text, base_text=None):
                 for i in missing:
                     fail.append(f"phase {pk}: task {i!r} existed in the previous commit and is "
                                 f"now GONE. Tasks are append-only — mark it superseded instead.")
+
+            # 4a. An `estate_notice` marker may not be stripped from a task that kept its id.
+            #     Reported by a receiving project 2026-08-06: /update-progress lists "remove the
+            #     estate_notice key" under NEVER Do and states the consequence — the next central
+            #     run appends a SECOND copy — while nothing checked it. Deleting the task was
+            #     blocked by the id rule above; deleting just the key passed silently, which is
+            #     the same data loss with a smaller blast radius and no alarm. This is inside
+            #     this checker's charter: it destroys a marker other machinery depends on, and it
+            #     is decided by comparing two committed versions — not by enforcing a schema.
+            bn, an = notice_markers(base_doc), notice_markers(doc)
+            for key, marker in bn.items():
+                # BOTH halves are required and the first draft had only the second, which failed
+                # every task that never carried a marker at all — caught by the control case in
+                # the test, not by reading. Only a marker that EXISTED and then vanished is a loss.
+                if marker is not None and key in an and an[key] is None:
+                    pk, tid = key
+                    fail.append(f"phase {pk}: task {tid!r} carried estate_notice "
+                                f"{marker!r} in the previous commit and no longer does. That key "
+                                f"is what makes re-notification a no-op — strip it and the next "
+                                f"central run appends a second copy of the same notice. To "
+                                f"DECLINE the check, mark the task superseded and add the probe "
+                                f"name to .claude/estate-align.skip; do not remove the key.")
 
     # Warnings: real but not destructive.
     for pk, po in iter_phases(doc):
