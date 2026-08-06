@@ -272,7 +272,15 @@ else:
     for f in drifted: print(f"DEFAULTS DRIFT: DRIFTED  {f} — bytes differ from what the engine delivered")
     for f in missing: print(f"DEFAULTS DRIFT: MISSING  {f} — manifest says delivered; file is absent")
 PY
+DRIFT_RC=$?
+[ "$DRIFT_RC" -eq 0 ] || echo "DEFAULTS DRIFT: DID-NOT-RUN (interpreter exit $DRIFT_RC) — drift is UNKNOWN for this project, which is NOT ok"
 ```
+
+> **The exit status is tested, and it is the same rule this file applies to every other verdict:
+> a check that could not run must say so.** Every verdict above is *printed by the interpreter*,
+> so an interpreter that dies prints nothing — and nothing is exactly what a clean project prints.
+> Reported upstream 2026-08-05 as framework defect 4, which named only Step 2.5; Steps 0.7 and 2.7
+> carry the same shape and were found by looking for it rather than by being told.
 
 **Why this cannot cry wolf on legitimate variance:** the manifest records *delivered* bytes, so a
 file customized via `.claude/local-overlays/` hash-matches (its baked result IS what was delivered),
@@ -559,9 +567,13 @@ else:
         elif age > 30: print(f"HYGIENE: due ({age:.0f}d since {lp}) — schedule /repo-hygiene this session or next")
         else:          print(f"HYGIENE: ok (last pass {lp}, {age:.0f}d ago)")
 PY
+HYG_RC=$?
+[ "$HYG_RC" -eq 0 ] || echo "HYGIENE: DID-NOT-RUN (interpreter exit $HYG_RC) — the clock is UNKNOWN, which is NOT ok"
 ```
 
 - `ok` → proceed; omit from the handoff.
+- **`DID-NOT-RUN`** → surface it in the handoff. An unknown clock is not a healthy clock; treat it
+  as `never recorded` until a run succeeds (framework defect 4's shape, at its second site).
 - `due` → surface a "⚠ Repo hygiene due" line in the Session Handoff (informational).
 - `content baseline missing` → surface it in the handoff: the clock is fine but the per-session
   content-consolidation rotation (`/update-progress` Step 2b) has no baseline yet — recommend a
