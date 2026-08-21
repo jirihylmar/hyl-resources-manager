@@ -401,9 +401,12 @@ Then the sweeps:
    remainder to `docs/_archive/`. Never blind-move, never delete. A reference check after the move
    must show zero new broken refs.
 2. **progress.json weight check.** If `progress.json` exceeds ~300KB, run the compaction step from
-   `/repo-hygiene` (Step 4: dry-run, review, `--apply`) — verbose bodies of long-completed phases
-   move to committed sidecars under `docs/_archive/progress-sidecars/`; tasks/ids/status/verify
-   never change (append-only preserved).
+   `/repo-hygiene` (Step 4: dry-run, read the account, `--apply`) — verbose bodies of *finished*
+   tasks in *finished* phases outside the newest two move to committed sidecars under
+   `docs/_archive/progress-sidecars/`; tasks, ids, status, names, `verify`, `estate_notice`, the
+   dependency keys and the timestamps never change (append-only preserved). Read the run's
+   **NOT moved** account before concluding compaction did not help — weight sitting in phases that
+   are still open is weight it must not touch, and it prints that number.
 3. **Index touch-up.** Any index the closed phase's files appeared in (CLAUDE.md pointers, skill
    picker, knowledge base) is reconciled to the post-sweep paths.
 4. **Content check on what the phase leaves canonical.** Any doc/skill the phase promotes to (or

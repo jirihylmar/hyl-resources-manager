@@ -336,61 +336,472 @@ see `/update-progress`); this step is the periodic backstop that catches what sl
 progress.json is append-only for tasks — compaction **relocates verbose prose, never removes
 tasks or fields that identify/verify them**. Bodies move to committed sidecars with full fidelity.
 
+**What moves is decided by a deny-list, and that is the load-bearing choice.** The rule used to
+name the three fields it *would* move (`findings`, `verify_result`, `notes`), so a project keeping
+its bulk under any other key got no relief. Reported 2026-08-21 by app-brm-manufacturing-products:
+a clean run moved 210 bodies from 52 completed phases and took 3,679,053 B to 3,450,961 — 6.2%.
+Measured by *running* both rules across 24 local projects: the old one freed **exactly zero bytes
+in 15 of them**. Projects invent keys weekly (one carries 556 distinct task keys): what may be
+moved is unknowable, what must be **kept** is finite. So the script names the keep-set, and every
+other long body in a *finished* task moves. On the same file that takes 3,679,053 B to 2,630,804 —
+**28.5%**, against the old rule's 6.2%.
+
+**Three guards exist because widening the field set makes their absence dangerous, not because
+they are tidy:** a task still open inside a finished phase keeps its prose (open-work renders it —
+`open_work.py` bucket 3); a task carrying `estate_notice` is never touched at all (the probe that
+delivered it compares every field, so archiving one re-proposes the notice forever); and a task
+whose id is missing or duplicated within its phase is refused rather than merged into a colliding
+sidecar slot.
+
 ```bash
-python3 - <<'PY'
-import json, re, shutil, sys, time
+cat > /tmp/progress-compact.py <<'PY'
+import json, re, subprocess, sys, time
 from pathlib import Path
 APPLY = "--apply" in sys.argv
-KEEP_RECENT = 2           # newest N completed phases keep verbose bodies
+KEEP_RECENT = 2           # newest N finished phases keep verbose bodies
 MIN_LEN = 300             # only bodies longer than this move
+
+# A phase or a task is FINISHED under many spellings. This rule used to recognise exactly one
+# ("complete"), so phases spelt superseded/closed/done were never compactable at all. This is the
+# SAME tuple the open-work renderer uses (skills/open-work/open_work.py DONE) and it must stay the
+# same: open-work renders every task IT considers non-terminal, so a spelling terminal here but open
+# there would archive the prose out of a row still being shown. The test compares the two sets.
+DONE = ("complete", "completed", "superseded", "done", "closed", "dropped",
+        "cancelled", "canceled", "resolved", "obsolete", "abandoned")
+
+# NEVER moved. Two grounds, both checkable: machinery reads it (start-session EXECUTES `verify`;
+# open-work renders id/name/status/size and the dependency keys; progress-check compares
+# estate_notice; this script's own selection reads the timestamps), or it identifies the task.
+# Everything else that is long prose in a FINISHED task moves.
+#
+# This is a DENY-list, and that IS the fix. The old rule named the three fields it WOULD move
+# ("findings", "verify_result", "notes"), so a project keeping its bulk under any other key got no
+# relief — and projects invent keys weekly (one estate project's tasks carry 556 distinct keys).
+# What must be KEPT is finite and knowable; what may be moved is not.
+KEEP_TASK = {"id", "name", "title", "status", "size", "priority", "type", "phase", "owner",
+             "repo", "branch", "verify", "estate_notice",
+             "depends_on", "depends_on_shipped", "blocked_by", "blocked_on", "blocks",
+             "superseded_by", "parent_task", "subtasks", "decomposed_into",
+             "added_by", "added_at", "added_on", "started_at", "completed_at", "superseded_at",
+             "deferred_at", "verified_at", "filed_at", "approval_gate", "approval_status"}
+KEEP_PHASE = {"id", "key", "name", "title", "status", "goal", "description", "objective",
+              "tasks", "started_at", "completed_at", "superseded_at", "depends_on"}
+SIDE_PHASE_KEY = "__phase__"          # sidecar slot for the phase's own bodies
+DATE_FIELDS = ("completed_at", "closed_at", "superseded_at", "finished_at")
+PTR = re.compile(r"^archived: docs/_archive/progress-sidecars/(.+)\.json#(.+)$")
+
 root = Path.cwd(); pj = root/"progress.json"
-data = json.loads(pj.read_text())
+raw_before = pj.read_bytes()
+size_before = len(raw_before)
+trailing_nl = raw_before.endswith(b"\n")
+
+def no_dupes(pairs):
+    out = {}
+    for k, v in pairs:
+        if k in out: raise ValueError("duplicate key %r" % k)
+        out[k] = v
+    return out
+try:
+    text = raw_before.decode("utf-8")
+except UnicodeDecodeError as e:
+    sys.exit("NOT EXAMINED: progress.json is not valid UTF-8 (%s). Nothing was read." % e)
+try:
+    data = json.loads(text, object_pairs_hook=no_dupes)
+except json.JSONDecodeError as e:
+    sys.exit("NOT EXAMINED: progress.json does not parse (%s). Compaction cannot run on a file it "
+             "cannot read — repair it first (docs/progress-json-repair-instruction.md)." % e)
+except ValueError as e:
+    sys.exit("REFUSING: progress.json has a %s. Rewriting the file would silently drop one of the "
+             "two values — the exact corruption the progress-check skill is armed to catch, and it "
+             "would be laundered before the commit hook ever sees it. Repair it first." % e)
+
 phases = data.get("phases", {})
 # `phases` is a DICT in some projects ({"phase_2": {...}}) and a LIST in others ([{...}, ...]).
-# Normalise to (key, phase) pairs before touching it. This block used to call phases.items()
-# unconditionally, so on a list-shaped progress.json the whole compaction died with
-# AttributeError the first time it was due — and because the weight gate (D) fires only above
-# 300KB, it could sit latent for the entire life of a repo and then fail exactly when it was
-# finally needed. Same failure class as the last_pass-is-null crash in check A. Do not "simplify".
+# This block used to call phases.items() unconditionally, so on a list-shaped progress.json the
+# whole compaction died with AttributeError the first time it was due — and because the weight gate
+# (D) fires only above 300KB it could sit latent for a repo's whole life and fail exactly when it
+# was finally needed. Same failure class as the last_pass-is-null crash in check A. Do not simplify.
+#
+# The two branches derive the sidecar name DIFFERENTLY and must keep doing so: projects already hold
+# sidecars written under the old scheme (a raw dict key; a lowercased slug for a list), and changing
+# either would split a phase's archive across two filenames.
 if isinstance(phases, dict):
-    items = list(phases.items())
+    items = [(str(k), v) for k, v in phases.items()]
 elif isinstance(phases, list):
-    # No keys in a list — synthesise a stable sidecar filename from id/name, falling back to index.
-    items = [(re.sub(r"[^a-z0-9._-]+", "-", str(p.get("id") or p.get("name") or f"phase_{i}").lower()).strip("-") or f"phase_{i}", p)
+    items = [(re.sub(r"[^a-z0-9._-]+", "-", str(p.get("id") or p.get("name") or "phase_%d" % i).lower()).strip("-")
+              or "phase_%d" % i, p)
              for i, p in enumerate(phases) if isinstance(p, dict)]
 else:
     items = []
-completed = [(k,v) for k,v in items if isinstance(v,dict) and v.get("status")=="complete" and v.get("completed_at")]
-completed.sort(key=lambda kv: str(kv[1].get("completed_at")))
-targets = completed[:-KEEP_RECENT] if len(completed)>KEEP_RECENT else []
-side_dir = root/"docs/_archive/progress-sidecars"; moved = 0
-for key, ph in targets:
-    side_p = side_dir/f"{key}.json"
-    side = json.loads(side_p.read_text()) if side_p.exists() else {}
-    tasks = ph.get("tasks"); tasks = tasks if isinstance(tasks,list) else list(tasks.values()) if isinstance(tasks,dict) else []
-    for t in tasks:
-        if not isinstance(t,dict): continue
-        for fld in ("findings","verify_result","notes"):
-            val = t.get(fld)
-            if isinstance(val,str) and len(val)>MIN_LEN and not val.startswith("archived:"):
-                side.setdefault(t.get("id","?"),{})[fld] = val
-                if APPLY: t[fld] = f"archived: docs/_archive/progress-sidecars/{key}.json#{t.get('id','?')}"
-                moved += 1
-    if APPLY and side:
-        side_dir.mkdir(parents=True, exist_ok=True)
-        side_p.write_text(json.dumps(side, indent=1, ensure_ascii=False))
-if APPLY and moved:
-    bak = root/f"docs/_archive/progress-sidecars/progress.json.pre-compact.{time.strftime('%Y%m%d')}"
-    bak.parent.mkdir(parents=True, exist_ok=True); shutil.copy2(pj, bak)
-    pj.write_text(json.dumps(data, indent=2, ensure_ascii=False))
-    json.loads(pj.read_text())  # re-parse gate
-print(f"{'APPLIED' if APPLY else 'DRY-RUN'}: {moved} verbose bodies from {len(targets)} old completed phases -> sidecars")
+if not items:
+    sys.exit("NOT EXAMINED: progress.json carries no readable `phases` (found %s). That is not the "
+             "same as a file with nothing to compact, and it is not reported as one."
+             % type(phases).__name__)
+
+# ONE safety sanitiser over both shapes — IDENTITY for an ordinary key, so existing sidecars keep
+# their names — then a uniqueness pass. The dict branch used to pass the raw key straight into a
+# filename: a key containing `/` or `..` wrote the archived body outside docs/_archive/ entirely,
+# where "commit the sidecars" would never stage it. And any two keys that sanitise alike shared ONE
+# sidecar, each overwriting the other's bodies. The counter here must advance on the BASE, not on
+# the name it just produced — the obvious version of this loop collapses N collisions onto 2 names.
+stems, used = {}, set()
+for idx, (key, ph) in enumerate(items):
+    base = re.sub(r"[^A-Za-z0-9._-]+", "-", key).strip("-.") or "phase"
+    stem, n = base, 1
+    while stem in used:
+        stem = "%s-%d" % (base, n); n += 1
+    used.add(stem); stems[idx] = stem
+assert len(used) == len(items), "sidecar stems are not unique"
+
+def tasks_of(ph):
+    t = ph.get("tasks")
+    return t if isinstance(t, list) else list(t.values()) if isinstance(t, dict) else []
+def term(o):  return str((o or {}).get("status") or "").strip().lower() in DONE
+def blob(v):  return len(json.dumps(v, ensure_ascii=False))
+def ident(v):
+    # current_task / current_phase is a bare string in most projects and an OBJECT in some. Reading
+    # it with str() turned the object into "{'id': '5.2', ...}", which matches no task id, so the
+    # guard that protects live work was silently inert exactly where the pointer was richest.
+    if isinstance(v, dict):
+        for f in ("id", "key", "task", "name"):
+            if isinstance(v.get(f), (str, int, float)): return str(v[f])
+        return ""
+    return str(v) if isinstance(v, (str, int, float)) else ""
+def eff_date(ph, ts):
+    for f in DATE_FIELDS:
+        v = ph.get(f)
+        if isinstance(v, str) and v.strip(): return v.strip()
+    # A phase whose own stamp was never written is still dateable from its tasks: 19 phases in one
+    # estate project were marked complete with NO completed_at and were exempt FOREVER under the old
+    # selection — the single largest bucket it could not see. A phase with no date ANYWHERE sorts
+    # first and is therefore compacted on the first run: it cannot be shown to be recent.
+    ds = [t[f] for t in ts if isinstance(t, dict) for f in DATE_FIELDS
+          if isinstance(t.get(f), str) and t[f].strip()]
+    return max(ds) if ds else ""
+
+cur_phase = ident(data.get("current_phase"))
+cur_task  = ident(data.get("current_task"))
+
+finished, skipped = [], []           # skipped carries a REASON and bytes — never silently
+for idx, (key, ph) in enumerate(items):
+    if not isinstance(ph, dict): skipped.append((key, "not a dict", 0)); continue
+    ts = tasks_of(ph)
+    ids = {str(t.get("id")) for t in ts if isinstance(t, dict) and t.get("id") is not None}
+    if not term(ph):
+        skipped.append((key, "status=%r — not finished" % ph.get("status"), blob(ph))); continue
+    if cur_phase and cur_phase in (key, str(ph.get("id")), str(ph.get("name"))) or (cur_task and cur_task in ids):
+        skipped.append((key, "holds current_phase/current_task", blob(ph))); continue
+    finished.append((eff_date(ph, ts), idx, key, ph))
+finished.sort(key=lambda r: r[0])
+targets = finished[:-KEEP_RECENT] if len(finished) > KEEP_RECENT else []
+for d, i, k, ph in (finished[-KEEP_RECENT:] if len(finished) > KEEP_RECENT else finished):
+    skipped.append((k, "newest %d finished (KEEP_RECENT)" % KEEP_RECENT, blob(ph)))
+
+side_dir = root/"docs/_archive/progress-sidecars"
+def ignored(p):
+    try:
+        return subprocess.run(["git", "check-ignore", "-q", p], capture_output=True).returncode == 0
+    except FileNotFoundError:
+        return False        # no git here; the gitignore question cannot be answered, not "no"
+if APPLY and (ignored("docs/_archive/progress-sidecars")
+              or ignored("docs/_archive/progress-sidecars/probe.json")):
+    sys.exit("REFUSING: docs/_archive/progress-sidecars (or the .json files in it) is gitignored. "
+             "The sidecars would not be committed and every pointer left behind would dangle. "
+             "Un-ignore it first.")
+
+moved = 0
+declined = {"non-string body": [0, 0], "task carries an estate_notice": [0, 0],
+            "task has no id": [0, 0], "duplicate task id": [0, 0],
+            "task still open inside a finished phase": [0, 0], "protected field": [0, 0],
+            "sidecar unreadable — phase skipped": [0, 0],
+            "sidecar slot already holds a different body": [0, 0]}
+def decline(kind, n, b): declined[kind][0] += n; declined[kind][1] += b
+per_phase, wrote, side_cache = [], [], {}
+
+for _d, idx, key, ph in targets:
+    stem = stems[idx]
+    side_p = side_dir/("%s.json" % stem)
+    if side_dir.resolve() not in side_p.resolve().parents:
+        print("!! %s: sidecar path would escape the archive directory — phase skipped" % key); continue
+    try:
+        side = json.loads(side_p.read_text()) if side_p.exists() else {}
+        if not isinstance(side, dict) or any(not isinstance(v, dict) for v in side.values()):
+            raise ValueError("not a mapping of task id -> {field: body}")
+    except Exception as e:
+        # One interrupted run used to leave a half-written sidecar that aborted EVERY future run
+        # with a bare traceback. Name it, skip that phase, carry on.
+        print("!! %s: existing sidecar %s is unusable (%s) — phase skipped" % (key, side_p.name, e))
+        decline("sidecar unreadable — phase skipped", 1, blob(ph)); continue
+    side_cache[stem] = (side_p, side)
+    ts = tasks_of(ph)
+    seen, dup = set(), set()
+    for t in ts:
+        if isinstance(t, dict) and t.get("id") is not None:
+            i = str(t["id"]); dup.add(i) if i in seen else seen.add(i)
+    ph_moved = ph_freed = 0
+    def relocate(holder, fld, val, side_key, keepset):
+        global moved, ph_moved, ph_freed
+        if fld in keepset or fld == "tasks": return
+        if not isinstance(val, str):
+            if blob(val) > MIN_LEN: decline("non-string body", 1, blob(val))
+            return
+        if len(val) <= MIN_LEN or val.startswith("archived:"): return
+        ptr = "archived: docs/_archive/progress-sidecars/%s.json#%s" % (stem, side_key)
+        if len(val) <= len(ptr) + 50: return          # a pointer that costs more than it saves
+        prior = side.get(side_key, {}).get(fld)
+        if prior is not None and prior != val:
+            # The slot already holds a DIFFERENT body — from an earlier run, or from another phase
+            # that shares this stem. Writing would destroy it, and the pointer would then name text
+            # that was never here. Refuse, and say which slot.
+            print("!! %s#%s[%s]: sidecar slot already holds different text — left in place" % (stem, side_key, fld))
+            decline("sidecar slot already holds a different body", 1, len(val)); return
+        side.setdefault(side_key, {})[fld] = val
+        holder[fld] = ptr                      # mutate always; only the WRITE is gated on --apply
+        wrote.append((stem, side_key, fld, val, ptr))
+        moved += 1; ph_moved += 1; ph_freed += len(val) - len(ptr)
+    for t in ts:
+        if not isinstance(t, dict): continue
+        if t.get("estate_notice") is not None:
+            # A central notice is compared FIELD BY FIELD by the probe that delivered it
+            # (scripts/probes/notify-mcp-transport.probe). Archiving its `detail` would make the
+            # delivered notice differ from the one the survey would send, so the estate would
+            # re-propose it forever. Notices are never compacted, whatever their status.
+            decline("task carries an estate_notice", 1, blob(t)); continue
+        if t.get("id") is None:
+            decline("task has no id", 1, blob(t)); continue      # no pointer could resolve to it
+        tid = str(t["id"])
+        if tid in dup:
+            # Two tasks sharing an id used to funnel into one sidecar slot: the first body was
+            # overwritten and BOTH pointers named the survivor. Silent, unrecoverable, and it got
+            # worse with every field added to the old list. Refuse, and say so.
+            decline("duplicate task id", 1, blob(t)); continue
+        if tid == SIDE_PHASE_KEY:
+            decline("duplicate task id", 1, blob(t)); continue    # would collide with the phase slot
+        if not term(t) or tid == cur_task:
+            # open-work renders EVERY non-terminal task, including ones inside a phase marked
+            # complete (open_work.py bucket 3 — itself a fix for 28 invisible rows across 7
+            # projects). Archiving their prose empties rows the operator is still being shown.
+            decline("task still open inside a finished phase", 1, blob(t)); continue
+        for fld, val in list(t.items()):
+            if fld in KEEP_TASK and isinstance(val, str) and len(val) > MIN_LEN:
+                decline("protected field", 1, len(val))
+            relocate(t, fld, val, tid, KEEP_TASK)
+    for fld, val in list(ph.items()):
+        if fld in KEEP_PHASE and isinstance(val, str) and len(val) > MIN_LEN:
+            decline("protected field", 1, len(val))
+        relocate(ph, fld, val, SIDE_PHASE_KEY, KEEP_PHASE)
+    if ph_moved: per_phase.append((key, ph_moved, ph_freed))
+
+# The mutation above always happens, so the predicted size is the REAL size — the old dry-run
+# subtracted body lengths and ignored re-serialisation, and a re-serialise at indent=2 GROWS nine
+# of the estate's files. A predicted shrink that is really a growth is the one number the operator
+# uses to decide whether to apply.
+out = json.dumps(data, indent=2, ensure_ascii=False) + ("\n" if trailing_nl else "")
+size_after = len(out.encode("utf-8"))
+
+def account():
+    head = ("APPLIED" if moved else "NOTHING TO MOVE") if APPLY else "DRY-RUN"
+    print("%s: %d bodies from %d of %d phases %s sidecars, %s -> %s bytes" % (
+          head, moved, len(targets), len(items),
+          "->" if (APPLY and moved) else "would move ->", format(size_before, ","),
+          format(size_after if moved else size_before, ",")))
+    for k, n, b in sorted(per_phase, key=lambda r: -r[2])[:10]:
+        print("   %4d bodies  ~%9s B  %s" % (n, format(b, ","), k))
+    print("NOT moved — this is the rest of the file, and none of it is dropped silently:")
+    for kind, (n, b) in sorted(declined.items(), key=lambda kv: -kv[1][1]):
+        if n: print("   %5d x %-42s ~%10s B" % (n, kind, format(b, ",")))
+    agg = {}
+    for k, r, b in skipped:
+        a = agg.setdefault(r, [0, 0]); a[0] += 1; a[1] += b
+    for r, (n, b) in sorted(agg.items(), key=lambda kv: -kv[1][1]):
+        print("   %5d phases %-42s ~%10s B" % (n, r, format(b, ",")))
+
+if not APPLY:
+    account()
+    # Pointers already in the file, from earlier runs: are they still resolvable? Nothing else in
+    # the estate ever checks, so a sidecar deleted or renamed away leaves progress.json pointing at
+    # text that is gone, and every run before this one reported clean.
+    dangling = []
+    def scan(o):
+        if isinstance(o, dict):
+            for k, v in o.items():
+                if isinstance(v, str):
+                    m = PTR.match(v)
+                    if m and not any(w[4] == v and w[2] == k for w in wrote):
+                        try:
+                            json.loads((side_dir/(m.group(1)+".json")).read_text())[m.group(2)][k]
+                        except Exception: dangling.append(v)
+                else: scan(v)
+        elif isinstance(o, list):
+            for v in o: scan(v)
+    scan(data)
+    if dangling:
+        print("!! %d pointer(s) already in this file do NOT resolve — the archived text is gone or "
+              "the sidecar was renamed. First: %s" % (len(dangling), dangling[0]))
+    raise SystemExit(0)
+
+if not moved:
+    account()
+    print("Nothing to move — progress.json was not rewritten. (A run that moves nothing must not "
+          "reformat the file: that is a diff with no compaction in it.)")
+    raise SystemExit(0)
+
+# --- APPLY --------------------------------------------------------------------------------------
+# The pre-state: git holds it whenever progress.json is tracked and unmodified, which is the normal
+# case at a hygiene pass. A file copy is taken ONLY when git cannot recover it — the old rule copied
+# every time, into the very directory the instructions tell the operator to commit, so compaction
+# added far more tracked bytes than it removed and the ignore rule to prevent that existed in one
+# repo only. Rollback below never depends on the copy: the original bytes are held in memory.
+def git_has_prestate():
+    try:
+        t = subprocess.run(["git", "ls-files", "--error-unmatch", "progress.json"], capture_output=True)
+        if t.returncode != 0: return None
+        d = subprocess.run(["git", "diff", "--quiet", "HEAD", "--", "progress.json"], capture_output=True)
+        if d.returncode != 0: return None
+        r = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True)
+        return r.stdout.strip() or None
+    except FileNotFoundError:
+        return None
+ref = git_has_prestate()
+bak = None
+if ref is None:
+    # Never overwrite an existing copy. A date-only name let a second run the same day replace the
+    # true pre-state with an already-compacted one; a stamp to the second still collides when two
+    # runs land in the same second, which is exactly what a scripted apply-after-dry-run does.
+    stamp = time.strftime("%Y%m%dT%H%M%S")
+    bak = side_dir/("progress.json.pre-compact.%s" % stamp); n = 1
+    while bak.exists():
+        bak = side_dir/("progress.json.pre-compact.%s-%d" % (stamp, n)); n += 1
+    bak.parent.mkdir(parents=True, exist_ok=True)
+    bak.write_bytes(raw_before)
+
+for stem, (side_p, side) in side_cache.items():
+    if not side: continue
+    side_dir.mkdir(parents=True, exist_ok=True)
+    tmp = side_p.with_name(side_p.name + ".tmp")       # atomic: an interrupted write used to poison
+    tmp.write_text(json.dumps(side, indent=1, ensure_ascii=False))   # every later run
+    tmp.replace(side_p)
+
+def restore(why):
+    pj.write_bytes(raw_before)
+    sys.exit("ROLLED BACK — %s. progress.json restored byte for byte%s; the sidecars written this "
+             "run are still on disk and safe to inspect. Nothing was lost."
+             % (why, "" if bak is None else " (a copy is also at %s)" % bak.name))
+try:
+    tmp = pj.with_name("progress.json.tmp")           # atomic: write_text truncates in place, so an
+    tmp.write_text(out)                               # ENOSPC/OOM mid-write left the file that holds
+    tmp.replace(pj)                                   # the project's whole state truncated
+except Exception as e:
+    restore("writing progress.json failed (%s)" % e)
+
+# THE GATE. The old one re-parsed the bytes json.dumps had just produced — it could only fail if the
+# JSON library were broken. This one re-reads FROM DISK and checks the three things that actually
+# went wrong: a task lost, a pointer that is not the one intended, and a pointer that resolves to
+# something other than the body that was taken.
+def census(pairs):
+    out = []
+    for k, ph in pairs:
+        if not isinstance(ph, dict): continue
+        for t in tasks_of(ph):
+            if isinstance(t, dict): out.append((k, str(t.get("id"))))
+    return sorted(out)
+census_before = census([(k, json.loads(raw_before.decode())["phases"][k]) for k, _ in items]) \
+                if isinstance(phases, dict) else None
+try:
+    back = json.loads(pj.read_text(), object_pairs_hook=no_dupes)
+except Exception as e:
+    restore("the rewritten progress.json does not read back (%s)" % e)
+bp = back.get("phases", {})
+bi = [(str(k), v) for k, v in bp.items()] if isinstance(bp, dict) else \
+     [(str(i), p) for i, p in enumerate(bp) if isinstance(p, dict)]
+oi = [(str(k), v) for k, v in phases.items()] if isinstance(phases, dict) else \
+     [(str(i), p) for i, p in enumerate(json.loads(raw_before.decode()).get("phases", [])) if isinstance(p, dict)]
+if census(bi) != census(oi):
+    lost = sorted(set(census(oi)) - set(census(bi)))
+    restore("task ids changed: %d lost, first %s" % (len(lost), lost[:3]))
+found = set()
+def collect(o):
+    if isinstance(o, dict):
+        for k, v in o.items():
+            if isinstance(v, str):
+                m = PTR.match(v)
+                if m: found.add((m.group(1), m.group(2), k, v))
+            else: collect(v)
+    elif isinstance(o, list):
+        for v in o: collect(v)
+collect(back)
+for stem, side_key, fld, original, ptr in wrote:
+    if (stem, side_key, fld, ptr) not in found:
+        restore("the pointer for %s#%s[%s] is not in the written file" % (stem, side_key, fld))
+    try:
+        body = json.loads((side_dir/("%s.json" % stem)).read_text())[side_key][fld]
+    except Exception:
+        restore("pointer %s.json#%s[%s] does not resolve" % (stem, side_key, fld))
+    if body != original:
+        restore("pointer %s.json#%s[%s] resolves to text that is not the body it replaced — a "
+                "sidecar slot was overwritten" % (stem, side_key, fld))
+
+account()
+if bak is None:
+    print("PRE-STATE: progress.json was tracked and clean, so git holds it — recover with "
+          "`git show %s:progress.json`. No copy was written; committed pre-compact copies cost the "
+          "repo more than compaction saves it." % ref)
+else:
+    print("PRE-STATE: git could not recover it (untracked or already modified), so a copy is at "
+          "docs/_archive/progress-sidecars/%s. It is a LOCAL rollback, not part of the trail — "
+          "delete it once this compaction is committed." % bak.name)
 PY
+python3 /tmp/progress-compact.py            # dry-run: reads, writes nothing, prints the account
 ```
 
-Run **dry-run first**, review the count, then re-run with `--apply`. Rules: tasks/ids/status/names/
-`verify` never change; only completed phases older than the newest `KEEP_RECENT` are touched; a
-pre-compact backup + the sidecars are committed together with the shrunk progress.json.
+**Read the account, not the headline** — and it is a separate fence for that reason: pasting one
+block must not apply anything. The run prints what it moved *and* what it did not, with bytes and a
+named reason for each bucket: protected fields, non-string bodies, open tasks, notices, phases that
+are not finished, phases the newest-`KEEP_RECENT` window protects. A shrink that disappoints is
+usually not a narrow field list — in the reporting project 983,214 B (28% of the phases blob) sat in
+phases that were still open, which compaction must never touch, and another 799,421 B in finished
+phases the old selection could not recognise. Both read straight off the account; their absence is
+what produced the first, wrong diagnosis. The dry-run's predicted size is the real serialised size,
+not an estimate, because a re-serialisation alone changes nine of the estate's files. Then, and only
+then:
+
+```bash
+python3 /tmp/progress-compact.py --apply
+```
+
+**Rules.** Tasks, ids, status, names, `verify`, `estate_notice`, the dependency keys and the
+timestamps never change. Only *finished* phases outside the newest `KEEP_RECENT` are touched —
+"finished" being the same terminal-status set the open-work renderer uses, not the single spelling
+`complete`; a phase whose own `completed_at` was never written is dated from its tasks, and one with
+no date anywhere sorts oldest and is compacted on the first run, because nothing about it can be
+shown to be recent. The phase holding `current_phase`/`current_task` is skipped whatever its status
+says, including when that pointer is an object rather than a string. The sidecars are committed
+together with the shrunk progress.json.
+
+**Resolving an archived body.** The pointer names a task slot, not a field, so this prints every
+body archived for that task and you read the one you want:
+`python3 -c "import json,sys;p=sys.argv[1].split('#');d=json.load(open(p[0].split(' ',1)[1]))[p[1]];[print('---',k,'---',v,sep='\n') for k,v in d.items()]" "archived: docs/_archive/progress-sidecars/phase_12.json#12.3"`
+
+**No pre-compact copy is written when git already holds the pre-state** — tracked and unmodified is
+the normal case at a hygiene pass, and the run tells you the sha to recover from. A copy is written
+only when git cannot help (untracked, or already modified), stamped to the second, and it is a local
+rollback to delete once the compaction is committed. The old rule copied every time, into the very
+directory the instructions tell you to commit: one project had accumulated 7.1 MB of tracked copies
+against 0.56 MB of real sidecars, so compaction was making the repo larger than it made it smaller.
+
+**It refuses rather than guesses.** Duplicate JSON keys abort the run (rewriting would silently drop
+one — the corruption `progress-check` is armed to catch, laundered before the commit hook could see
+it); a gitignored sidecar directory *or* a pattern that ignores the sidecar files aborts it (the
+pointers would dangle); a file with no readable `phases` is reported NOT EXAMINED, never as a clean
+zero; a run that moves nothing does not rewrite the file at all. progress.json is written to a temp
+file and renamed, so a failed write cannot truncate the file that holds the project's whole state.
+After the rename the gate re-reads **from disk** and checks that every task id survived, that every
+pointer it intended is actually in the file, and that each one resolves to the exact body it
+replaced — rolling back byte-for-byte from memory if any of that fails. A dry-run additionally
+reports pointers *already* in the file that no longer resolve, which nothing else in the estate
+checks. `scripts/test-progress-compaction.sh` in syndicate-playbooks-examples runs this exact block,
+extracted from this file, against fixtures.
+
 
 ## Step 5 — Record + close
 
