@@ -15,6 +15,7 @@
 #   consult-posture.sh snapshot <real> <clone> <state>   # step 1
 #   consult-posture.sh verify   <real> <clone> <state>   # step 4 — exit 2 and a list on any drift
 #   consult-posture.sh append   <real> <record> <state>  # steps 5–7 — exit 2 if the log is not old+record
+#   consult-posture.sh refresh  <real> <state>           # re-baseline the REAL tree alone (see below)
 #   consult-posture.sh header                            # the log's first lines, for a project that has none yet
 #   consult-posture.sh destroy  <clone>
 #
@@ -33,6 +34,10 @@
 # excluding it made it the one path where a reviewer write would hide.
 # What this still cannot do: a reviewer under bypass can rewrite the state dir and re-run
 # `snapshot` itself. That is defence, not proof; the caller records the snapshot digest.
+# Why `refresh` exists (task 31.1): when the skill ITSELF undoes a write it just made — a publication
+# that could not be committed, rolled back out of the log — the step-4 baseline no longer describes
+# the tree. Refreshing it is the skill re-baselining its own reversal, never the clone's; `refresh`
+# deliberately does not touch clone.fp, so a reviewer write during that window is still caught.
 set -u
 LOG=consult_notes.md
 die(){ echo "consult-posture: $*" >&2; exit 2; }
@@ -62,8 +67,14 @@ case "${1:-}" in
     [ -z "$(git -C "$CL" remote)" ] || die "clone still has a remote"
     echo "clone $CL at $(git -C "$CL" rev-parse --short HEAD), no remotes, hooksPath=$(git -C "$CL" config core.hooksPath)";;
   snapshot)
-    REAL="${2:?}"; CL="${3:?}"; ST="${4:?state dir}"; mkdir -p "$ST"
-    fp_tree "$REAL" > "$ST/real.fp"; fp_tree "$CL" > "$ST/clone.fp"
+    # Every write is checked. Without this the two redirects could fail (a full state filesystem, a
+    # read-only $ST) and the trailing echo would still supply exit 0 — consult.sh would proceed with
+    # a missing or truncated baseline, believing posture protection was armed. Same swallowed-write
+    # defect as `refresh` had; found by the reviewer in cycle 20260825-170103-b72153b, which noticed
+    # the fix had been applied to one of the two and not the other.
+    REAL="${2:?}"; CL="${3:?}"; ST="${4:?state dir}"; mkdir -p "$ST" || die "cannot create $ST"
+    fp_tree "$REAL" > "$ST/real.fp"  || die "cannot write $ST/real.fp"
+    fp_tree "$CL"   > "$ST/clone.fp" || die "cannot write $ST/clone.fp"
     echo "snapshot: real $(wc -l < "$ST/real.fp") lines, clone $(wc -l < "$ST/clone.fp") lines, digest $(cat "$ST/real.fp" "$ST/clone.fp" | sha256sum | cut -c1-16)";;
   verify)
     REAL="${2:?}"; CL="${3:?}"; ST="${4:?}"; bad=0
@@ -97,7 +108,15 @@ case "${1:-}" in
       cp --remove-destination "$OLD" "$L"; die "a write other than the log landed during append — rolled back:$(diff "$ST/real.fp.new" "$ST/real.fp" | grep -E '^[<>]' | grep -vF "$LOG" | grep -vE "^[<>] LOG " | head -10 | tr '\n' ';')"; fi
     mv "$ST/real.fp.new" "$ST/real.fp"   # the skill's write is now the baseline; nothing else moved
     echo "append: +$(( $(wc -c < "$REC") + 1 )) bytes (newline + record) to $LOG, verified old+record";;
+  refresh)
+    # the REAL tree only, and only after the skill reversed its own write — see the header.
+    REAL="${2:?}"; ST="${3:?state dir}"; mkdir -p "$ST"
+    # the redirect is checked: without `|| die` a failed write leaves the OLD baseline in place and
+    # the case arm still exits 0 through the following echo — a swallowed status in the one helper
+    # whose whole job is to make a baseline true
+    fp_tree "$REAL" > "$ST/real.fp" || die "cannot write $ST/real.fp"
+    echo "refresh: real $(wc -l < "$ST/real.fp") lines";;
   destroy)
     CL="${2:?}"; [ -d "$CL/.git" ] || die "not a git dir: $CL"; chmod -R u+rwX "$CL" 2>/dev/null; rm -rf "$CL" || die "destroy failed: $CL"; [ -e "$CL" ] && die "still present: $CL"; echo "destroyed $CL";;
-  *) sed -n '2,30p' "$0"; exit 1;;
+  *) sed -n '2,39p' "$0"; exit 1;;
 esac

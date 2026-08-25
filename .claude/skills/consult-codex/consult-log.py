@@ -5,6 +5,15 @@
     consult-log.py ledger   <claims-file> <ledger-file>   exit 0 if the ledger covers exactly the
                                                           claim ids with a valid status each; prints
                                                           "examined=N unavailable=N skipped=N"
+    consult-log.py check-outcome <value>                  exit 0 if <value> is one of the five
+                                                          outcomes THIS file accepts; 2 with the
+                                                          validator's own message otherwise
+
+There is one definition of a valid outcome and it lives here (task 31.3). `consult.sh close` used a
+shell `case` that accepted `not-reviewed:*` — any suffix, including a lower-case one the validator
+rejects — so a typo passed the runner, survived the recheck, and was refused only by the grammar at
+append time, after the reviewer had been re-run. `check-outcome` shares EXACT and NR with `validate`,
+so the runner and the log cannot disagree about what an outcome is.
 
 Grammar (one file per project, append-only):
   # Consult log                              — header, once, first
@@ -21,7 +30,26 @@ no opening record is a violation. A blank record heading is a violation.
 import re, sys
 
 EXACT = {"agreed-applied", "agreed-proposed", "agreed-nothing", "disputed"}
-NR = re.compile(r"^not-reviewed:[A-Z][A-Za-z0-9:-]*$")   # NO-TARGET, NOT-REVIEWABLE:progress-json, …
+# An UPPER-CASE code, optionally followed by ':' and a sub-code that MAY be lower case.
+# The first draft was `[A-Z][A-Za-z0-9:-]*`, which accepted `not-reviewed:Ffoo` while the diagnostic
+# promised an upper-case code (found by the reviewer, cycle 20260825-164306-1335b9f). The obvious
+# tightening to upper-case-only would have been wrong: three live codes are deliberately mixed —
+# NOT-REVIEWABLE:progress-json, :no-claude-dir, :codex-roots-present — an upper-case code with a
+# lower-case sub-code. So the colon is where the case rule changes.
+NR = re.compile(r"^not-reviewed:[A-Z][A-Z0-9-]*(:[A-Za-z0-9-]+)?$")
+
+
+def outcome_ok(val):
+    """The single predicate. Used by validate() on a written record and by check-outcome on an
+    argument, so the runner cannot accept an outcome the log would later refuse."""
+    return val in EXACT or bool(NR.match(val))
+
+
+def outcome_message(val):
+    return (f"outcome not one of the five (exact): '{val}' — "
+            f"expected one of {', '.join(sorted(EXACT))}, or "
+            f"not-reviewed:<UPPER-CASE-CODE>[:<sub-code>]")
+
 CYCLE = re.compile(r"^## cycle (\d{8}-\d{6}-[0-9a-f]{7,40}) — (\S.*)$")   # the runner writes 7; accept a longer sha if one ever slips in — a heading is not the place to lose a record
 REQ_CLOSE = ("- outcome:", "opening SHA:", "result SHA:", "procedure digest:", "rounds:", "- claims:")
 ROUND = re.compile(r"^### (?:Round (\d+) — reviewer|Author — round (\d+))")
@@ -79,7 +107,7 @@ def validate(path):
                 if req not in text: v.append(f"line {n}: closing record lacks '{req}'")
             oc = re.search(r"- outcome: `([^`]*)`", text)
             val = oc.group(1) if oc else ""
-            if not (val in EXACT or NR.match(val)): v.append(f"line {n}: outcome not one of the five (exact): '{val}'")
+            if not outcome_ok(val): v.append(f"line {n}: " + outcome_message(val))
         rm = ROUND.match(ln)
         if rm:
             if cur is None: v.append(f"line {n}: round entry outside a cycle")
@@ -126,4 +154,9 @@ if __name__ == "__main__":
         sys.exit(2 if viol else 0)
     if len(sys.argv) >= 4 and sys.argv[1] == "ledger":
         sys.exit(ledger(sys.argv[2], sys.argv[3]))
+    if len(sys.argv) >= 3 and sys.argv[1] == "check-outcome":
+        if outcome_ok(sys.argv[2]):
+            sys.exit(0)
+        print("consult-log:", outcome_message(sys.argv[2]), file=sys.stderr)
+        sys.exit(2)
     print(__doc__); sys.exit(1)

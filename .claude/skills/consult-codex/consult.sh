@@ -41,25 +41,137 @@ refuse(){
   # But a refusal must never leave state behind or vanish silently: if the record itself cannot be
   # appended (measured 2026-08-25: a cycle id the grammar rejected), say so LOUDLY, clean up, still exit 3.
   local recorded=1
+  pub_begin || pub_abort "the refusal $code"
   [ -f "$ST/opened" ] || { printf '## cycle %s — %s\n\n**Opening record**\n- entry: B · procedure digest: %s\n- preflight: REFUSED %s%s\n' \
       "$(st cycle)" "${T:-(no target)}" "$(procedure_digest)" "$code" "${why:+ — $why}" > "$SCR/open.md"; ( append "$SCR/open.md" ) || recorded=0; }
   printf '**Closing record**\n- outcome: `not-reviewed:%s`\n- opening SHA: %s · result SHA: -\n- procedure digest: %s · rounds: 0 of %s\n- claims: examined 0 · unavailable 0 · skipped 0\n- nothing written to progress.json by this cycle\n' \
       "$code" "$(git -C "$REAL" rev-parse HEAD)" "$(procedure_digest)" "$CAP" > "$SCR/close.md"
-  if [ $recorded -eq 1 ] && ( append "$SCR/close.md" ); then publish_log "consult: refused $code"
-  else say "REFUSAL-NOT-RECORDED — the refusal $code could not be written to consult_notes.md (see the grammar message above). This is a defect in the skill, not in the project: report it through /syndicate-consult-loop."; fi
+  if [ $recorded -eq 1 ] && ( append "$SCR/close.md" ); then
+    publish_or_rollback "consult: refused $code" "the refusal $code was written to consult_notes.md but could not be COMMITTED, so it has been rolled back out of the log and out of the index. Nothing uncommitted is left behind and no record of this aborted cycle exists. The state dir and any clone are kept for diagnosis ($WORK). Fix the commit failure — a pre-commit hook, an unset git identity — and re-run the same 'open': the refusal will be recorded then."
+  else pub_rollback   # the opening record may already have landed; leaving it uncommitted is the
+                      # very thing task 31.1's invariant forbids, so the transaction is reversed here too
+    say "REFUSAL-NOT-RECORDED — the refusal $code could not be written to consult_notes.md (see the grammar message above), so the log has been left exactly as it was. This is a defect in the skill, not in the project: report it through /syndicate-consult-loop."; fi
   [ -d "$CL" ] && "$POSTURE" destroy "$CL" >/dev/null; rm -rf "$ST"; exit 3
+}
+# ---- the publication transaction (task 31.1) ----------------------------------------------------
+# publish_log's return code used to be discarded at BOTH call sites, so a commit that failed left an
+# uncommitted closing or refusal record sitting in the worktree while the runner destroyed the state
+# dir and the clone and reported success. That record could then never be published (its cycle's
+# state was gone), and it made the checkout dirty, so the project's NEXT cycle refused DIRTY-CHECKOUT.
+#
+# So publication is a transaction with a rollback. Two things must be snapshotted, and each is easy
+# to miss for its own reason:
+#   the LOG   — consult-posture.sh takes its own log.before PER APPEND, which cannot cover a refusal:
+#               a refusal appends TWICE (opening, then closing), so by the time publication fails,
+#               log.before describes the state after the FIRST append, not before the transaction.
+#   the INDEX — `git add consult_notes.md` runs before the failing commit, so restoring the worktree
+#               file alone would leave the record staged and the checkout dirty anyway.
+# 0 = a trustworthy pre-publication snapshot exists · 1 = it does NOT, so NOTHING may be published:
+# publishing without a snapshot means a failed commit could not be rolled back, which is the whole
+# guarantee. Every write is checked — the first draft assumed they could not fail and would arm
+# `pub.begun` regardless (found by the reviewer, cycle 20260825-170103-b72153b).
+pub_begin(){   # idempotent: refuse() calls it once and appends twice
+  [ -f "$ST/pub.begun" ] && return 0
+  mkdir -p "$ST" || { say "cannot create the state dir $ST"; return 1; }
+  if [ -f "$LOG" ]; then
+    cp --remove-destination "$LOG" "$ST/pub.log.before" || { say "cannot snapshot $LOG to $ST/pub.log.before"; return 1; }
+    printf 'present' > "$ST/pub.log.state" || { say "cannot write $ST/pub.log.state"; return 1; }
+  else
+    rm -f "$ST/pub.log.before"
+    printf 'absent' > "$ST/pub.log.state" || { say "cannot write $ST/pub.log.state"; return 1; }
+  fi
+  # an untracked log yields NO index entry, which is exactly the "remove it from the index" case
+  if ! git -C "$REAL" ls-files --stage -- consult_notes.md > "$ST/pub.index.before" 2>/dev/null; then
+    : > "$ST/pub.index.before" || { say "cannot write $ST/pub.index.before"; return 1; }
+  fi
+  printf '1' > "$ST/pub.begun" || { say "cannot write $ST/pub.begun"; return 1; }
+}
+pub_abort(){   # $1 = what was about to be written
+  say "PUBLICATION-ABORTED — the pre-publication snapshot could not be taken (see above), so $1 was NOT written to consult_notes.md. Without that snapshot a failed commit could not be rolled back, and publishing anyway is exactly the guarantee this transaction exists to give. Free space or fix permissions under $WORK, then re-run."
+  exit 2
+}
+pub_end(){ rm -f "$ST/pub.begun" "$ST/pub.log.state" "$ST/pub.log.before" "$ST/pub.index.before"; }
+# Returns 0 when the pre-publication state is verifiably back, 2 when it is NOT — and in that case
+# the snapshot is KEPT. The first draft of this function checked nothing, printed ROLLBACK-INCOMPLETE
+# as a message rather than a state, and then called pub_end, which unlinks pub.log.before: the only
+# surviving copy of the pre-publication bytes, deleted at the moment it is needed. A full disk — the
+# commit-failure case the design record itself names — is exactly what makes the restoring `cp` fail.
+# Found by the reviewer in cycle 20260825-164306-1335b9f: the same success-while-doing-nothing shape
+# that task 31.1 exists to remove, one level down, introduced by the fix for it.
+pub_rollback(){
+  local bad=""
+  if [ "$(cat "$ST/pub.log.state" 2>/dev/null)" = present ]; then
+    cp --remove-destination "$ST/pub.log.before" "$LOG" || bad="restoring the log failed"
+  else rm -f "$LOG" || bad="removing the log failed"; fi
+  if [ -s "$ST/pub.index.before" ]; then
+    local mode obj stage path
+    read -r mode obj stage path < "$ST/pub.index.before"   # "<mode> <sha> <stage>\t<path>"
+    git -C "$REAL" update-index --cacheinfo "$mode,$obj,consult_notes.md" 2>/dev/null || bad="${bad:+$bad; }restoring the index entry failed"
+    git -C "$REAL" update-index -q --refresh -- consult_notes.md 2>/dev/null || :   # stat-only; reports "modified" harmlessly
+  else
+    git -C "$REAL" update-index --force-remove -- consult_notes.md 2>/dev/null || bad="${bad:+$bad; }removing the index entry failed"
+  fi
+  # the two things that must be true, CHECKED and not assumed
+  git -C "$REAL" diff --cached --quiet -- consult_notes.md 2>/dev/null || bad="${bad:+$bad; }consult_notes.md is still STAGED"
+  if [ "$(cat "$ST/pub.log.state" 2>/dev/null)" = present ] && ! cmp -s "$ST/pub.log.before" "$LOG" 2>/dev/null; then
+    bad="${bad:+$bad; }consult_notes.md does not match its pre-publication bytes"
+  fi
+  if [ -n "$bad" ]; then
+    # Name only the remedy that EXISTS. When the thing that failed is the snapshot itself, telling
+    # the operator to copy from it is worse than saying nothing — the log's last good bytes are then
+    # in git, not in the state dir.
+    local remedy
+    if [ -f "$ST/pub.log.before" ]; then
+      remedy="cp $ST/pub.log.before $LOG"
+    elif [ -f "$ST/log.before" ]; then
+      remedy="the publication snapshot is gone (that copy is what failed). $ST/log.before holds the log as it stood before the LAST append, which is the right content after a close and one record short after a refusal:  cp $ST/log.before $LOG  — check it before trusting it"
+    else
+      remedy="neither snapshot survives, so the pre-publication bytes are not recoverable from the state dir. If consult_notes.md is committed, 'git -C $REAL restore --source=HEAD -- consult_notes.md' returns the last PUBLISHED log and loses only this cycle's unpublished records; if it is not, this cycle created the file and removing it is the clean state"
+    fi
+    say "ROLLBACK-INCOMPLETE — $bad. Whatever snapshot survives is KEPT, not deleted ($ST). Finish it by hand:  $remedy  && git -C $REAL restore --staged consult_notes.md  — and do not open another cycle in this project until 'git status' is clean."
+    return 2
+  fi
+  # only now: the skill reversed its OWN write, so the step-4 baseline may describe the tree as it is.
+  # Its failure is a ROLLBACK failure — refreshing is part of restoring the pre-publication state, and
+  # ignoring it here would delete the snapshot (pub_end) on a rollback that did not finish. Found by
+  # the recheck of cycle 20260825-164306-1335b9f, in the fix for the defect it had just named.
+  if [ -f "$ST/real.fp" ] && ! "$POSTURE" refresh "$REAL" "$ST" >/dev/null 2>&1; then
+    say "ROLLBACK-INCOMPLETE — the log and its index entry were restored, but the posture baseline could not be refreshed, so the next append would refuse on drift the skill itself caused. The snapshot is KEPT ($ST). Finish it by hand:  bash $POSTURE refresh $REAL $ST"
+    return 2
+  fi
+  pub_end
+}
+
+# One place decides what happened, so the two messages can never both be printed. The callers used to
+# announce "rolled back, nothing uncommitted is left behind" unconditionally — including after
+# pub_rollback had just reported that it could NOT restore. Recheck finding, same cycle.
+publish_or_rollback(){   # $1 = commit message · $2 = what to tell the operator on a COMPLETE rollback
+  publish_log "$1" && { pub_end; return 0; }
+  if pub_rollback; then say "PUBLICATION-FAILED — $2"
+  else say "PUBLICATION-FAILED, and the ROLLBACK DID NOT COMPLETE — see the ROLLBACK-INCOMPLETE line above. Records from this cycle may still be sitting in consult_notes.md or staged in the index; this checkout needs the hand-fix named there before any further cycle in this project."; fi
+  exit 2
 }
 publish_log(){  # scoped commit of the log alone, FF push; failure is recorded, not hidden
   ( cd "$REAL" && git add consult_notes.md && git -c commit.gpgsign=false commit -q -m "$1" -- consult_notes.md ) || { say "log commit failed"; return 1; }
-  if git -C "$REAL" remote get-url origin >/dev/null 2>&1; then
-    if git -C "$REAL" push -q origin HEAD 2>/dev/null; then say "log committed + pushed"
-    else  # a failed push is ambiguous (the commit may have landed) — never amend; add the marker as its OWN commit and retry once.
-          # If the retry fails too, the marker is committed locally and travels with the next successful push; it is not "visible on the remote".
-         say "LOG-COMMITTED-NOT-PUSHED"; echo "- publication: LOG-COMMITTED-NOT-PUSHED $(date -u +%FT%TZ)" > "$SCR/marker.md"; append "$SCR/marker.md"   # validated like every record
-         ( cd "$REAL" && git add consult_notes.md && git -c commit.gpgsign=false commit -q -m "consult: publication failed — marker" -- consult_notes.md )
-         git -C "$REAL" push -q origin HEAD 2>/dev/null && say "marker pushed on retry" || say "marker committed locally; will travel with the next push"
-    fi
-  else say "log committed (no origin)"; fi
+  git -C "$REAL" remote get-url origin >/dev/null 2>&1 || { say "log committed (no origin)"; return 0; }
+  git -C "$REAL" push -q origin HEAD 2>/dev/null && { say "log committed + pushed"; return 0; }
+  # A failed push is ambiguous (the commit may have landed) — never amend; add the marker as its OWN
+  # commit and retry the push once. A failed push is NOT rolled back: the commit landed, so the record
+  # exists and rolling back would delete it.
+  #
+  # The commit above changed .git, so the step-4 baseline no longer describes the tree and `append`
+  # would REFUSE with "real tree drifted since verify" before the marker could be written — the whole
+  # marker path was dead, and no fixture could see it because every fixture has no origin. Found by
+  # the reviewer, cycle 20260825-170103-b72153b. Re-baseline first: the skill made that change itself.
+  say "LOG-COMMITTED-NOT-PUSHED"
+  if [ -f "$ST/real.fp" ] && ! "$POSTURE" refresh "$REAL" "$ST" >/dev/null 2>&1; then
+    say "MARKER-NOT-RECORDED — the log is committed but NOT pushed, and the posture baseline could not be refreshed, so the marker could not be appended. Push by hand: git -C $REAL push origin HEAD"; return 0; fi
+  echo "- publication: LOG-COMMITTED-NOT-PUSHED $(date -u +%FT%TZ)" > "$SCR/marker.md"
+  ( append "$SCR/marker.md" ) || { say "MARKER-NOT-RECORDED — the log is committed but NOT pushed, and the marker itself could not be appended (see the grammar or posture message above). Push by hand: git -C $REAL push origin HEAD"; return 0; }
+  ( cd "$REAL" && git add consult_notes.md && git -c commit.gpgsign=false commit -q -m "consult: publication failed — marker" -- consult_notes.md ) \
+    || { say "MARKER-NOT-COMMITTED — the marker was appended to consult_notes.md but its own commit failed, so the checkout is left MODIFIED and the next cycle here will refuse DIRTY-CHECKOUT. Commit it by hand: git -C $REAL commit -m 'consult: publication failed — marker' -- consult_notes.md"; return 0; }
+  git -C "$REAL" push -q origin HEAD 2>/dev/null && say "marker pushed on retry" || say "marker committed locally; will travel with the next push"
+  return 0
 }
 
 case "${1:-}" in
@@ -69,8 +181,18 @@ open)
   put cycle "$(date -u +%Y%m%d-%H%M%S)-$(git -C "$REAL" rev-parse HEAD | cut -c1-7)"   # NOT --short: git widens it past 7 in a big repo (measured: 8 in app-brm-manufacturing-products) and the grammar is exact
   [ -n "$T" ] || refuse NO-TARGET "task:<id> | phase:<key> | file:<paths> | commit:<range>"
   command -v codex >/dev/null || refuse NO-CODEX "not on PATH (non-interactive ssh? bash -lc)"
-  codex login status 2>&1 | grep -q 'Logged in' || refuse NOT-LOGGED-IN
-  python3 -c "import tomllib,os;t=tomllib.load(open(os.path.expanduser('~/.codex/config.toml'),'rb'));assert t.get('project_doc_fallback_filenames')==['CLAUDE.md']" 2>/dev/null || refuse HOST-NOT-PREPARED "run: bash .claude/skills/consult-codex/prepare-host.sh --apply (once per machine)"
+  if ! codex login status 2>&1 | grep -q 'Logged in'; then
+    # A config Codex cannot LOAD makes every codex command fail, this one included — and
+    # NOT-LOGGED-IN would send the operator to re-authenticate, which cannot possibly help.
+    # Measured 2026-08-25 while testing the predicate: a key written directly under [projects]
+    # gives "invalid type: integer `1024`, expected struct ProjectConfig" and codex refuses to
+    # start at all. So ask the config first, and only say NOT-LOGGED-IN when the config is fine.
+    CFGMSG="$(bash "$SK/prepare-host.sh" --check-config 2>&1)" \
+      || refuse HOST-NOT-PREPARED "$CFGMSG — and codex itself could not start, which this explains: a config Codex cannot load fails every codex command. Fix the config, not the login: bash .claude/skills/consult-codex/prepare-host.sh --apply"
+    refuse NOT-LOGGED-IN
+  fi
+  # the host-config predicate has ONE definition, in prepare-host.sh; this calls it and quotes it.
+  CFGMSG="$(bash "$SK/prepare-host.sh" --check-config 2>&1)" || refuse HOST-NOT-PREPARED "$CFGMSG — run: bash .claude/skills/consult-codex/prepare-host.sh --apply (once per machine)"
   ENTRY="${CODEX_HOME:-$HOME/.codex}/skills/syndicate-consult-claude/SKILL.md"
   [ -f "$ENTRY" ] || refuse HOST-NOT-PREPARED "host entry $ENTRY absent — run prepare-host.sh --apply"
   grep -q "Expected procedure digest: \`$(procedure_digest)\`" "$ENTRY" || refuse PROCEDURE-DRIFT "host entry carries $(sed -n 's/.*Expected procedure digest: `\([0-9a-f]*\)`.*/\1/p' "$ENTRY" | head -1), this project's procedure is $(procedure_digest) — re-run prepare-host.sh --apply or /distribute-defaults"
@@ -89,7 +211,10 @@ open)
   { [ -e "$REAL/.codex" ] || [ -e "$REAL/.agents/skills" ]; } && refuse NOT-REVIEWABLE:codex-roots-present
   # AWS binding — by command, via codex-here's own rules; 3 = refusal, else aws or no-infra
   B="$("$HERE" --project "$REAL" --dry-run exec x 2>&1 >/dev/null)"; rc=$?
-  [ $rc -eq 3 ] && refuse "$(sed -n 's/codex-here: \([A-Z-]*\).*/\1/p' <<<"$B")" "$B"
+  # Every other refusal code is a literal; this one is EXTRACTED, and it lands in `not-reviewed:<CODE>`,
+  # which the grammar requires to be non-empty and upper-case. An extraction that matched nothing would
+  # produce `not-reviewed:` — a record the log refuses — making the refusal itself unrecordable.
+  [ $rc -eq 3 ] && { CODE="$(sed -n 's/codex-here: \([A-Z][A-Z0-9-]*\).*/\1/p' <<<"$B" | head -1)"; refuse "${CODE:-BINDING-REFUSED}" "$B"; }
   MODE="$(sed -n 's/.*mode=\([^ ]*\).*/\1/p' <<<"$B")"; put mode "$MODE"; put bind "$B"
   # claims from the target
   python3 - "$REAL" "$T" > "$ST/claims" 2> "$ST/claims.note" <<'PY' || refuse NOT-REVIEWABLE "target unreadable: $(tail -1 "$ST/claims.note" 2>/dev/null)"
@@ -192,7 +317,11 @@ respond)
 close)
   [ -f "$ST/opened" ] || { say "no open cycle"; exit 1; }
   O="${2:?outcome}"; SHA="${3:-}"
-  case "$O" in agreed-applied|agreed-proposed|agreed-nothing|disputed|not-reviewed:*) ;; *) say "outcome must be one of the five"; exit 1;; esac
+  # ONE definition of a valid outcome, and it is the log grammar's (task 31.3). The shell `case`
+  # that stood here accepted any not-reviewed:<anything> — including a lower-case suffix the grammar
+  # refuses — so a typo passed the runner, ran the recheck (a full Codex round for agreed-applied),
+  # and was rejected only by the validator at append time, after the cost had been paid.
+  python3 "$SK/consult-log.py" check-outcome "$O" || exit 1
   LC="$(st ledger_counts)"; EX=$(sed -n 's/.*examined=\([0-9]*\).*/\1/p' <<<"$LC"); UN=$(sed -n 's/.*unavailable=\([0-9]*\).*/\1/p' <<<"$LC"); SKP=$(sed -n 's/.*skipped=\([0-9]*\).*/\1/p' <<<"$LC"); EX=${EX:-0}; UN=${UN:-0}; SKP=${SKP:-0}
   # no completed reviewer round at all forbids every "agreed" outcome — a cycle cannot agree with nobody
   if [ ! -f "$ST/reviewed" ]; then case "$O" in agreed-*) say "no successful reviewer round — recording not-reviewed:NO-REVIEW instead of $O"; O="not-reviewed:NO-REVIEW";; esac; fi
@@ -228,7 +357,9 @@ close)
   { printf '**Closing record**\n- outcome: `%s`\n- opening SHA: %s · reviewed SHA: %s · result SHA: %s · author commits since opening: %s\n' "$O" "$(st sha)" "$(git -C "$CL" rev-parse HEAD 2>/dev/null || st sha)" "${SHA:--}" "$AUTHOR_COMMITS"
     printf -- '- procedure digest: %s · rounds: %s of %s · mode: %s · identity: %s\n- claims: examined %s · unavailable %s · skipped %s\n- recheck: %s\n- nothing written to progress.json by this cycle\n' "$(procedure_digest)" "$(st round)" "$CAP" "$(st mode)" "$(st identity)" "$EX" "$UN" "$SKP" "$RECHECK"
     [ "$O" = agreed-applied ] && [ -s "$SCR/recheck.out" ] && { printf '\n> '; tr '\n' ' ' < "$SCR/recheck.out" | cut -c1-600; printf '\n'; }; } > "$SCR/close.md"
-  append "$SCR/close.md"; publish_log "consult: close cycle $(st cycle) — $O"
+  pub_begin || pub_abort "the closing record"
+  append "$SCR/close.md"
+  publish_or_rollback "consult: close cycle $(st cycle) — $O" "the closing record could not be COMMITTED, so it has been rolled back out of consult_notes.md and out of the index. THE CYCLE IS STILL OPEN: its state dir and its clone are kept, and nothing uncommitted is left in the checkout. Fix the commit failure — a pre-commit hook, an unset git identity — and re-run the same close command."
   "$POSTURE" destroy "$CL" >/dev/null; rm -rf "$ST"; say "closed $O";;
 # =====================================================================================
 status) for k in cycle target mode sync sha identity declared round thread; do printf '%-9s %s\n' "$k" "$(st $k)"; done; [ -f "$ST/claims" ] && echo "claims    $(grep -c . "$ST/claims")";;

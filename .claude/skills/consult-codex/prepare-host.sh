@@ -3,8 +3,11 @@
 # syndicate-connect: the material arrives by /distribute-defaults; the settings change happens
 # HERE, run by this host's own session, proven before and after.
 #
-#   bash .claude/skills/consult-codex/prepare-host.sh            # check only, exit 1 on any failure
-#   bash .claude/skills/consult-codex/prepare-host.sh --apply    # write what is missing, then check
+#   bash .claude/skills/consult-codex/prepare-host.sh                 # check only, exit 1 on any failure
+#   bash .claude/skills/consult-codex/prepare-host.sh --apply         # write what is missing, then check
+#   bash .claude/skills/consult-codex/prepare-host.sh --check-config  # the host-config predicate ALONE:
+#                                                                     # reads, never writes, needs no Codex,
+#                                                                     # exit 0 prepared / 1 with the reason
 #
 # What --apply writes, and nothing else:
 #   ~/.codex/config.toml            two lines PREPENDED if absent (never appended — the file opens
@@ -14,13 +17,20 @@
 #                                   with the digest of THIS copy's procedure embedded — so a host
 #                                   prepared against one version refuses a project carrying another
 #
-# Three behavioural checks, because each catches a failure the others cannot:
-#   A  tomllib: both keys are TOP-LEVEL in the parsed file (not nested, not missing)
+# Four checks, because each catches a failure the others cannot:
+#   A  the config predicate (check_config below) — both keys TOP-LEVEL, right values, no nested copy
 #   B  synthetic project, CLAUDE.md > 32 KiB, codeword on the LAST line: proves injection AND that
 #      project_doc_max_bytes was really raised (the default truncates mid-line, silently)
 #   C  the largest REAL CLAUDE.md on this host: Codex quotes its final paragraph without a file read
 #   D  the host entry exists and its embedded digest equals this copy's procedure digest
 # Correct on ANY host: every path is resolved from $HOME / $CODEX_HOME by probing.
+#
+# A is the ONLY one consult.sh runs (as --check-config). B, C and D stay PREPARATION-ONLY: B and C
+# each cost a Codex round, and D belongs to the host-entry contract that consult.sh checks directly
+# against the entry file. Task 31.4: consult.sh used to re-implement half of A inline — it asserted
+# the fallback key and nothing else, and did it against a hardcoded ~/.codex path that ignored
+# $CODEX_HOME — so a host with project_doc_max_bytes left at the 32 KiB default passed preflight and
+# then silently truncated every CLAUDE.md the reviewer was given. One predicate, one definition.
 set -u
 SK="$(cd "$(dirname "$0")" && pwd)"
 CODEX_HOME="${CODEX_HOME:-$HOME/.codex}"
@@ -28,6 +38,60 @@ CFG="$CODEX_HOME/config.toml"
 ENTRY_DIR="$CODEX_HOME/skills/syndicate-consult-claude"; ENTRY="$ENTRY_DIR/SKILL.md"
 WANT_FALLBACK='project_doc_fallback_filenames = ["CLAUDE.md"]'
 WANT_MAX='project_doc_max_bytes = 262144'
+
+# ---- the host-config predicate: the ONE definition of "this host's Codex config is prepared" ----
+# It READS and never writes, needs no Codex and no network, and is the whole of check A below.
+# Four conditions, each a failure that really happened:
+#   fallback == ["CLAUDE.md"]        without it Codex is never given the project's rules at all
+#   max_bytes an int >= 262144       the 32 KiB default truncates MID-LINE, silently
+#   both TOP-LEVEL                   a key appended after a [projects] table nests into it and is ignored
+#   no nested copy under [projects]  that nesting is what an append produces — name it, so the
+#                                    operator is told what happened rather than that "it is missing"
+check_config(){
+  python3 - "$CFG" <<'TOMLCHECK'
+import sys, tomllib, os
+cfg = sys.argv[1]
+if not os.path.exists(cfg):
+    print(f"config absent: {cfg}", file=sys.stderr); sys.exit(1)
+try:
+    t = tomllib.load(open(cfg, "rb"))
+except Exception as e:
+    print(f"config does not parse ({cfg}): {e}", file=sys.stderr); sys.exit(1)
+fb = t.get("project_doc_fallback_filenames"); mx = t.get("project_doc_max_bytes")
+bad = []
+if fb != ["CLAUDE.md"]:
+    bad.append(f"project_doc_fallback_filenames={fb!r}, want ['CLAUDE.md']")
+if isinstance(mx, bool) or not isinstance(mx, int) or mx < 262144:
+    bad.append(f"project_doc_max_bytes={mx!r}, want an integer >= 262144 "
+               f"(the 32 KiB default truncates a long CLAUDE.md mid-line, silently)")
+# BOTH shapes an append produces, and the first draft saw only the second (found by the reviewer,
+# cycle 20260825-164306-1335b9f): a key written straight under [projects] is a SCALAR value in
+# t["projects"], so a walk that inspects only dict values skips it entirely — and that is the shape
+# you get when the file has no [projects."<path>"] sub-table yet, i.e. on a fresh host.
+KEYS = {"project_doc_fallback_filenames", "project_doc_max_bytes"}
+proj = t.get("projects")
+if isinstance(proj, dict):
+    direct = sorted(KEYS & set(proj))
+    if direct:
+        bad.append(f"a copy of {direct[0]} sits DIRECTLY under [projects] — it was appended, not "
+                   f"prepended, and Codex ignores it there")
+    for k, v in proj.items():
+        if isinstance(v, dict) and (KEYS & set(v)):
+            bad.append(f"a copy of the key nests inside [projects.{k!r}] — it was appended, not "
+                       f"prepended, and Codex ignores it there")
+            break
+if bad:
+    print("; ".join(bad), file=sys.stderr); sys.exit(1)
+sys.exit(0)
+TOMLCHECK
+}
+
+# --check-config: the predicate alone, before anything that writes, spawns Codex, or needs a login.
+# consult.sh calls exactly this and quotes the message into its HOST-NOT-PREPARED refusal.
+if [ "${1:-}" = "--check-config" ]; then
+  if M="$(check_config 2>&1)"; then echo "host config ok: $CFG"; exit 0
+  else echo "host config NOT prepared: ${M:-unknown}" >&2; exit 1; fi
+fi
 SCRATCH="${TMPDIR:-/tmp}/prepare-host.$$"
 FAIL=0
 say()  { printf '  %-46s %s\n' "$1" "$2"; }
@@ -67,19 +131,8 @@ PY
   else mkdir -p "$ENTRY_DIR"; sed -e "s/{{DIGEST}}/$D/g" -e "s/{{INSTALLED_AT}}/$(date -u +%FT%TZ)/" "$SK/host-entry.SKILL.md" > "$ENTRY"; say "apply" "installed $ENTRY at digest $D"; fi
 fi
 
-# ---------- A: top-level keys ----------
-python3 - "$CFG" <<'PY' || FAIL=1
-import sys, tomllib
-t = tomllib.load(open(sys.argv[1], "rb"))
-fb = t.get("project_doc_fallback_filenames"); mx = t.get("project_doc_max_bytes")
-bad = []
-if fb != ["CLAUDE.md"]: bad.append(f"project_doc_fallback_filenames={fb!r}")
-if not isinstance(mx, int) or mx < 262144: bad.append(f"project_doc_max_bytes={mx!r}")
-nested = [k for k, v in t.get("projects", {}).items() if isinstance(v, dict) and "project_doc_fallback_filenames" in v]
-if nested: bad.append(f"key nested inside [projects.{nested[0]!r}] — appended, not prepended")
-print("  %-46s %s" % ("A  keys top-level (tomllib)", "ok" if not bad else "FAIL — " + "; ".join(bad)))
-sys.exit(1 if bad else 0)
-PY
+# ---------- A: the config predicate (the same one consult.sh calls) ----------
+if M="$(check_config 2>&1)"; then ok "A  config predicate (--check-config)"; else fail "A  config predicate (--check-config)" "$M"; fi
 
 run_codex() {  # $1=dir $2=prompt -> stdout: last message. read-only, no MCP, stdin closed.
   ( cd "$1" && AWS_CONFIG_FILE=/nonexistent AWS_SHARED_CREDENTIALS_FILE=/nonexistent \

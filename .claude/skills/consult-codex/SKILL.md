@@ -79,6 +79,35 @@ work (`/add-work` § Authorization Boundaries).
 writes `progress.json`; only your own `/add-work`, on the operator's word, does.
 <!-- procedure:end -->
 
+## When a record cannot be committed — the publication transaction
+
+`close` and a refusal both end by committing `consult_notes.md` alone. If that **commit** fails —
+a pre-commit hook that refuses, an unset git identity — the record is **rolled back out of the log
+and out of the git index**, the runner exits **2**, and it says so. Nothing uncommitted is left in
+the checkout, because an uncommitted record is a record that can never be published (its cycle's
+state is gone) and that makes the next cycle in that project refuse `DIRTY-CHECKOUT`.
+
+What survives a rolled-back publication is what you need to retry it: the state directory and the
+clone under `~/.cache/consult/<project>/`. **A close retries with the same `close` command; a
+refusal retries by re-running the same `open`** — a refusal never sets the `opened` marker, so
+there is no cycle for `close` to close. Both are idempotent: retrying after the commit problem is
+fixed produces exactly one record, not two.
+
+A failed **push** is a different thing and is not rolled back: the commit landed, so the log is
+safe locally, and the runner records `LOG-COMMITTED-NOT-PUSHED` as its own commit and retries the
+push once. Rejected alternative, for the record: leaving the record in the worktree for a later
+invocation to commit. It would make an uncommitted record a legitimate state, collide with the
+`DIRTY-CHECKOUT` preflight, and let one cycle's record be committed under another cycle's message.
+
+## Where the host predicate lives
+
+"Is this host prepared?" has **one** definition and it is in `prepare-host.sh`, callable on its own
+as `prepare-host.sh --check-config`: both Codex config keys top-level, `project_doc_fallback_filenames`
+exactly `["CLAUDE.md"]`, `project_doc_max_bytes` an integer at least 262144, and no copy of either
+key nested inside a `[projects]` table. It reads, never writes, and needs no Codex. `consult.sh`
+calls it and quotes its message into `HOST-NOT-PREPARED`; the behavioural checks that spawn Codex
+(B and C) and the host-entry digest check (D) stay in the preparation run.
+
 ## What the reviewer may never do — and what happens if it does
 
 Write into either tree, touch `progress.json`, commit, or push. Under bypass mode nothing

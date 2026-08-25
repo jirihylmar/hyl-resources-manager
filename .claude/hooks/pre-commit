@@ -151,6 +151,13 @@ if git diff --cached --name-only 2>/dev/null | grep -qx 'progress.json'; then
         echo "  git commit --no-verify"
       } >&2
       exit 1
+    elif [ -n "$pg_out" ]; then
+      # progress-check exited 0 and still had something to say. Warnings NEVER block — they are not
+      # data loss — but until phase 31 they were also never printed: the hook showed $pg_out only in
+      # the failure branch, and --quiet suppressed them at the source. A warning nobody sees at the
+      # one moment it was written for (commit time) is a warning that does not exist.
+      { echo "progress.json (staged) — progress-check notes; NOT blocking this commit:"
+        printf '%s\n' "$pg_out"; } >&2
     fi
   fi
 fi

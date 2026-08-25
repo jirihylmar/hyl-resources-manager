@@ -1,7 +1,7 @@
 {
   "_comment": "Written by /distribute-defaults. Proves the engine delivered these exact bytes. /repo-hygiene reads this BEFORE classifying any default as hand-edited. A hash match here means DELIVERED, whatever the git state. Never edit by hand.",
-  "written_at": "2026-08-25T15:11:49Z",
-  "canonical_commit": "979bf106e6d795f804f397b9fe5e671a0a72026e",
+  "written_at": "2026-08-25T17:09:47Z",
+  "canonical_commit": "f9db2366fa2b283b59da913e9f3a84ef22162bee",
   "files": {
     ".claude/commands/add-work.md": { "sha256": "8ac7f1d1faad66c173735ae9ff7726d5e5fa159f0b8e49dea79e00a32103da3d", "source": "canonical" },
     ".claude/commands/check-aws.md": { "sha256": "24178c91d34397b4deb7714d8779e7db28d4fa288a4cdccbf79512b4c9a8818c", "source": "canonical" },
@@ -17,16 +17,16 @@
     ".claude/skills/server-report/SKILL.md": { "sha256": "cbf9ee54eb5fdc7132a8d21ed5c1158c9c5495947f4850cddf6ff19380cb18b0", "source": "canonical" },
     ".claude/skills/syndicate-connect/connect.sh": { "sha256": "d82c836496aa9bc307babefe0143afbcfec2cf89f099852d45fd7a5873d3ebb1", "source": "canonical" },
     ".claude/skills/syndicate-connect/SKILL.md": { "sha256": "0c74edac4dd578892ae495d4afe4d64f40b3d0f73852cdbb35dae3ca1bf38c75", "source": "canonical" },
-    ".claude/skills/progress-check/progress_check.py": { "sha256": "58ef4e57b2b492e092b43f772f1217f10c1ce773b01111583c1a18a8c80efd60", "source": "canonical" },
-    ".claude/skills/progress-check/SKILL.md": { "sha256": "52b48622f0bf837626af9cf3e6491137c83591995957dcf5f5efdcb39a3b79c9", "source": "canonical" },
-    ".claude/skills/consult-codex/prepare-host.sh": { "sha256": "39aeb0ec3eb3b337b2d67c32895df51cc713f2b5665ebc824e7a942dd15833bf", "source": "canonical" },
-    ".claude/skills/consult-codex/consult.sh": { "sha256": "82a26bae14c4a5bd11bd1349dd75a1d1a2df6a3bc5a31a00a7aa5338db9a06d4", "source": "canonical" },
+    ".claude/skills/progress-check/progress_check.py": { "sha256": "788a2584a6cc0a8a6763401ee94d759641568c6fbeacccd08bc60fd550c1f71b", "source": "canonical" },
+    ".claude/skills/progress-check/SKILL.md": { "sha256": "5a545718774927bed552883d52d5ccac7fc799ab42484a29ce3b0796e0174ab5", "source": "canonical" },
+    ".claude/skills/consult-codex/prepare-host.sh": { "sha256": "09a59009cfcec40bd50d9d7377167f4dd954169508c0d7c7cbd290149efbb012", "source": "canonical" },
+    ".claude/skills/consult-codex/consult.sh": { "sha256": "4eeb39863bbc95a711a425308c0ccc9b83368a8b44143b4b6eea49a0f0246b35", "source": "canonical" },
     ".claude/skills/consult-codex/host-entry.SKILL.md": { "sha256": "6610b8b1e6cad26698af0721fc0bf75cb8251f0e8d055b4501fe77f84b5e0d85", "source": "canonical" },
-    ".claude/skills/consult-codex/consult-posture.sh": { "sha256": "a7c79028fa8425a261aa9e7321eae0dca4b3c84d5795057f0e8ecfc170f79bdc", "source": "canonical" },
-    ".claude/skills/consult-codex/SKILL.md": { "sha256": "3566a8a54a7623ab3567eca32565e98391d89fac7044755ebd0a224100389983", "source": "canonical" },
+    ".claude/skills/consult-codex/consult-posture.sh": { "sha256": "2f037a666876bd41410fd16fc913a1908f1650426a1ce53552462971a70462b4", "source": "canonical" },
+    ".claude/skills/consult-codex/SKILL.md": { "sha256": "fc938329b5c23e6b32453fe1a609ab383e2442627c7aadb7328e3df5e1f841f5", "source": "canonical" },
     ".claude/skills/consult-codex/reviewer-prompt.md": { "sha256": "e4958e267a00ed40b9227490f1e6984657c52c6f81e08f6588cb255c787860b8", "source": "canonical" },
     ".claude/skills/consult-codex/codex-here": { "sha256": "47860c5f7bb4e433ebb2fd17a4bd3c2a1fc2eaa86ce3078bf0d7e3cc967b76e3", "source": "canonical" },
-    ".claude/skills/consult-codex/consult-log.py": { "sha256": "e1929d55efc4e263c4760b05d75a35121af58aa44c8db3631aac0c358e5442c1", "source": "canonical" },
+    ".claude/skills/consult-codex/consult-log.py": { "sha256": "0aba318a449e47b8d55597f1ad274c339e746ca372f6f6a9d7e1018a08948a32", "source": "canonical" },
     ".claude/skills/open-work/SKILL.md": { "sha256": "ed650e7763c329a25f00fb5bbcaf6affdef47b4e0c41878ca1b5ed6d5e12c7d4", "source": "canonical" },
     ".claude/skills/open-work/open_work.py": { "sha256": "a8f4ae71950cb02bfa4a6a68692aedbfcfac8b307f5c2e8d5983bf1931011fae", "source": "canonical" }
   }

@@ -30,6 +30,44 @@ staged, so the check happens at the moment of writing whether or not anyone reme
 | **Duplicate task id in a phase** | Two records claim to be the same task; which one any tool reads is arbitrary. |
 | **A task or phase that existed in the last commit is gone** | The framework's oldest rule — *never remove a task, mark it superseded* — enforced mechanically instead of by prose. |
 
+## Plus one thing it warns about: a stale `last_updated`
+
+Since 2026-08-25 the check also compares `last_updated` against the newest completion date it can
+find, and **warns** if the file reports itself as older than the work inside it. Found here on
+2026-08-21: `last_updated: 2026-08-21` while phase 30's tasks carried `completed_at: 2026-08-25`.
+Nothing anywhere compared the two.
+
+It is a **warning, never a failure** — exit stays `0` and commits are not blocked. A stale date
+destroys nothing, and this checker is armed as a pre-commit hook across the whole estate; a fifth
+failure would stop commits everywhere over a cosmetic field. The remedy is `/update-progress`,
+which refreshes `last_updated` when it closes a task.
+
+What it looks at, and what it stays quiet about:
+
+- Both `completed_at` **and** the older `completed`, on tasks **and** on phases. In this repo's own
+  file, 158 tasks use the first spelling and 58 use the second, and the two sets are disjoint.
+- Dates truncated to `YYYY-MM-DD`, so `2026-08-25` and `2025-12-20T10:00:00Z` compare alike.
+- **Absence is not staleness.** No `last_updated`, a `null` placeholder, an unsubstituted
+  `{{CREATION_DATE}}` template placeholder, or no completion date anywhere means the check simply
+  does not apply and says nothing. (`progress.json.bootstrap` ships `{{CREATION_DATE}}`, so without
+  that second carve-out every freshly bootstrapped project would open its life complaining about a
+  value the framework itself wrote.)
+- A value that is not shaped like an ISO date is reported in a **separate** warning that names the
+  offenders (first three, plus a count) and is left out of the comparison. If one of them is a
+  compaction sidecar pointer (`archived: docs/_archive/progress-sidecars/…`) the warning says so —
+  the date now lives in the sidecar and this file no longer states when the work finished.
+- Status is not consulted: a task marked `superseded` that carries a completion date still counts.
+  This checker enforces no vocabulary, here as everywhere else.
+
+**You will see it at commit time.** `--quiet` suppresses the all-clear line and nothing else:
+warnings go to stderr, and the pre-commit hook prints them under *"progress-check notes; NOT
+blocking this commit"*. Until 2026-08-25 `--quiet` swallowed warnings outright, and the hook —
+the only automated caller — passes `--quiet`, so a warning was in practice printed to nobody at
+the one moment it was written for.
+
+Pinned by `scripts/test-progress-check-freshness.sh` in the central repo (16 cases, including the
+shipped bootstrap and both example playbooks staying silent).
+
 ## What it deliberately does NOT enforce
 
 No schema, no vocabulary, no style. Measured across 34 real projects: `phases` is a dict in 30 and a
