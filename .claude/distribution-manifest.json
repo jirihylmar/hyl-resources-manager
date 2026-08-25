@@ -1,18 +1,18 @@
 {
   "_comment": "Written by /distribute-defaults. Proves the engine delivered these exact bytes. /repo-hygiene reads this BEFORE classifying any default as hand-edited. A hash match here means DELIVERED, whatever the git state. Never edit by hand.",
-  "written_at": "2026-08-25T17:09:47Z",
-  "canonical_commit": "f9db2366fa2b283b59da913e9f3a84ef22162bee",
+  "written_at": "2026-08-25T19:00:11Z",
+  "canonical_commit": "dba49c73755838bffc2bd2eeae2b5999a3feafd5",
   "files": {
-    ".claude/commands/add-work.md": { "sha256": "8ac7f1d1faad66c173735ae9ff7726d5e5fa159f0b8e49dea79e00a32103da3d", "source": "canonical" },
+    ".claude/commands/add-work.md": { "sha256": "94894457a419530416c34fc71be0fda5e10d6448c8764d1f1843a7b52c5cc535", "source": "canonical" },
     ".claude/commands/check-aws.md": { "sha256": "24178c91d34397b4deb7714d8779e7db28d4fa288a4cdccbf79512b4c9a8818c", "source": "canonical" },
     ".claude/commands/generate-architecture.md": { "sha256": "b1151f41dcc4b4146d59f995d18686f044c0010f821b1e40d6fb283d8c665caf", "source": "canonical" },
     ".claude/commands/generate-phases.md": { "sha256": "a55de2000fa4c3e3d159c9bf94f2a92ec41774a8fedcbb74b24e8fcdad12500e", "source": "canonical" },
     ".claude/commands/repo-hygiene.md": { "sha256": "12947cf33f243c6ea084dc4d21ce1e20c887682e4f9fc5cb80fbe7c0a4f7c484", "source": "canonical" },
     ".claude/commands/syndicate-refresh-remote.md": { "sha256": "805541e9abcb7551fc3cc3d8f0a5669a8d84cc33886d8093edb161a787d51eec", "source": "canonical" },
-    ".claude/commands/setup-workflow-only.md": { "sha256": "8c89ef81acf6a146e555622bfeb20d3ff33658a1294d2f2ba50579c231ccacf3", "source": "canonical" },
+    ".claude/commands/setup-workflow-only.md": { "sha256": "e785b4f4b1047287386a543ec577cc5f5b3c7f450b4332346acfbb8d6a0ffdaf", "source": "canonical" },
     ".claude/commands/setup.md": { "sha256": "5d4a1eebe8d975e247678715e16099512012ee3ec36d758291983a2f783d435a", "source": "canonical" },
-    ".claude/commands/start-session.md": { "sha256": "e77c54e9305423b45228864281cfe49543dbdcd98a77898de79b6d267b3ca5b8", "source": "canonical" },
-    ".claude/commands/update-progress.md": { "sha256": "4a5532d6a98372540f64ade33558548200a0d9a360934416157a5dcf3a4a0517", "source": "canonical" },
+    ".claude/commands/start-session.md": { "sha256": "cc8103b02ad7b7a98d2cff1164cb59892240653ed1b9fa7f8ce08f0528abf60e", "source": "canonical" },
+    ".claude/commands/update-progress.md": { "sha256": "110a2f5df8b74b9702662b7aefb9a8f7b47827d34fb95ca633822b6025da6d1b", "source": "canonical" },
     ".claude/skills/server-report/report.py": { "sha256": "a96944afba04903151a129f9ac389c43f966bec16ba2cc5cbc8b57e93c15ac0b", "source": "canonical" },
     ".claude/skills/server-report/SKILL.md": { "sha256": "cbf9ee54eb5fdc7132a8d21ed5c1158c9c5495947f4850cddf6ff19380cb18b0", "source": "canonical" },
     ".claude/skills/syndicate-connect/connect.sh": { "sha256": "d82c836496aa9bc307babefe0143afbcfec2cf89f099852d45fd7a5873d3ebb1", "source": "canonical" },
@@ -27,7 +27,7 @@
     ".claude/skills/consult-codex/reviewer-prompt.md": { "sha256": "e4958e267a00ed40b9227490f1e6984657c52c6f81e08f6588cb255c787860b8", "source": "canonical" },
     ".claude/skills/consult-codex/codex-here": { "sha256": "47860c5f7bb4e433ebb2fd17a4bd3c2a1fc2eaa86ce3078bf0d7e3cc967b76e3", "source": "canonical" },
     ".claude/skills/consult-codex/consult-log.py": { "sha256": "0aba318a449e47b8d55597f1ad274c339e746ca372f6f6a9d7e1018a08948a32", "source": "canonical" },
-    ".claude/skills/open-work/SKILL.md": { "sha256": "ed650e7763c329a25f00fb5bbcaf6affdef47b4e0c41878ca1b5ed6d5e12c7d4", "source": "canonical" },
-    ".claude/skills/open-work/open_work.py": { "sha256": "a8f4ae71950cb02bfa4a6a68692aedbfcfac8b307f5c2e8d5983bf1931011fae", "source": "canonical" }
+    ".claude/skills/open-work/SKILL.md": { "sha256": "354919cc2269d6120a3dd15a5e9ea4a90671d5073b7c3d7036e834de3b165c74", "source": "canonical" },
+    ".claude/skills/open-work/open_work.py": { "sha256": "ca34f8109d490a62cbad1f0a32089d4638af420c99a0cd940eb313f109016562", "source": "canonical" }
   }
 }

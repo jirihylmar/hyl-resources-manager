@@ -305,11 +305,10 @@ Create based on gathered info:
   "current_phase": "phase_1_current",
 
   "git_repos": {
-    "{detected repos}"
+    "{repo name}": {"local": "{path}", "remote": "{origin url}", "status": "clean"}
   },
 
-  "blockers": [],
-  "backlog": []
+  "blockers": []
 }
 ```
 

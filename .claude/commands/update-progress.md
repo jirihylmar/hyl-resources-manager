@@ -38,6 +38,10 @@ Update progress tracking after completing tasks. Follow conservative rules stric
   **83-day lie** in the single source of truth — a phase sat `in_progress` with all 17 of its
   tasks complete since 2026-05-13, and future sessions kept re-reading it as live work.
 
+**That list is closed, and appending to a catch-all array has never been on it.** Everything it
+permits is scoped to a *task* — a thing with an id, an owner, a verify step and a way of ending.
+Nothing in `progress.json` is a place to park a concern that has none of those.
+
 ### NEVER Do:
 - ❌ Remove tasks (mark as `superseded` instead)
 - ❌ Reorder tasks
@@ -46,6 +50,12 @@ Update progress tracking after completing tasks. Follow conservative rules stric
 - ❌ Change task IDs
 - ❌ Delete from `artifacts` array
 - ❌ Remove the `estate_notice` key from a task (see below)
+- ❌ Append to a generic catch-all array — a top-level `backlog`, `ideas`, `todo`, `notes` or
+  anything else that holds free strings instead of tasks. Such an entry has no owner, no
+  authorization and no closure rule, so nothing that enters one is ever forced to leave, and
+  `/open-work` renders the pile as though it were open work. Route the concern instead by the four
+  destinations in `/add-work` § *The Four Destinations*; if it has no owner and nobody authorized
+  it, it is destination 4 and belongs in `session_notes.md`, not here.
 
 ### Tasks that arrive from the central estate survey
 

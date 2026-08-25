@@ -695,18 +695,24 @@ drift. **A row a script emits cannot be dropped for brevity.**
 
 #### 4.0a — What the three tables are (the shape the renderer emits)
 
-Scope: **ALL open work, in three buckets — current, stuck, deferred.** Every open task and every
-backlog item appears in exactly one of them; nothing tracked is ever invisible at session start.
+Scope: **ALL open work, in three buckets — current, stuck, deferred.** Open work is tasks and
+phases: every open task appears in exactly one bucket, so nothing tracked is ever invisible at
+session start. A record that is not a task is not open work and has no row here — an untriaged
+note with no owner and no authorization was never open work, it only looked like it while it sat
+in `progress.json` (`/add-work` § *The Four Destinations*).
 
 | Bucket | Contains |
 |---|---|
 | **Current phase** | every task in the current phase that is not complete/superseded, one row each |
 | **Stuck elsewhere** | `in_progress` or `blocked` in a phase that is *not* current — started or obstructed, then abandoned; precisely the ones that go stale unnoticed |
-| **Deferred work** | `pending` in a non-current phase (one row per phase, with its open count), **plus every open `backlog` item, listed individually** — the backlog has no phase file, no task ids, and no other rendering surface, so this table is the only place the operator ever sees it |
+| **Deferred work** | `pending` in a non-current phase, one row per phase with its open count |
 
 Deferred is **by design**: rendering it as "stuck" miscasts planned work as neglect, and not
-rendering it at all is how a 5-item backlog sat structurally invisible for months until the
-operator asked where it was. A stuck task old enough that its context has gone stale is a candidate
+rendering it at all is how work that nothing else points at goes structurally invisible for months
+until the operator asks where it went — measured on the untyped `backlog` array this table used to
+render, removed on 2026-08-25 because nothing in it could be acted on. The lesson outlived the
+channel: a phase nobody is currently working on is exactly the thing that goes quiet, so it is
+counted here every session. A stuck task old enough that its context has gone stale is a candidate
 for the disposition rules in `/update-progress` Step 3a — say so rather than carrying it silently.
 
 The renderer also emits a **pointer check** when `current_task`/`current_phase` is stale, absent,
@@ -738,8 +744,8 @@ or not an id. Report those lines; do not quietly fix `progress.json` here.
 
 [Replace the line above with the verbatim output of § 4.0's renderer, every <FILL: …> token
  filled in. Three tables: current phase, "Stuck elsewhere" (omit if empty), "Deferred work"
- (omit ONLY if there are no non-current-phase pending tasks AND no open backlog item). Do not
- summarise them into prose, and do not drop rows.]
+ (omit ONLY if there are no non-current-phase pending tasks). Do not summarise them into prose,
+ and do not drop rows.]
 
 ### ⚠ Remote-resident repos  (omit ONLY if Step 2.5 found none needing action)
 [repo → REMOTE (host): this project's skills reference it by a local path that is DEAD.
@@ -784,7 +790,8 @@ or not an id. Report those lines; do not quietly fix `progress.json` here.
 - Have the discussion
 - If work is identified, ask: "Should I add this as tracked tasks?"
 - If yes, follow `/add-work` workflow
-- If no, just note in session_notes.md for later
+- If no, it is an untracked observation: `session_notes.md` only, never `progress.json` under any
+  key (`/add-work` § *The Four Destinations*)
 
 ### 5. Verify AWS Account (CRITICAL)
 

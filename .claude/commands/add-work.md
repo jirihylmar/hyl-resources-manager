@@ -54,6 +54,36 @@ Use this command when:
 
 ---
 
+## The Four Destinations
+
+A session constantly turns up things that are not the task in hand: a defect, an idea, a risk, a
+finding about a file some *other* project owns, the result of a job that ran unattended. Each of
+those has a different owner, a different authorization and a different way of ending, so each has
+its own destination. **Every recorded concern has exactly one destination, and a concern with no
+owner and no authorization has destination 4.**
+
+| # | Destination | What belongs there | Who owns it | What authorizes it | How it CLOSES |
+|---|---|---|---|---|---|
+| 1 | **Approved task** — a task in a goal-bearing phase of `progress.json` | work this project is going to do | this project | the operator's explicit word, per *Authorization Boundaries* above — nothing else | completion, or the disposition gate in `/update-progress` Step 3a: `superseded` with a stated reason |
+| 2 | **Estate notice** — a task in the OWNING project's `progress.json`, carrying `estate_notice: <marker>` | a finding about a file this project does not own | that other project | role 2 of the central repo (`/syndicate-estate-operations`, `--apply` **and** `--plan <digest>`) | when the owning project acts on it, or refuses it (`.claude/estate-align.skip`, then `superseded` with the reason) |
+| 3 | **Informational notice** — a task that reports a result instead of requesting work, carrying an explicit `expires` date | something a human must see exactly once: an unattended run announcing that it ran, or that it failed | this project | the run itself. It asks for no work, so it needs no approval | a human acknowledges it (mark it `complete`), or it passes `expires` and the next session marks it `superseded` naming the expiry |
+| 4 | **Untracked observation** — the session report and `session_notes.md` | everything else: speculation, an idea nobody has agreed to, a "we should probably…" | nobody | nothing | the session ends. It was never open work |
+
+**A destination-3 notice must carry an expiry or an acknowledgement, or it is destination 4 wearing
+a disguise.** A notice that can never go stale, and that nobody ever has to act on, is an
+observation — and observations do not belong in `progress.json`.
+
+**There is no fifth destination, and in particular no catch-all list.** A top-level `backlog` array
+of plain strings used to serve as the unwritten fifth: findings, proposals, notices and authorized
+work all went into it, carrying different owners and different authorization, and none of them had
+a closure rule — so nothing that entered was ever forced to leave. One repository accumulated 43
+untriaged rows, which `/open-work` then rendered as open work beside 247 tasks that were every one
+of them terminal. The operator removed the array on 2026-08-25: *"it serves nothing, cant be act
+on"*. Appending to a generic catch-all array in `progress.json` — under that name or any other — is
+not a permitted modification of it; route by the table above instead.
+
+---
+
 ## Procedure
 
 ### 1. Determine Work Type
@@ -65,14 +95,21 @@ Use AskUserQuestion:
 
 What type of work should I add?
 
-A) **New tasks** - Add to existing Phase X (current phase)
-B) **New phase** - Create a new phase for this feature set
-C) **Just noting** - Record for later, don't create tasks yet
+A) **New tasks** - Add to existing Phase X (current phase)        → destination 1
+B) **New phase** - Create a new phase for this feature set        → destination 1
+C) **Untracked observation** - No owner, no authorization: it goes in the session
+   report and session_notes.md, and does NOT enter progress.json  → destination 4
 
 Which applies?
 ```
 
 Wait for explicit answer.
+
+**C is not a way to record work without approval.** If the concern has an owner here and the
+operator has said to do it, it is A or B and takes the ordinary approval; if it does not, it is not
+work, and it must not be written into `progress.json` under any key. A finding about a file some
+*other* project owns is neither: that is destination 2, delivered to the owning project by role 2
+from the central repo, never written from here.
 
 ### 2. Collect Work Details
 
@@ -85,6 +122,13 @@ Wait for explicit answer.
 - What's the objective?
 - What are the major task groups?
 - Dependencies on other phases?
+
+**For an untracked observation (C):**
+- Write it into `session_notes.md` under `### Observations (untracked)`, for a cold reader: what
+  you saw, where, and how you know. The session that noticed it is gone by the time anyone reads it.
+- Say in the session report that it is untracked, and why — no owner, no authorization.
+- Then stop. Steps 3-6 do not apply: no task id is generated, `progress.json` is not opened, and
+  nothing is appended to any array in it. An observation is closed by the session ending.
 
 ### 3. Apply Task Sizing Rules
 
@@ -210,10 +254,17 @@ track work in progress.json only skip this:
 - Reason: [why added]
 ```
 
+For an untracked observation (C) the heading is `### Observations (untracked)` instead, and the
+entry states what was seen, where, and how you know — no id, no size, no verify, because it is not
+work. It is the record that it was considered and deliberately not tracked.
+
 ### 8. Commit
 
 Scoped to the files this command changed (include `tasks/` only if the project keeps task files
 and you updated them):
+
+For an untracked observation (C) the only changed file is `session_notes.md` — commit that alone,
+with a `notes:` subject, and stop; the report below describes tracked work and does not apply.
 
 ```bash
 git add progress.json session_notes.md   # + tasks/phase_X_<name>.md if updated
@@ -290,6 +341,8 @@ After `/add-work`:
 - Reorder existing tasks
 - Add work without user approval
 - Create "large" tasks (break them down)
+- Record an unauthorized concern in `progress.json` under any key — no catch-all array, no
+  free-string list, no "notes" field standing in for one. Route it by *The Four Destinations*.
 
 ---
 

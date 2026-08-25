@@ -23,6 +23,16 @@ array holds bare strings. A renderer that assumes the template's shape crashes o
 projects that need it most — the old ones, which are exactly where work goes invisible.
 Anything unreadable is REPORTED, never silently dropped.
 
+OPEN WORK IS TASKS AND PHASES. NOTHING ELSE. Until 2026-08-25 this renderer also read a
+top-level `backlog` array and printed every open entry under "Deferred work" with an "Open"
+count. That array was an untyped string list with no owner, no authorization, no closure and
+no phase — /add-work offered "just noting" and defined no home for it — so findings accumulated
+there instead of becoming tasks, estate notices, or nothing. In the estate's own central repo it
+reached 43 entries against 0-4 everywhere else, and an operator reading this renderer's output saw
+"20+ opened tasks" in a project whose 247 tasks were ALL terminal. The channel is retired
+(/add-work § Where a recorded concern goes). A legacy `backlog` key is REPORTED as a retired
+channel and never rendered as work.
+
 No dependencies, no network, no writes. Reads one file — plus consult_notes.md beside it IF it
 exists, because the consult loop never writes progress.json and its open outcomes would
 otherwise be invisible here (see SKILL.md § Why a second file).
@@ -32,9 +42,13 @@ Usage:
 
 Exit codes:
     0  tables rendered
-    2  progress.json missing, unreadable, or carrying no recognisable phases
+    2  progress.json missing, unreadable, or STRUCTURALLY UNRENDERABLE — no recognisable
+       phases, an empty phases object, a `tasks` value that is not a list, duplicate derived
+       phase keys in a list-shaped file, or a `backlog` key that is not a list.
        (deliberately not 0-with-empty-output: "no open work" and "I could not read it"
-        must never look identical to the reader)
+        must never look identical to the reader. Each of those five shapes used to render as
+        "No open work" at exit 0 while holding real tasks, or crash with a traceback outside
+        this contract entirely — found by consult cycle 20260825-173617-18311a2.)
 """
 
 import collections
@@ -90,9 +104,12 @@ def short(text, limit=110):
 def normalize_phases(raw):
     """-> OrderedDict(key -> phase dict), from either shape. None if unrecognisable."""
     if isinstance(raw, dict):
+        # `or None`, because an EMPTY OrderedDict is not None and used to sail through the
+        # caller's `is None` guard: `{"phases": {}}` rendered "No open work" at exit 0, which is
+        # the file's documented exit-2 case wearing the all-clear's clothes.
         return collections.OrderedDict(
             (str(k), v) for k, v in raw.items() if isinstance(v, dict)
-        )
+        ) or None
     if isinstance(raw, list):
         out = collections.OrderedDict()
         for i, phase in enumerate(raw):
@@ -100,9 +117,19 @@ def normalize_phases(raw):
                 continue
             key = (phase.get("key") or phase.get("id") or phase.get("phase")
                    or phase.get("name") or "phase_%d" % (i + 1))
-            out[str(key)] = phase
+            key = str(key)
+            if key in out:
+                # Two phases deriving the same key silently overwrote the first — a whole phase
+                # and every task in it disappearing while exit 0 reported success. Refuse instead.
+                DUPLICATE_KEYS.append(key)
+            out[key] = phase
         return out or None
     return None
+
+
+#: Filled by normalize_phases when a list-shaped `phases` derives the same key twice. A module
+#: global rather than a return value because normalize_phases has one job and three callers.
+DUPLICATE_KEYS = []
 
 
 def phase_label(key):
@@ -117,7 +144,11 @@ def phase_label(key):
 
 
 def tasks_of(phase):
-    """Dict tasks only, plus a count of entries too malformed to render."""
+    """Dict tasks only, plus a count of entries too malformed to render.
+
+    A `tasks` value that is not a list is NOT handled here — `structural_problems()` refuses the
+    whole file first. Returning ([], 0) for it, as this did until 2026-08-25, meant a phase whose
+    tasks were stored as an object rendered as having none: real open work, invisible, exit 0."""
     raw = phase.get("tasks") or []
     if not isinstance(raw, list):
         return [], 0
@@ -125,37 +156,60 @@ def tasks_of(phase):
     return good, len(raw) - len(good)
 
 
-def _label_reads_closed(label):
-    """A backlog entry that OPENS by announcing its own resolution is closed. The convention
-    in these files is to keep the item and rewrite it as a record — 'RESOLVED <date> by ...' —
-    rather than delete it, precisely so the history survives. Anchored to the start so an item
-    that merely MENTIONS a resolution ('blocked until X is resolved') stays open."""
-    # DROPPED is a disposition, not a loose end: /update-progress § 3a gives exactly three ways to
-    # close a task — finished, re-homed, dropped — and an item dropped WITH a stated reason is
-    # decided. Leaving it rendering as open work is how a decision gets re-litigated every session.
-    return str(label).lstrip("*_# ").upper().startswith(
-        ("RESOLVED", "SUPERSEDED", "CLOSED", "DONE", "DROPPED"))
+def structural_problems(data, phases):
+    """-> [str]. Shapes this renderer cannot honestly render. Any one of them exits 2.
+
+    Shape TOLERANCE is deliberate and stays (see the module docstring): phases as an object or a
+    list, tasks as a list holding bare strings, any status vocabulary. Shape SILENCE is the bug.
+    The line between them is whether the renderer can still see every task: it can tolerate a task
+    it cannot describe, and it cannot tolerate a container it cannot enumerate."""
+    problems = []
+    for key, phase in phases.items():
+        raw = phase.get("tasks")
+        if raw is not None and not isinstance(raw, list):
+            problems.append(
+                "phase '%s' stores `tasks` as %s, not a list — every task in it would be "
+                "invisible, so nothing is rendered" % (short(key, 40), type(raw).__name__))
+    for key in DUPLICATE_KEYS:
+        problems.append(
+            "two phases in the list-shaped `phases` derive the same key '%s' — the second "
+            "overwrites the first and a whole phase disappears" % short(key, 40))
+    legacy = data.get("backlog")
+    if legacy is not None and not isinstance(legacy, list):
+        problems.append(
+            "`backlog` is %s, not a list — it is a retired channel, but a malformed one is a "
+            "sign the file was edited by hand" % type(legacy).__name__)
+    return problems
 
 
-def backlog_entry(item):
-    """-> (label, is_open). A backlog item may be a plain string or an object. Objects
-    carry their own closure signals; rendering a resolved item as open work is a false
-    alarm, and false alarms train a reader to skim past the whole section.
+def cell(value, limit=110):
+    """A value safe to interpolate into a Markdown table cell.
 
-    STRINGS GET THE SAME TEST AS OBJECTS. They used to return (item, True) unconditionally —
-    open, always, no matter what they said — so an entry rewritten to 'RESOLVED 2026-08-01 by
-    phase 16' kept rendering as open work in every session handoff forever. The closure test
-    below already existed; strings simply returned before reaching it."""
-    if isinstance(item, str):
-        return item, not _label_reads_closed(item)
-    if not isinstance(item, dict):
-        return str(item), True
-    label = item.get("title") or item.get("name") or json.dumps(item)[:160]
-    status = str(item.get("status") or "").lower()
-    closed = bool(item.get("resolved") or item.get("resolution")) or any(
-        w in status for w in ("resolved", "superseded", "closed", "complete")
-    ) or _label_reads_closed(label)
-    return label, not closed
+    Table values were interpolated raw, so a `|` in a task id, a phase name or a consult target
+    produced extra columns and a newline broke the row entirely — the deterministic table shape
+    this script exists to guarantee, destroyed by its own content. Escape the delimiter, flatten
+    whitespace, then shorten."""
+    text = " ".join(str(value).split()).replace("|", "\\|")
+    return short(text, limit)
+
+
+# The five outcomes, EXACTLY as .claude/skills/consult-codex/consult-log.py defines them. This is
+# a deliberate second copy, not an oversight: this renderer is dependency-free by design so it works
+# in a project that has no consult skill installed. scripts/test-open-work-claims.sh pins the two
+# definitions equal, so the duplication cannot drift silently. Until 2026-08-25 no validation
+# happened at all — any backticked value counted as CLOSED and an unquoted one became "?" and also
+# counted as closed, so a grammatically broken log vanished into the benign closed-cycle count
+# instead of raising CONSULT-LOG-UNREADABLE.
+_OUTCOME_EXACT = ("agreed-applied", "agreed-proposed", "agreed-nothing", "disputed")
+_OUTCOME_NR = None   # compiled on first use; `re` is imported inside consult_cycles
+
+
+def OUTCOME_OK(value):
+    global _OUTCOME_NR
+    import re as _re
+    if _OUTCOME_NR is None:
+        _OUTCOME_NR = _re.compile(r"^not-reviewed:[A-Z][A-Z0-9-]*(:[A-Za-z0-9-]+)?$")
+    return value in _OUTCOME_EXACT or bool(_OUTCOME_NR.match(value))
 
 
 def consult_cycles(log_path):
@@ -188,7 +242,12 @@ def consult_cycles(log_path):
             if cur["closing"]: return [], 0, "second closing record in cycle %s" % cur["id"]
             cur["closing"] = True; continue
         if cur and cur["closing"] and cur["outcome"] is None and ln.startswith("- outcome:"):
-            om = re.search(r"`([^`]+)`", ln); cur["outcome"] = om.group(1) if om else "?"
+            om = re.search(r"`([^`]+)`", ln)
+            if not om:
+                return [], 0, "closing record of cycle %s states an outcome that is not in backticks: %s" % (cur["id"], ln.strip()[:80])
+            if not OUTCOME_OK(om.group(1)):
+                return [], 0, "cycle %s closed with '%s', which is not one of the five outcomes" % (cur["id"], om.group(1)[:60])
+            cur["outcome"] = om.group(1)
     unclosed = [c for c in cycles if not c["closing"]]
     if len(unclosed) > 1:
         return [], 0, "more than one cycle without a closing record (%s)" % ", ".join(c["id"] for c in unclosed)
@@ -246,9 +305,16 @@ def main():
     if not isinstance(data, dict):
         die("%s is not a JSON object" % path)
 
+    del DUPLICATE_KEYS[:]           # module global; a second call in one process must not inherit
     phases = normalize_phases(data.get("phases"))
     if phases is None:
-        die("%s carries no recognisable 'phases' (expected an object or a list)" % path)
+        die("%s carries no recognisable 'phases' — expected a non-empty object or list. An EMPTY "
+            "`phases` is this case too: there is nothing to render and nothing to report as open, "
+            "and saying 'no open work' about a file with no phases is a guess, not a reading."
+            % path)
+    problems = structural_problems(data, phases)
+    if problems:
+        die("%s cannot be rendered honestly:\n  - %s" % (path, "\n  - ".join(problems)))
 
     current_task = data.get("current_task")
     if isinstance(current_task, str) and len(current_task) <= 40:
@@ -275,6 +341,16 @@ def main():
     if long_pointer:
         notes.append("current_task is not a task id (it holds %d characters) — nothing "
                      "can point at it" % len(str(long_pointer)))
+    # ABSENT, not merely stale. /start-session § 4.0a promises a pointer report when either
+    # pointer is "stale, absent, or not an id"; only the first two of those three were ever
+    # emitted, so a file with both pointers null — the normal state at a clean session close, and
+    # the state of this repo's own file — reported nothing at all and the reader could not tell
+    # "deliberately parked" from "the pointer was lost".
+    absent = [n for n in ("current_task", "current_phase") if data.get(n) in (None, "")]
+    if absent:
+        notes.append("%s %s absent — no task is scheduled. That is a legitimate state at a clean "
+                     "close; it is reported so it cannot be mistaken for a lost pointer"
+                     % (" and ".join(absent), "is" if len(absent) == 1 else "are"))
     resolved = phase_of(phases, current_task) if current_task else None
     if current_phase and current_phase not in phases:
         notes.append("current_phase '%s' does not exist in phases" % short(current_phase, 60))
@@ -317,10 +393,10 @@ def main():
             out.append("|------|----------------|-------|")
             for task in rows:
                 out.append("| %s | %s | %s |"
-                           % (task.get("id", "?"),
+                           % (cell(task.get("id", "?"), 40),
                               fill("what %s actually is, needing no other document open — "
                                    "NOT its name repeated: %s"
-                                   % (task.get("id", "?"), short(task.get("name", "")))),
+                                   % (cell(task.get("id", "?"), 40), cell(task.get("name", "")))),
                               state_of(task, current_task)))
                 rendered_rows += 1
         else:
@@ -338,15 +414,15 @@ def main():
         out.append("|------|----------------|-------------|---------------------|")
         for task, phase in stuck:
             out.append("| %s | %s | %s | %s |"
-                       % (task.get("id", "?"),
+                       % (cell(task.get("id", "?"), 40),
                           fill("what %s is: %s"
-                               % (task.get("id", "?"), short(task.get("name", "")))),
-                          stuck_since(task, phase),
+                               % (cell(task.get("id", "?"), 40), cell(task.get("name", "")))),
+                          cell(stuck_since(task, phase), 40),
                           fill("blocked on what, or: abandoned mid-flight")))
             rendered_rows += 1
         out.append("")
 
-    # --- bucket 3: deferred (pending elsewhere + every open backlog item) ---
+    # --- bucket 3: deferred (pending tasks in a non-current phase) ---
     # EVERY non-current phase is examined, INCLUDING the ones marked complete. § 4.0a promises
     # "nothing tracked is ever invisible at session start"; skipping closed phases broke that
     # promise for 28 task rows across 7 projects, and in the no-current-phase case the renderer
@@ -364,17 +440,9 @@ def main():
         label = phase_label(key)
         if is_terminal(phase):
             label += " ⚠ phase says %s" % _st(phase)
-        deferred.append((label, short(phase.get("name", key)), len(open_tasks)))
+        deferred.append((label, cell(phase.get("name", key)), len(open_tasks)))
 
-    backlog, closed_backlog = [], 0
-    for item in (data.get("backlog") or []):
-        label, is_open = backlog_entry(item)
-        if is_open:
-            backlog.append(label)
-        else:
-            closed_backlog += 1
-
-    if deferred or backlog:
+    if deferred:
         out.append("**Deferred work**")
         out.append("")
         out.append("| Where | In plain words | Open |")
@@ -385,16 +453,6 @@ def main():
                           fill("what this phase is FOR, one line — not its title again"),
                           count, "" if count == 1 else "s"))
             rendered_rows += 1
-        for label in backlog:
-            out.append("| Backlog | %s | — |"
-                       % fill("in plain words, no jargon: %s" % short(label, 160)))
-            rendered_rows += 1
-        out.append("")
-    if closed_backlog:
-        out.append("_%d further backlog item%s carr%s a resolution and %s not shown._"
-                   % (closed_backlog, "" if closed_backlog == 1 else "s",
-                      "ies" if closed_backlog == 1 else "y",
-                      "is" if closed_backlog == 1 else "are"))
         out.append("")
 
     # --- consult cycles: the ONE thing the loop leaves behind that is not in progress.json ---
@@ -415,7 +473,7 @@ def main():
         out.append("|-------|--------|---------|----------------|")
         for cid, target, outcome in open_cycles:
             out.append("| %s | %s | `%s` | %s |"
-                       % (cid, short(target, 60), outcome,
+                       % (cell(cid, 40), cell(target, 60), outcome,
                           fill("what the reviewer proposed or disputed, one line — read the cycle's closing rounds")))
             rendered_rows += 1
         out.append("")
@@ -426,8 +484,21 @@ def main():
 
     if rendered_rows == 0 and not current_block:
         # Explicit, because an empty render and a broken render must not look alike.
-        out.append("_No open work in progress.json: every task carries a terminal status "
-                   "and no backlog item is open._")
+        out.append("_No open work in progress.json: every task carries a terminal status._")
+
+    # A project that still carries the retired channel is TOLD, once, in the words of the contract.
+    # Not a table and not a count: these records were never authorized, never owned and never
+    # closable, so presenting them as work is the defect this task removed. Silence would be the
+    # other half of it — 12 projects still hold entries, and their operators should know why they
+    # stopped appearing.
+    legacy = data.get("backlog")
+    if isinstance(legacy, list) and legacy:
+        out.append("")
+        out.append("> **Retired channel:** this progress.json still carries a `backlog` array with "
+                   "%d entr%s. It is not open work and is not rendered: it had no owner, no "
+                   "authorization and no closure. Route each entry to one of the four destinations "
+                   "in /add-work § Where a recorded concern goes, then remove the key."
+                   % (len(legacy), "y" if len(legacy) == 1 else "ies"))
 
     print("\n".join(out).rstrip())
     print()
