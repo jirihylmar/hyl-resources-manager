@@ -37,12 +37,17 @@ append(){  # validate OLD + CANDIDATE first; the real log is touched only if the
 refuse(){
   local code="$1" why="${2:-}"
   say "REFUSED $code${why:+ — $why}"
-  # refusal records go through the SAME validated append as every other record — no side door
+  # refusal records go through the SAME validated append as every other record — no side door.
+  # But a refusal must never leave state behind or vanish silently: if the record itself cannot be
+  # appended (measured 2026-08-25: a cycle id the grammar rejected), say so LOUDLY, clean up, still exit 3.
+  local recorded=1
   [ -f "$ST/opened" ] || { printf '## cycle %s — %s\n\n**Opening record**\n- entry: B · procedure digest: %s\n- preflight: REFUSED %s%s\n' \
-      "$(st cycle)" "${T:-(no target)}" "$(procedure_digest)" "$code" "${why:+ — $why}" > "$SCR/open.md"; append "$SCR/open.md"; }
+      "$(st cycle)" "${T:-(no target)}" "$(procedure_digest)" "$code" "${why:+ — $why}" > "$SCR/open.md"; ( append "$SCR/open.md" ) || recorded=0; }
   printf '**Closing record**\n- outcome: `not-reviewed:%s`\n- opening SHA: %s · result SHA: -\n- procedure digest: %s · rounds: 0 of %s\n- claims: examined 0 · unavailable 0 · skipped 0\n- nothing written to progress.json by this cycle\n' \
       "$code" "$(git -C "$REAL" rev-parse HEAD)" "$(procedure_digest)" "$CAP" > "$SCR/close.md"
-  append "$SCR/close.md"; publish_log "consult: refused $code"; [ -d "$CL" ] && "$POSTURE" destroy "$CL" >/dev/null; rm -rf "$ST"; exit 3
+  if [ $recorded -eq 1 ] && ( append "$SCR/close.md" ); then publish_log "consult: refused $code"
+  else say "REFUSAL-NOT-RECORDED — the refusal $code could not be written to consult_notes.md (see the grammar message above). This is a defect in the skill, not in the project: report it through /syndicate-consult-loop."; fi
+  [ -d "$CL" ] && "$POSTURE" destroy "$CL" >/dev/null; rm -rf "$ST"; exit 3
 }
 publish_log(){  # scoped commit of the log alone, FF push; failure is recorded, not hidden
   ( cd "$REAL" && git add consult_notes.md && git -c commit.gpgsign=false commit -q -m "$1" -- consult_notes.md ) || { say "log commit failed"; return 1; }
@@ -61,7 +66,7 @@ case "${1:-}" in
 # =====================================================================================
 open)
   T="${2:-}"; rm -rf "$ST"; mkdir -p "$ST"; put target "$T"
-  put cycle "$(date -u +%Y%m%d-%H%M%S)-$(git -C "$REAL" rev-parse --short HEAD)"
+  put cycle "$(date -u +%Y%m%d-%H%M%S)-$(git -C "$REAL" rev-parse HEAD | cut -c1-7)"   # NOT --short: git widens it past 7 in a big repo (measured: 8 in app-brm-manufacturing-products) and the grammar is exact
   [ -n "$T" ] || refuse NO-TARGET "task:<id> | phase:<key> | file:<paths> | commit:<range>"
   command -v codex >/dev/null || refuse NO-CODEX "not on PATH (non-interactive ssh? bash -lc)"
   codex login status 2>&1 | grep -q 'Logged in' || refuse NOT-LOGGED-IN
@@ -87,15 +92,32 @@ open)
   [ $rc -eq 3 ] && refuse "$(sed -n 's/codex-here: \([A-Z-]*\).*/\1/p' <<<"$B")" "$B"
   MODE="$(sed -n 's/.*mode=\([^ ]*\).*/\1/p' <<<"$B")"; put mode "$MODE"; put bind "$B"
   # claims from the target
-  python3 - "$REAL" "$T" > "$ST/claims" <<'PY' || refuse NOT-REVIEWABLE "target unreadable"
-import json,subprocess,sys,os
+  python3 - "$REAL" "$T" > "$ST/claims" 2> "$ST/claims.note" <<'PY' || refuse NOT-REVIEWABLE "target unreadable: $(tail -1 "$ST/claims.note" 2>/dev/null)"
+import json,subprocess,sys,os,re
 real,t=sys.argv[1:3]; kind,_,val=t.partition(':'); out=[]
 if kind in('task','phase'):
     d=json.load(open(os.path.join(real,'progress.json')))
-    for pk,ph in (d.get('phases') or {}).items():
-        for tk in (ph.get('tasks') or []):
-            if (kind=='task' and str(tk.get('id'))==val) or (kind=='phase' and pk==val):
-                out.append(f"{tk.get('id')}: {tk.get('name','')} — verify: {tk.get('verify','(none)')}")
+    raw=d.get('phases') or {}
+    phases=list(raw.items()) if isinstance(raw,dict) else [(str(p.get('key') or p.get('id') or i),p) for i,p in enumerate(raw) if isinstance(p,dict)]
+    def tasks(ph): return [tk for tk in (ph.get('tasks') or []) if isinstance(tk,dict)]
+    def add(tk): out.append(f"{tk.get('id')}: {tk.get('name','')} — verify: {tk.get('verify','(none)')}")
+    # 1. exact task id
+    if kind=='task':
+        for pk,ph in phases:
+            for tk in tasks(ph):
+                if str(tk.get('id'))==val: add(tk)
+    # 2. a phase, by key OR by bare number — "task 132" / "phase 132" both mean phase_132_* when no task "132" exists
+    if not out:
+        for pk,ph in phases:
+            if pk==val or re.match(r'^phase_'+re.escape(val)+r'(_|$)',pk) or (kind=='phase' and pk.endswith('_'+val)):
+                for tk in tasks(ph): add(tk)
+                if out: print(f"# resolved {t} -> phase {pk} ({len(out)} tasks)",file=sys.stderr)
+    # 3. nothing — name the near misses so the operator can correct the target instead of guessing
+    if not out:
+        near=[str(tk.get('id')) for pk,ph in phases for tk in tasks(ph) if str(tk.get('id')).startswith(val)][:8]
+        nearp=[pk for pk,ph in phases if val in pk][:4]
+        hint=(" — did you mean " + ", ".join([f"task:{n}" for n in near]+[f"phase:{p}" for p in nearp]) if (near or nearp) else "")
+        print(f"# no task or phase matches {t}{hint}",file=sys.stderr)
 elif kind=='file':
     for f in val.split(','):
         if os.path.exists(os.path.join(real,f)) or os.path.isabs(f): out.append(f"{f}: the content and claims of this file")
@@ -104,7 +126,8 @@ elif kind=='commit':
         out.append(f"{f}: as changed in {val}")
 print("\n".join(out))
 PY
-  [ "$(grep -c . "$ST/claims")" -gt 0 ] || refuse NOT-REVIEWABLE:NO-REVIEWABLE-CLAIMS "target '$T' yields no claims"   # -s is fooled by a lone newline
+  [ -s "$ST/claims.note" ] && say "$(sed 's/^# //' "$ST/claims.note")"
+  [ "$(grep -c . "$ST/claims")" -gt 0 ] || refuse NOT-REVIEWABLE:NO-REVIEWABLE-CLAIMS "target '$T' yields no claims$(sed -n 's/^# no task or phase matches [^ ]*//p' "$ST/claims.note" | head -1)"   # -s is fooled by a lone newline; the note names the near misses
   # clone + baseline
   rm -rf "$CL"; "$POSTURE" clone "$REAL" "$CL" >/dev/null || refuse CLONE-FAILED
   put sha "$(git -C "$CL" rev-parse HEAD)"; "$POSTURE" snapshot "$REAL" "$CL" "$ST" >/dev/null

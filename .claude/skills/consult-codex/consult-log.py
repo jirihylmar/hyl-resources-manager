@@ -22,7 +22,7 @@ import re, sys
 
 EXACT = {"agreed-applied", "agreed-proposed", "agreed-nothing", "disputed"}
 NR = re.compile(r"^not-reviewed:[A-Z][A-Za-z0-9:-]*$")   # NO-TARGET, NOT-REVIEWABLE:progress-json, …
-CYCLE = re.compile(r"^## cycle (\d{8}-\d{6}-[0-9a-f]{7}) — (\S.*)$")
+CYCLE = re.compile(r"^## cycle (\d{8}-\d{6}-[0-9a-f]{7,40}) — (\S.*)$")   # the runner writes 7; accept a longer sha if one ever slips in — a heading is not the place to lose a record
 REQ_CLOSE = ("- outcome:", "opening SHA:", "result SHA:", "procedure digest:", "rounds:", "- claims:")
 ROUND = re.compile(r"^### (?:Round (\d+) — reviewer|Author — round (\d+))")
 AFTER_CLOSE_OK = re.compile(r"^(- |> |$)")
