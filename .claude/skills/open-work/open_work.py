@@ -23,7 +23,9 @@ array holds bare strings. A renderer that assumes the template's shape crashes o
 projects that need it most — the old ones, which are exactly where work goes invisible.
 Anything unreadable is REPORTED, never silently dropped.
 
-No dependencies, no network, no writes. Reads one file.
+No dependencies, no network, no writes. Reads one file — plus consult_notes.md beside it IF it
+exists, because the consult loop never writes progress.json and its open outcomes would
+otherwise be invisible here (see SKILL.md § Why a second file).
 
 Usage:
     python3 open_work.py [--file progress.json]
@@ -37,6 +39,7 @@ Exit codes:
 
 import collections
 import json
+import os
 import sys
 
 # Terminal statuses — every spelling that means "this is finished", because the estate uses
@@ -153,6 +156,49 @@ def backlog_entry(item):
         w in status for w in ("resolved", "superseded", "closed", "complete")
     ) or _label_reads_closed(label)
     return label, not closed
+
+
+def consult_cycles(log_path):
+    """-> (open [(id, target, outcome)], closed_count, problem_or_None) from consult_notes.md.
+    Grammar (owned by .claude/skills/consult-codex/consult-log.py — this is the reader's half,
+    kept dependency-free so open-work renders in a project that has no consult skill):
+      '## cycle <id> — <target>' opens a cycle; '**Closing record**' followed by
+      '- outcome: `<value>`' closes it. Open = agreed-proposed | disputed. A cycle with no closing
+      record is in progress and is reported as open with outcome 'in-progress'. Two cycles with
+      no closing record, a duplicate id, or a closing record outside a cycle is a broken log."""
+    import os, re
+    if not os.path.exists(log_path):
+        return [], 0, None
+    try:
+        with open(log_path, encoding="utf-8") as fh:
+            lines = fh.read().split("\n")
+    except OSError as exc:
+        return [], 0, "unreadable: %s" % exc
+    head = re.compile(r"^## cycle (\S+) — (.+)$")
+    cycles, cur, seen = [], None, set()
+    for ln in lines:
+        m = head.match(ln)
+        if m:
+            if m.group(1) in seen:
+                return [], 0, "duplicate cycle id %s" % m.group(1)
+            seen.add(m.group(1)); cur = {"id": m.group(1), "target": m.group(2).strip(), "outcome": None, "closing": False}
+            cycles.append(cur); continue
+        if ln.startswith("**Closing record**"):
+            if cur is None: return [], 0, "closing record outside a cycle"
+            if cur["closing"]: return [], 0, "second closing record in cycle %s" % cur["id"]
+            cur["closing"] = True; continue
+        if cur and cur["closing"] and cur["outcome"] is None and ln.startswith("- outcome:"):
+            om = re.search(r"`([^`]+)`", ln); cur["outcome"] = om.group(1) if om else "?"
+    unclosed = [c for c in cycles if not c["closing"]]
+    if len(unclosed) > 1:
+        return [], 0, "more than one cycle without a closing record (%s)" % ", ".join(c["id"] for c in unclosed)
+    open_rows, closed = [], 0
+    for c in cycles:
+        if not c["closing"]: open_rows.append((c["id"], c["target"], "in-progress"))
+        elif c["outcome"] in ("agreed-proposed", "disputed"): open_rows.append((c["id"], c["target"], c["outcome"]))
+        elif c["outcome"] is None: return [], 0, "closing record of cycle %s carries no outcome" % c["id"]
+        else: closed += 1
+    return open_rows, closed, None
 
 
 def phase_of(phases, task_id):
@@ -349,6 +395,33 @@ def main():
                    % (closed_backlog, "" if closed_backlog == 1 else "s",
                       "ies" if closed_backlog == 1 else "y",
                       "is" if closed_backlog == 1 else "are"))
+        out.append("")
+
+    # --- consult cycles: the ONE thing the loop leaves behind that is not in progress.json ---
+    # A cycle closed `agreed-proposed` or `disputed` lives only in consult_notes.md (the loop
+    # never writes progress.json, by design). Phase 28 of the examples repo is the record of a
+    # notice channel nobody read for 15 days; this section exists so a consult outcome cannot
+    # repeat that. Absent log = no cycles (nothing to say). Malformed log = say so, loudly —
+    # "no open consult work" and "I could not read the log" must never look the same.
+    open_cycles, closed_cycles, log_problem = consult_cycles(os.path.join(os.path.dirname(os.path.abspath(path)), "consult_notes.md"))
+    if log_problem:
+        out.append("> **CONSULT-LOG-UNREADABLE** — consult_notes.md exists but its grammar is broken: %s. "
+                   "Report it; do not assume there is no open consult work." % log_problem)
+        out.append("")
+    if open_cycles:
+        out.append("**Open consult cycles** (consult_notes.md — the reviewer's outcome awaits the operator)")
+        out.append("")
+        out.append("| Cycle | Target | Outcome | In plain words |")
+        out.append("|-------|--------|---------|----------------|")
+        for cid, target, outcome in open_cycles:
+            out.append("| %s | %s | `%s` | %s |"
+                       % (cid, short(target, 60), outcome,
+                          fill("what the reviewer proposed or disputed, one line — read the cycle's closing rounds")))
+            rendered_rows += 1
+        out.append("")
+    if closed_cycles:
+        out.append("_%d consult cycle%s closed (applied, nothing to change, or refused) and %s not shown._"
+                   % (closed_cycles, "" if closed_cycles == 1 else "s", "is" if closed_cycles == 1 else "are"))
         out.append("")
 
     if rendered_rows == 0 and not current_block:

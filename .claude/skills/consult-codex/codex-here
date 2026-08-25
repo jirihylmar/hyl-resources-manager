@@ -16,7 +16,12 @@ What it does, in order:
   2. Reads <project>/progress.json  ->  context_hints.aws_account (the declared primary).
   3. Binds exactly one candidate, or refuses:
         ACCOUNT-AMBIGUOUS  more than one candidate and no way to pick   (exit 3)
-        ACCOUNT-NOT-BOUND  an account is declared but no server serves it (exit 3)
+        profile-scan       an account is declared but Claude has no server for it (the box:
+                           its AWS reach is a user-level proxy whose --read-only drops every
+                           executor tool) -> scan this host's AWS profiles for the one whose
+                           sts identity IS the declared account, run the awslabs server via
+                           the pipx binary or `uvx`. Bound by proof, re-derived every run.
+        ACCOUNT-NOT-BOUND  declared, and no profile on this host resolves to it (exit 3)
         no-infra           nothing declared, nothing configured -> launch WITHOUT AWS, say so
   4. Injects the bound server per invocation with -c mcp_servers.<name>.…  — every env
      key copied (the server does not inherit the parent's environment) plus

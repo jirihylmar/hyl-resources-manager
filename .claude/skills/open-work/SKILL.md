@@ -38,7 +38,17 @@ Paste the output verbatim into the report, then replace **every** `<FILL: …>` 
 summarise the tables into prose, and do not drop rows because a phase "isn't relevant right
 now" — deferred work being invisible is the condition this exists to end.
 
-The script reads one file. No dependencies, no network, no writes.
+The script reads one file — plus `consult_notes.md` beside it, **if present**. No dependencies,
+no network, no writes.
+
+**Why a second file, when the design rule is one.** The consult loop (`/consult-codex`) never
+writes `progress.json`: a cycle that closed `agreed-proposed` or `disputed` exists only in the
+project's `consult_notes.md`. A renderer that reads `progress.json` alone would report *no open
+work* over an outcome the operator has not seen — the phase-28 notice channel again. So the
+renderer adds one table, **Open consult cycles**, for cycles whose closing record says
+`agreed-proposed` or `disputed` (or that have no closing record yet), counts the closed ones, and
+prints **CONSULT-LOG-UNREADABLE** when the log exists but its grammar is broken. An absent log
+renders nothing: absence and ignorance are different, and only the second is reported.
 
 ## Exit codes
 

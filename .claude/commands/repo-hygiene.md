@@ -818,8 +818,10 @@ extracted from this file, against fixtures.
 ## Guardrails
 
 - **This is not a delete license.** Never remove protected artifacts: progress.json tasks
-  (mark superseded), session_notes, incident/audit trail, product/data records. Prefer
-  mark-superseded or move-to-`_archive/`; when unsure, leave it and note it.
+  (mark superseded), session_notes, `consult_notes.md` (the consult loop's append-only record —
+  one `## cycle` per cycle, never edited, never rotated into `docs/`; its grammar is checked by
+  `.claude/skills/consult-codex/consult-log.py validate`), incident/audit trail, product/data
+  records. Prefer mark-superseded or move-to-`_archive/`; when unsure, leave it and note it.
 - **Extract-then-archive** — a "closed" dir can hold live dependencies (a skill's default paths,
   a test fixture, a cited rule). Repoint every live inbound reference first; a currency check run
   after the move must show zero new broken refs.

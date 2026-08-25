@@ -1,13 +1,13 @@
 {
   "_comment": "Written by /distribute-defaults. Proves the engine delivered these exact bytes. /repo-hygiene reads this BEFORE classifying any default as hand-edited. A hash match here means DELIVERED, whatever the git state. Never edit by hand.",
-  "written_at": "2026-08-25T12:50:14Z",
-  "canonical_commit": "f0ea0e4e58fc114b288b4c174c93dbb9774a6843",
+  "written_at": "2026-08-25T14:17:42Z",
+  "canonical_commit": "07b72f76238a2911960592c5c9a01a42387caf84",
   "files": {
     ".claude/commands/add-work.md": { "sha256": "8ac7f1d1faad66c173735ae9ff7726d5e5fa159f0b8e49dea79e00a32103da3d", "source": "canonical" },
     ".claude/commands/check-aws.md": { "sha256": "24178c91d34397b4deb7714d8779e7db28d4fa288a4cdccbf79512b4c9a8818c", "source": "canonical" },
     ".claude/commands/generate-architecture.md": { "sha256": "b1151f41dcc4b4146d59f995d18686f044c0010f821b1e40d6fb283d8c665caf", "source": "canonical" },
     ".claude/commands/generate-phases.md": { "sha256": "a55de2000fa4c3e3d159c9bf94f2a92ec41774a8fedcbb74b24e8fcdad12500e", "source": "canonical" },
-    ".claude/commands/repo-hygiene.md": { "sha256": "d906f57247950577b3562331725c9c64a78ee0da4ddc680cd8e1607afcfee95b", "source": "canonical" },
+    ".claude/commands/repo-hygiene.md": { "sha256": "12947cf33f243c6ea084dc4d21ce1e20c887682e4f9fc5cb80fbe7c0a4f7c484", "source": "canonical" },
     ".claude/commands/syndicate-refresh-remote.md": { "sha256": "805541e9abcb7551fc3cc3d8f0a5669a8d84cc33886d8093edb161a787d51eec", "source": "canonical" },
     ".claude/commands/setup-workflow-only.md": { "sha256": "8c89ef81acf6a146e555622bfeb20d3ff33658a1294d2f2ba50579c231ccacf3", "source": "canonical" },
     ".claude/commands/setup.md": { "sha256": "5d4a1eebe8d975e247678715e16099512012ee3ec36d758291983a2f783d435a", "source": "canonical" },
@@ -25,9 +25,9 @@
     ".claude/skills/consult-codex/consult-posture.sh": { "sha256": "a7c79028fa8425a261aa9e7321eae0dca4b3c84d5795057f0e8ecfc170f79bdc", "source": "canonical" },
     ".claude/skills/consult-codex/SKILL.md": { "sha256": "3566a8a54a7623ab3567eca32565e98391d89fac7044755ebd0a224100389983", "source": "canonical" },
     ".claude/skills/consult-codex/reviewer-prompt.md": { "sha256": "e4958e267a00ed40b9227490f1e6984657c52c6f81e08f6588cb255c787860b8", "source": "canonical" },
-    ".claude/skills/consult-codex/codex-here": { "sha256": "e4f18e0508475247c7d9f2ea4613f3c7b039e21fc9fd3296f0393548d8d2c37e", "source": "canonical" },
+    ".claude/skills/consult-codex/codex-here": { "sha256": "47860c5f7bb4e433ebb2fd17a4bd3c2a1fc2eaa86ce3078bf0d7e3cc967b76e3", "source": "canonical" },
     ".claude/skills/consult-codex/consult-log.py": { "sha256": "5f152d6a243db07daa4189b6caab5d8ec693302ca658ee6b96325410d00400ce", "source": "canonical" },
-    ".claude/skills/open-work/SKILL.md": { "sha256": "db4688a1d92df8e1d61047759ef973c48a3dc6d317f5efba2cda219458e6c28b", "source": "canonical" },
-    ".claude/skills/open-work/open_work.py": { "sha256": "d4469d1d15e5fc1fdb6d268de382dfa6a6824f97edf07eae571fff23eaf536fa", "source": "canonical" }
+    ".claude/skills/open-work/SKILL.md": { "sha256": "ed650e7763c329a25f00fb5bbcaf6affdef47b4e0c41878ca1b5ed6d5e12c7d4", "source": "canonical" },
+    ".claude/skills/open-work/open_work.py": { "sha256": "a8f4ae71950cb02bfa4a6a68692aedbfcfac8b307f5c2e8d5983bf1931011fae", "source": "canonical" }
   }
 }

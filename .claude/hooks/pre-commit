@@ -77,6 +77,20 @@ violations=""
 # plain NUL-separated paths (no status field, no rename pairs) → unambiguous parse.
 while IFS= read -r -d '' path; do
   [ -n "$path" ] || continue
+
+  # A tracked .codex/ directory is NOT a build artifact, and it is evaluated BEFORE is_allowed on
+  # purpose: a one-line artifact-guard.allow entry must not be able to exempt it. Codex loads
+  # <project>/.codex/config.toml in a trusted checkout and EXECUTES its [mcp_servers.*] commands
+  # at session start — so a committed .codex/ turns `git pull` into a code-execution channel for
+  # every host that trusts the project. Measured 2026-08-25 (consult-loop design, invariant I4).
+  # Codex configuration in this estate is per-host ($CODEX_HOME) or per-invocation (-c flags);
+  # it is never a project file. Override is the same audited --no-verify as everything else.
+  if printf '%s' "$path" | grep -qE '(^|/)\.codex/'; then
+    violations="${violations}  ${path}  (NEW, a tracked .codex/ directory — Codex executes its mcp_servers commands on pull in a trusted checkout; Codex config is per-host or per-invocation, never committed)
+"
+    continue
+  fi
+
   is_allowed "$path" && continue
 
   reason=""
