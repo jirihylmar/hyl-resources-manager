@@ -99,9 +99,12 @@ if grep -q "$WORD" <<<"$ANS"; then ok "B  synthetic tail ($SZ B, > 32 KiB)" "cod
 # ---------- C: the largest REAL CLAUDE.md on this host ----------
 BIG=$(for f in "$HOME"/*/CLAUDE.md; do [ -f "$f" ] && printf '%d %s\n' "$(wc -c < "$f")" "$f"; done | sort -rn | head -1 | cut -d' ' -f2-)
 if [ -z "$BIG" ]; then fail "C  real CLAUDE.md" "no \$HOME/*/CLAUDE.md on this host"; else
-  TOK=$(tail -c 400 "$BIG" | tr -c 'A-Za-z0-9_./-' '\n' | grep -E '[/_.-]' | awk '{ if (length($0) > length(m)) m=$0 } END { print m }')
-  ANS=$(run_codex "$(dirname "$BIG")" "Quote the final paragraph of the project instructions you were given, verbatim. Do not read any files.")
-  if [ -n "$TOK" ] && grep -qF "$TOK" <<<"$ANS"; then ok "C  real tail: $(basename "$(dirname "$BIG")") ($(wc -c < "$BIG") B)" "token '$TOK' arrived"
+  # a distinctive token from the LAST non-empty line, and Codex must quote THAT line — "final paragraph"
+  # was ambiguous (measured on the box: it quoted a different paragraph and a true tail read FAIL)
+  LAST=$(grep -v '^[[:space:]]*$' "$BIG" | tail -1)
+  TOK=$(tr -c 'A-Za-z0-9_./-' '\n' <<<"$LAST" | awk 'length($0) >= 6 { if (length($0) > length(m)) m=$0 } END { print m }')
+  ANS=$(run_codex "$(dirname "$BIG")" "In the project instructions you were given, find the line that contains the exact text \`$TOK\` and quote that whole line verbatim. Do not read any files.")
+  if [ -n "$TOK" ] && grep -qF "$TOK" <<<"$ANS"; then ok "C  real tail: $(basename "$(dirname "$BIG")") ($(wc -c < "$BIG") B)" "last line's token '$TOK' arrived"
   else fail "C  real tail: $BIG" "token '${TOK:-?}' not in answer: '${ANS:0:80}'"; fi
 fi
 
