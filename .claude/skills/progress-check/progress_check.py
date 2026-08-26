@@ -26,7 +26,8 @@ Measured across 34 live projects: `phases` is a dict in 30 and a LIST in 2; `tas
 most and a DICT in one; some tasks are bare strings; status vocabularies disagree ("complete" vs
 "completed"). A checker that enforced the template's shape would block commits in real projects and
 be disabled within a day — which is worse than no checker. So: no schema, no vocabulary, no style.
-Four failures only, each one a thing that DESTROYS data.
+Four failures only — three that destroy data, plus the append-only policy (a vanished task id
+or phase key) enforced mechanically.
 """
 import argparse
 import datetime
@@ -195,6 +196,52 @@ def task_ids(doc):
     return out
 
 
+# --- started-task drift, for the mutability warning (phase 37, 2026-08-26) --
+#: The task-mutability rule in /update-progress: a task is STARTED once it carries a real
+#: `started_at` or a status outside this set; everything else is unstarted and may be refined in
+#: place (scope, dependency and looser-verify changes still supersede — the rule bounds that, not
+#: this module). This is a status vocabulary, which this module otherwise refuses to have — so it
+#: is used only to decide whether to SAY something (check() § 4b), never whether to fail.
+#: Case-insensitive.
+UNSTARTED_STATUSES = {"pending", "not_started", "planned", "todo", ""}
+
+#: The descriptive fields compared on a started task. The rule freezes `description` and the
+#: dependency fields too, but these two are the ones every shipped task carries and the two that
+#: change what "done" means — a drift check that compared everything would warn about the notes
+#: field that the same rule explicitly allows to change.
+DRIFT_FIELDS = ("name", "verify")
+
+_ABSENT = object()   # so "field removed" and "field set to null" both read as a difference
+
+
+def is_started(task):
+    """True when the task has begun, by the same two signals the prose rule names.
+
+    `started_at` counts when present, non-empty and not an unsubstituted `{{placeholder}}` — the
+    bootstrap ships those, same carve-out as is_absent(). `status` counts when it is anything
+    outside UNSTARTED_STATUSES: "in_progress", "completed", "complete", "superseded", "deferred",
+    "blocked" all mean the task has a history worth keeping. Unknown spellings therefore lean
+    towards STARTED, which errs on the side of a warning rather than of silence.
+    """
+    sa = task.get("started_at")
+    if sa is not None and not (isinstance(sa, str) and (sa.strip() == "" or is_absent(sa))):
+        return True
+    st = task.get("status")
+    if st is None:
+        return False
+    return str(st).strip().lower() not in UNSTARTED_STATUSES
+
+
+def tasks_by_key(doc):
+    """{(phase_key, task_id): task} for every task that has an id — the join the drift check runs on."""
+    out = {}
+    for pk, po in iter_phases(doc):
+        for t in iter_tasks(po):
+            if t.get("id") is not None:
+                out[(pk, str(t["id"]))] = t
+    return out
+
+
 # --- the four checks --------------------------------------------------------
 def check(text, base_text=None):
     """Return (failures, warnings). Empty failures == safe to commit."""
@@ -279,6 +326,48 @@ def check(text, base_text=None):
                                 f"DECLINE the check, mark the task superseded and add the probe "
                                 f"name to .claude/estate-align.skip; do not remove the key.")
 
+            # 4b. DRIFT on a STARTED task — a WARNING, never a failure (phase 37, 2026-08-26).
+            #     The consult that reshaped the never-modify rule (cycle 20260826-094406-418e380)
+            #     established that this checker had never seen a same-id rewrite at all: check 4
+            #     fails when an id vanishes, and a task whose name and verify were replaced under
+            #     the same id passed silently. The rule now says WHICH tasks that is allowed for —
+            #     unstarted ones, so findings can reshape work nobody has begun ("not everything
+            #     can be planned correctly", operator 2026-08-26) — and this is the other half:
+            #     once a task has started, its descriptive fields are its history.
+            #
+            #     A warning: a rewrite destroys nothing — the previous commit still holds the old
+            #     text — and "stricter" versus "weaker" cannot be told apart mechanically, so the
+            #     charter (three data-destroying failures plus the append-only rule) and the
+            #     pre-commit hook armed estate-wide both say the same thing: name it, exit 0, let
+            #     the reviewer judge.
+            #
+            #     Started in EITHER version: a task that was in progress in the base and has been
+            #     reset to pending had history too, and a task that starts in this very commit is
+            #     the rewrite-and-start case — pending yesterday, in_progress with a new name
+            #     today. That warns BY DESIGN: the commit that begins the work is the one that
+            #     freezes its description, and a rewrite landing in the same commit cannot be told
+            #     from one landing after it.
+            #
+            #     No estate_notice exemption: a notice is a request from central, and its text is
+            #     what the estate believes it asked for. A notice rewritten in place, by anyone —
+            #     the centre correcting its own text included — is a change to what the estate
+            #     asked for; the warning names it either way, and the commit says why.
+            bt, at = tasks_by_key(base_doc), tasks_by_key(doc)
+            for key, b in bt.items():
+                c = at.get(key)
+                if c is None or not (is_started(b) or is_started(c)):
+                    continue
+                pk, tid = key
+                for field in DRIFT_FIELDS:
+                    if b.get(field, _ABSENT) != c.get(field, _ABSENT):
+                        warn.append(
+                            f"phase {pk}: task {tid!r} is STARTED and its {field!r} differs from "
+                            f"the previous commit. Not blocking — a started task's name and verify "
+                            f"are frozen by the task-mutability rule in /update-progress; if this "
+                            f"was a change of plan, mark {tid!r} superseded and add the "
+                            f"replacement under a new id."
+                        )
+
     # Warnings: real but not destructive.
     for pk, po in iter_phases(doc):
         if isinstance(po, dict) and po.get("tasks") is None:
@@ -291,11 +380,12 @@ def check(text, base_text=None):
 
     # FRESHNESS — `last_updated` older than the newest completion date recorded in the file.
     #
-    # A WARNING, NEVER A FAILURE, and the reason is not taste: this module's charter is "four
-    # failures only, each one a thing that DESTROYS data" (see the docstring), and a stale
-    # `last_updated` destroys nothing — every task, id and date is still there. It is also armed
-    # as a pre-commit hook in ~28 projects across the estate, so a fifth failure would block
-    # commits estate-wide over a field that is merely out of date. It goes in `warn`, exit stays 0.
+    # A WARNING, NEVER A FAILURE, and the reason is not taste: this module's charter is four
+    # failures only — three that destroy data, plus the append-only rule (see the docstring) —
+    # and a stale `last_updated` destroys nothing — every task, id and date is still there. It is
+    # also armed as a pre-commit hook in ~28 projects across the estate, so a fifth failure would
+    # block commits estate-wide over a field that is merely out of date. It goes in `warn`, exit
+    # stays 0.
     #
     # Found 2026-08-21 in this repo: last_updated said 2026-08-21 while phase 30's tasks carried
     # completed_at 2026-08-25. Nothing anywhere reported it.

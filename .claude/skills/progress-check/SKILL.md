@@ -1,6 +1,6 @@
 ---
 name: progress-check
-description: Check progress.json for corruption that destroys data — a file that does not parse, a duplicate key that silently drops a value, a repeated task id, or a task that existed in the last commit and has vanished. Checks the staged bytes or the working tree. Invoke before committing progress.json, when a task or phase seems to have disappeared, when progress.json will not load, or when a project's reported state looks older than the work actually done.
+description: Check progress.json for corruption that destroys data — a file that does not parse, a duplicate key that silently drops a value, a repeated task id — and for the append-only rule: a task or phase that existed in the last commit and has vanished. Checks the staged bytes or the working tree. Invoke before committing progress.json, when a task or phase seems to have disappeared, when progress.json will not load, or when a project's reported state looks older than the work actually done.
 ---
 
 # progress-check
@@ -18,17 +18,26 @@ python3 .claude/skills/progress-check/progress_check.py --base none  # skip the 
 
 Exit `0` ok · `1` **FAIL, do not commit** · `2` could not check (file missing/unreadable).
 
-It also runs automatically: `.claude/hooks/pre-commit` invokes it whenever `progress.json` is
-staged, so the check happens at the moment of writing whether or not anyone remembered.
+It also runs at commit time, within three limits worth knowing. `.claude/hooks/pre-commit` invokes
+it only when `progress.json` is **staged** for the commit being made (`git diff --cached
+--name-only` lists it) — an edit that sits unstaged in the working tree is never checked, and
+neither is a commit in which `progress.json` is not among the staged files, whatever else is. And
+the hook **fails open**: if `python3` is not on `PATH`, or
+`.claude/skills/progress-check/progress_check.py` is not at the repo's top level, it skips the
+check silently and the commit goes through. That is deliberate — blocking every commit because an
+interpreter is absent would be a worse failure than the one being prevented — but it means a host
+without either gets no check and no message saying so. And the hook runs only in a clone whose
+`core.hooksPath` is `.claude/hooks` — `/distribute-defaults` sets that per clone (`arm_hookspath`);
+a fresh clone has no hook until then. When it matters, run it by hand.
 
-## What it reports — four things, all of which destroy data
+## What it fails on — three corruptions that lose data at read time, and one rule enforced mechanically
 
 | Failure | Why it matters |
 |---|---|
 | **Does not parse** | Every reader gets nothing. `Extra data` specifically means content was appended *after* the closing brace — usually a whole phase written outside `phases`. The text is in the file; the document does not contain it. |
 | **Duplicate key in one object** | **This is valid JSON.** `json.load` keeps the last and drops the first, silently. A parse check passes and the value is already gone. |
 | **Duplicate task id in a phase** | Two records claim to be the same task; which one any tool reads is arbitrary. |
-| **A task or phase that existed in the last commit is gone** | The framework's oldest rule — *never remove a task, mark it superseded* — enforced mechanically instead of by prose. |
+| **A task or phase present in the last commit is absent** | Not necessarily data loss — the previous commit still holds a removed task's text, and an empty phase has none to lose: this is the framework's oldest rule — *never remove a task, mark it superseded* — the **append-only policy**, enforced mechanically instead of by prose. It compares ids only, so it refuses the removal of an **empty** phase exactly as it refuses a full one (`phase 'x' existed in the previous commit and is now GONE (0 task(s) with it)`). Uniform on purpose: the checker cannot judge whether what vanished mattered, so it does not try. — And, since 2026-08-06, an `estate_notice` marker stripped from a task that kept its id, for the same reason: the next central run would append a second copy. |
 
 ## Plus one thing it warns about: a stale `last_updated`
 
@@ -68,6 +77,30 @@ the one moment it was written for.
 Pinned by `scripts/test-progress-check-freshness.sh` in the central repo (16 cases, including the
 shipped bootstrap and both example playbooks staying silent).
 
+## Plus one more warning since 2026-08-26: started-task drift
+
+Since 2026-08-26 the append-only comparison also looks at tasks present in **both** the last commit
+and the candidate, and **warns** when one that has *started* carries a different `name` or `verify`
+than it did. Started means: a non-empty `started_at` that is not an unsubstituted `{{placeholder}}`,
+or a `status` other than `pending`, `not_started`, `planned`, `todo` or empty (case-insensitive) —
+in either version, so a task rewritten and started in the same commit warns by design. One warning
+per field, naming phase, id and field. An **unstarted** task may be refined in place — `name`,
+`description`, `notes`, a stricter `verify` — and the checker says nothing: not everything can be
+planned correctly, and findings are allowed to change work nobody has begun. Scope, dependency and
+looser-`verify` changes still supersede, even unstarted (`/update-progress` states the rule).
+
+A **warning, never a failure** — exit stays `0`, for the same reason as freshness: a reworded task
+destroys no bytes, and this checker is a pre-commit hook estate-wide. It compares raw field values
+and cannot tell a stricter `verify` from a weaker one. If what changed was a change of plan — a
+different scope, different dependencies (which the checker does not compare), a looser `verify` —
+restore the started task's fields, mark it `superseded` with a reason, and add the replacement
+under a new id. If it was a legitimate edit, whoever reviews the commit judges that; the checker
+only says it happened. Until 2026-08-26 same-id rewrites were never detected at all (consult cycle
+20260826-094406-418e380), so the old blanket never-modify wording was never enforced by this
+checker either; this warning is the first mechanical signal a same-id rewrite has ever produced.
+
+Pinned by `scripts/test-progress-check-mutability.sh` in the central repo.
+
 ## What it deliberately does NOT enforce
 
 No schema, no vocabulary, no style. Measured across 34 real projects: `phases` is a dict in 30 and a
@@ -75,7 +108,8 @@ No schema, no vocabulary, no style. Measured across 34 real projects: `phases` i
 values include both `complete` and `completed`. All of that is tolerated.
 
 **A checker that enforced the template's shape would block commits in real projects and be switched
-off within a day** — which is worse than no checker. It fails only on things that lose data.
+off within a day** — which is worse than no checker. It fails only on things that lose data, plus
+the one append-only rule above.
 
 ## The three corruptions it was built from
 
@@ -94,12 +128,13 @@ check**, which is why the checker parses with `object_pairs_hook` instead of pla
 Fix the file and re-stage it. The repair is never blocked — only the damage is. `--no-verify`
 exists, but using it commits state you have been told is broken.
 
-An **already-damaged** file does not hold the repo hostage: the guard fires only when `progress.json`
-is staged, so unrelated work still commits. It stops the next person who writes the file.
+An **already-damaged** file does not hold the repo hostage — the guard fires only on a staged
+`progress.json` (above), so unrelated work still commits. It stops the next person who writes the file.
 
 ## Related
 
 - `/update-progress` — the conservative edit rules this enforces mechanically (append-only, never
-  remove, never reorder, never change ids).
+  remove, never change ids; since 2026-08-26, a warning when a started task's `name` or `verify`
+  drifts). Reordering is forbidden there and not detected here.
 - `/open-work` — renders the tables from this file; exits 2 when it cannot read it. If `open-work`
   reports it cannot read `progress.json`, run this to find out why.

@@ -26,7 +26,9 @@ Update progress tracking after completing tasks. Follow conservative rules stric
 - Add `completed_at` timestamp
 - Add `started_at` timestamp
 - Add entries to `artifacts` array
-- Add `notes` field to tasks
+- Add or update `notes` on a task (any stage)
+- Edit an **unstarted** task's `name`, `description`, `notes`, or tighten its `verify` — see NEVER
+  Do, first row; a started task's descriptive fields are frozen
 - Add `verify_result` field
 - Add NEW tasks with NEW IDs
 - Update `current_task` pointer
@@ -43,10 +45,34 @@ permits is scoped to a *task* — a thing with an id, an owner, a verify step an
 Nothing in `progress.json` is a place to park a concern that has none of those.
 
 ### NEVER Do:
-- ❌ Remove tasks (mark as `superseded` instead)
+- ❌ Remove tasks — **never delete a task.** Whether it may be *edited* depends on whether it has
+  **started**: a task is started when it carries a non-empty `started_at` (not an unsubstituted
+  `{{placeholder}}`), or its `status` is anything other than `pending`, `not_started`, `planned`,
+  `todo` or empty (case-insensitive). Everything else is **unstarted**.
+  - An **unstarted** task may be edited in place — `name`, `description`, `notes`, and `verify`
+    when the change makes verification **stricter** (tightening). Changing what the task is for,
+    its scope, its dependencies (`depends_on`, `blocked_by`, `blocks`, …), or making `verify`
+    **weaker** (loosening) is a change of plan: mark it `superseded` with a reason and add the
+    replacement under a new id.
+  - A **started** task's descriptive fields — `name`, `description`, `verify`, dependencies — are
+    **frozen**. Only the lifecycle fields in the ALLOWED list above change (`status`, timestamps,
+    `notes`, `artifacts`, `verify_result`, …). Anything else goes through `superseded` — with one
+    exception the estate makes, not the project: a central correction of a delivered
+    `estate_notice` text is replaced in place under the same id (see § *Tasks that arrive from
+    the central estate survey*). The centre writes it, and it still draws the drift warning below.
+  - Tightening versus loosening **cannot be told apart mechanically**. `progress-check` *fails*
+    only on a vanished id; since 2026-08-26 it **warns (never blocks)** when a started task's
+    `name` or `verify` differs from the last commit. Whether an edit was legitimate is judged by whoever
+    reviews the commit, or by a consult — the rule states the boundary; people hold it.
+
+  *Why it changed (operator, 2026-08-26; consult cycle 20260826-094406-418e380): the previous
+  rows were a blanket never-remove / never-rename ("Remove tasks (mark as `superseded` instead)",
+  "Rename task names (add note instead)"). The operator found that "not everything can be planned
+  correctly" and wanted findings to reshape not-yet-started work without a supersede for every
+  refinement. The consult established that the checker never detected a same-id rewrite anyway —
+  the old wording protected nothing mechanically that this one does not.*
 - ❌ Reorder tasks
 - ❌ Consolidate/merge tasks
-- ❌ Rename task names (add note instead)
 - ❌ Change task IDs
 - ❌ Delete from `artifacts` array
 - ❌ Remove the `estate_notice` key from a task (see below)
@@ -67,8 +93,9 @@ exactly as they stand.
 - **The body is in the task's `detail`.** `/open-work` renders `id`/`name`/`status` only, so read
   the task itself, not the table.
 - **Do not remove the `estate_notice` key.** It is what makes re-notification a no-op; delete it
-  and the next central run appends a second copy. The text may legitimately be replaced in place
-  under the same task id if the central rule is corrected.
+  and the next central run appends a second copy. The text is replaced in place by the centre,
+  under the same task id, if the central rule is corrected (if the task has already started, this
+  draws the non-blocking drift warning from `progress-check` — expected; say so in the commit).
 - **To decline** a given check, list its probe name (or `*`) in `.claude/estate-align.skip`, one
   per line. A refusal is reported as REFUSED and is never overridden.
   - **Before delivery** — stops the notice arriving at all. Only possible for a probe you have
@@ -86,6 +113,9 @@ exactly as they stand.
   mechanism always allowed the two-step path; only the sentence forbade it.*
 
 ### When Task Scope Changed During Work:
+
+This is the path for **any** change of intent, scope or dependencies, started or not; a refinement
+of an *unstarted* task that keeps its intent is edited in place instead — see § *NEVER Do*, first row.
 ```json
 // Mark OLD task as superseded (don't delete)
 {"id": "2.1", "name": "Original task", "status": "superseded", "superseded_by": "2.1a", "notes": "Scope changed because..."}
@@ -1146,7 +1176,16 @@ Total: 8/20 tasks complete (40%)
 ## Notes
 - ALWAYS update progress.json BEFORE committing
 - ALWAYS verify completed tasks
-- NEVER remove or reorder tasks
+- NEVER remove, reorder, merge or re-id tasks. A task is **started** once it has a non-empty
+  `started_at` (not a `{{placeholder}}`) or a `status` other than `pending`/`not_started`/`planned`/
+  `todo`/empty (case-insensitive); a **started** task's `name`, `description`, `verify` and
+  dependencies are frozen — only the ALLOWED lifecycle fields change
+- An **unstarted** task may be edited in place: `name`, `description`, `notes`, and `verify` when
+  tightening it. Changed intent, scope, dependencies, or a loosened `verify` → `superseded` with a
+  reason, replacement under a new id
+- Tightening vs loosening is not mechanically enforceable — `progress-check` only warns on a started
+  task's `name`/`verify` drift (since 2026-08-26; started in base OR candidate, so rewrite-and-start
+  in one commit warns by design); the commit reviewer and the consult hold the rule
 - Add new tasks with sub-IDs (2.3a, 2.3b)
 - Document everything in session_notes.md
 - Knowledge extraction is best-effort (skip if no learnings)

@@ -28,6 +28,32 @@ say(){ echo "consult: $*" >&2; }
 # One line, no control bytes: the posture validator refuses a record carrying any, and reviewer prose
 # can contain them. Tab and newline become spaces; everything else below 0x20 (and DEL) is dropped.
 rec_clean(){ LC_ALL=C tr -d '\000-\010\013-\037\177' | tr '\t\n' '  '; }
+
+# THE POSTURE OF A ROUND — and the two different things it can mean, which a display string cannot
+# tell apart:
+#   a BREACH          the CLONE drifted. Attributable to the reviewer and to nobody else, so $ST/breach
+#                     is set and every agreed-* outcome is downgraded at close.
+#   real-tree MOTION  the environment moved. Recorded as a qualification on what the review could see;
+#                     NOT a finding, and it downgrades nothing (the ownership rule, consult-posture.sh).
+# Until 2026-08-26 the operator's message was chosen by `[ "$POST" = clean ]` on the formatted string,
+# which was wrong twice over. `tr '\n' ' '` turns the trailing newline into a trailing SPACE, so
+# "clean " never equalled "clean" and EVERY clean round printed "posture breach recorded as a finding
+# against the reviewer" over a log that read `posture: clean` — measured in this repo's cycle
+# 20260826-094406-418e380, both rounds, reported by the operator the same day. And once real-tree
+# motion became a legitimate clean outcome (34.1), that same comparison would have announced the
+# environment moving as a finding against the reviewer, which is the exact opposite of what the
+# closing record says about it. The predicate is $ST/breach — the one file `close` downgrades on —
+# and the display string is only ever displayed.
+posture_line(){   # $1 = a `consult-posture.sh verify` output file -> one trimmed display line
+  tr '\n' ' ' < "$1" | cut -c1-300 | sed 's/^posture: //; s/[[:space:]]*$//'
+}
+posture_note(){   # $1 = state dir · $2 = round · $3 = 1 if the real tree moved this round -> a line, or nothing
+  if [ -f "$1/breach" ]; then
+    printf 'posture breach in %s — recorded as a finding against the reviewer; no agreed-* outcome can close this cycle\n' "$(cat "$1/breach" 2>/dev/null)"
+  elif [ "${3:-0}" = 1 ]; then
+    printf 'the real checkout moved during round %s — recorded as a qualification on what the review could see, not a finding about the reviewer\n' "$2"
+  fi
+}
 # The re-check text is recorded WHATEVER the verdict. Until 2026-08-26 the caller also required
 # `$O = agreed-applied`, so the reviewer's words were kept only when they said "confirmed" — the one
 # case where they carry no information — and DISCARDED whenever the re-check named a gap. The gap
@@ -384,11 +410,12 @@ PY
   # Real-tree motion returns 0 with a description, which is recorded verbatim in this round's record
   # so the operator can see what moved. It does not set $ST/breach and therefore does not downgrade
   # the outcome: it is a fact about the environment, not a finding about the reviewer.
+  MOVED=0
   if ! "$POSTURE" verify "$REAL" "$CL" "$ST" > "$SCR/r$R.posture" 2>&1; then
-    POST="**POSTURE BREACH** — $(tr '\n' ' ' < "$SCR/r$R.posture" | cut -c1-300)"; put breach "round $R"
+    POST="**POSTURE BREACH** — $(posture_line "$SCR/r$R.posture")"; put breach "round $R"
   else
-    POST="$(tr '\n' ' ' < "$SCR/r$R.posture" | sed 's/^posture: //' | cut -c1-300)"; POST="${POST:-clean}"
-    case "$POST" in *"real tree moved"*) put env_moved "round $R: $POST";; esac
+    POST="$(posture_line "$SCR/r$R.posture")"; POST="${POST:-clean}"
+    case "$POST" in *"real tree moved"*) put env_moved "round $R: $POST"; MOVED=1;; esac
   fi
   # a reviewer that crashed, timed out, or said nothing is a FAILED round, not a quiet one
   if [ $RC -ne 0 ] || [ ! -s "$SCR/r$R.out" ]; then put failed "round $R: rc $RC, $(wc -c < "$SCR/r$R.out" 2>/dev/null || echo 0) bytes"; STATUS="**REVIEWER FAILED** (rc $RC)"; else STATUS="ok"; put reviewed "$R"; fi   # `reviewed` is what every agreed-* outcome will require
@@ -398,7 +425,7 @@ PY
     grep -q 'error=' <<<"$LEDGER" && { put ledger_invalid 1; LEDGER="**LEDGER INVALID** $LEDGER"; }; fi
   { printf '### Round %s — reviewer (Codex, %s)\n\nstatus: %s · tokens %s · posture: %s · ledger: %s\n\n' "$R" "$(codex --version 2>&1 | awk '{print $2}')" "$STATUS" "${TOK:-?}" "$POST" "$LEDGER"; cat "$SCR/r$R.out" 2>/dev/null || echo "(no output)"; } > "$SCR/r$R.rec"
   append "$SCR/r$R.rec"; put round "$R"
-  [ "$POST" = clean ] || say "posture breach recorded as a finding against the reviewer"
+  PNOTE="$(posture_note "$ST" "$R" "$MOVED")"; [ -n "$PNOTE" ] && say "$PNOTE"
   [ "$STATUS" = ok ] || say "reviewer failed — only not-reviewed:REVIEWER-FAILED or disputed can close this cycle"
   say "round $R appended (rc $RC, posture $POST). Read the log, write your response, then: consult.sh respond <file>";;
 # =====================================================================================
