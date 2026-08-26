@@ -148,6 +148,25 @@ missing something that is merely uncommitted.
 Recording it would need an append the grammar itself refuses — a log may hold one open cycle — so
 the operator would get `REFUSAL-NOT-RECORDED`, a defect message for a correct state.
 
+## What the posture check refuses, and what it only records
+
+The reviewer runs in a **clone**; the check compares fingerprints of that clone and of your real
+checkout before and after each round. They are not treated alike, and the difference is the rule:
+
+- **The clone is the skill's.** Nothing else on the machine touches it and the reviewer's process
+  runs inside it, so any change there is the reviewer's. **Hard refusal.**
+- **Your checkout is not the skill's.** You, other sessions, builds and CI write there, so a change
+  proves nothing about the reviewer. It is **recorded, naming the paths that moved**, in the round
+  record and the closing record — and the cycle continues.
+- **Two exceptions inside your checkout, because the skill depends on them:** `consult_notes.md`
+  (the skill writes it; its claim is "old bytes + record") and `.git/hooks/` + `.claude/hooks/`
+  (the skill's own commit executes them). Those refuse.
+
+Until 2026-08-26 the whole real tree was a tripwire, so a concurrent commit, a build writing ignored
+files, or another session's `git fetch` killed the round — *after* the reviewer had been paid for,
+losing that round from the log. If a review ever reports that your checkout moved, that is
+information about the session you were running beside it, not a fault.
+
 ## Recovering a cycle whose session is gone
 
 ```bash

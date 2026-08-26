@@ -380,7 +380,16 @@ PY
   ( cd "$CL" && timeout 900 "$HERE" --bind-from "$REAL" exec "${RESUME[@]}" --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check -o "$SCR/r$R.out" "$(cat "$P")" >"$SCR/r$R.log" 2>&1 </dev/null ); RC=$?
   [ $R -eq 1 ] && put thread "$(grep -m1 -oE 'session id: [0-9a-f-]+' "$SCR/r$R.log" | awk '{print $3}')"
   TOK="$(grep -A1 '^tokens used' "$SCR/r$R.log" | tail -1)"
-  if ! "$POSTURE" verify "$REAL" "$CL" "$ST" > "$SCR/r$R.posture" 2>&1; then POST="**POSTURE BREACH** — $(tr '\n' ' ' < "$SCR/r$R.posture" | cut -c1-300)"; put breach "round $R"; else POST="clean"; fi
+  # Only CLONE drift is a breach (exit 2) — the ownership rule in consult-posture.sh § verify.
+  # Real-tree motion returns 0 with a description, which is recorded verbatim in this round's record
+  # so the operator can see what moved. It does not set $ST/breach and therefore does not downgrade
+  # the outcome: it is a fact about the environment, not a finding about the reviewer.
+  if ! "$POSTURE" verify "$REAL" "$CL" "$ST" > "$SCR/r$R.posture" 2>&1; then
+    POST="**POSTURE BREACH** — $(tr '\n' ' ' < "$SCR/r$R.posture" | cut -c1-300)"; put breach "round $R"
+  else
+    POST="$(tr '\n' ' ' < "$SCR/r$R.posture" | sed 's/^posture: //' | cut -c1-300)"; POST="${POST:-clean}"
+    case "$POST" in *"real tree moved"*) put env_moved "round $R: $POST";; esac
+  fi
   # a reviewer that crashed, timed out, or said nothing is a FAILED round, not a quiet one
   if [ $RC -ne 0 ] || [ ! -s "$SCR/r$R.out" ]; then put failed "round $R: rc $RC, $(wc -c < "$SCR/r$R.out" 2>/dev/null || echo 0) bytes"; STATUS="**REVIEWER FAILED** (rc $RC)"; else STATUS="ok"; put reviewed "$R"; fi   # `reviewed` is what every agreed-* outcome will require
   LEDGER="n/a"
@@ -445,7 +454,11 @@ close)
   AUTHOR_COMMITS=$(git -C "$REAL" rev-list --count "$(st sha)"..HEAD 2>/dev/null || echo 0)
   [ -d "$CL/.git" ] && "$POSTURE" snapshot "$REAL" "$CL" "$ST" >/dev/null || { "$POSTURE" clone "$REAL" "$CL" >/dev/null; "$POSTURE" snapshot "$REAL" "$CL" "$ST" >/dev/null; }
   { printf '**Closing record**\n- outcome: `%s`\n- opening SHA: %s · reviewed SHA: %s · result SHA: %s · author commits since opening: %s\n' "$O" "$(st sha)" "$(git -C "$CL" rev-parse HEAD 2>/dev/null || st sha)" "${SHA:--}" "$AUTHOR_COMMITS"
-    printf -- '- procedure digest: %s · rounds: %s of %s · mode: %s · identity: %s\n- claims: examined %s · unavailable %s · skipped %s\n- recheck: %s\n- nothing written to progress.json by this cycle\n' "$(procedure_digest)" "$(st round)" "$CAP" "$(st mode)" "$(st identity)" "$EX" "$UN" "$SKP" "$RECHECK"
+    printf -- '- procedure digest: %s · rounds: %s of %s · mode: %s · identity: %s\n- claims: examined %s · unavailable %s · skipped %s\n- recheck: %s\n' "$(procedure_digest)" "$(st round)" "$CAP" "$(st mode)" "$(st identity)" "$EX" "$UN" "$SKP" "$RECHECK"
+    # Environmental motion is a QUALIFICATION on the cycle, not a verdict on it — so it is stated in
+    # the closing record rather than being allowed to disappear with the state dir.
+    [ -n "$(st env_moved)" ] && printf -- '- environment: the real checkout moved during this cycle (%s) — the review read a clone of the opening SHA, so this qualifies what it could see; it is not a finding about the reviewer\n' "$(st env_moved)"
+    printf -- '- nothing written to progress.json by this cycle\n'
     # The re-check text is recorded WHATEVER the verdict. Until 2026-08-26 this also required
     # `$O = agreed-applied` — it kept the reviewer's words only when they said "confirmed", the one
     # case where they carry no information, and DISCARDED them whenever the re-check named a gap. The

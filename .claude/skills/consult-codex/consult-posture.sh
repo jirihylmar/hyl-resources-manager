@@ -53,6 +53,52 @@ fp_tree(){  # $1=dir -> fingerprint of EVERY path under the tree, .git INCLUDED:
     find . -type f ! -path './.git/index.lock' -print0 2>/dev/null | LC_ALL=C sort -z | xargs -0 -r sha256sum 2>&1
     [ -f "$LOG" ] && echo "LOG $(sha256sum "$LOG" | cut -d' ' -f1) $(wc -c < "$LOG")" || echo "LOG absent" )
 }
+# OWNED PATHS INSIDE A TREE THE SKILL DOES NOT OWN.
+#
+# The ownership rule (see `verify`) draws the line at what the skill is responsible for — and inside
+# the real checkout two things still are, for reasons that are about the skill, not about a list of
+# attacks someone thought of:
+#
+#   consult_notes.md   the skill WRITES it. Its whole integrity claim is "old bytes + record"; if
+#                      something else rewrites it between verify and append, the append lands on
+#                      tampered content and the claim is false. (Attack H7 in the suite.)
+#   .git/hooks/** and  the skill's own `git commit` EXECUTES these. A file planted in either runs
+#   .claude/hooks/**   as the operator at the skill's publication step. Both are listed because which
+#                      one git uses depends on core.hooksPath, which /start-session Step 0.5 sets to
+#                      .claude/hooks — so naming only one would leave the other open. (Attack B1.)
+#
+# Nothing else qualifies. A concurrent commit's objects and refs, a build's ignored files, a new
+# untracked file, a nested repo, even the repo being flipped to bare — the skill neither wrote them
+# nor runs them, so they are environment, and environment is recorded rather than refused.
+owned_drift(){   # $1 = a diff against real.fp -> 0 (true) if a path the skill owns moved
+  grep -qE '^[<>] LOG ' "$1" && return 0
+  # Candidate paths out of the three shapes fp_tree emits: the find listing, the sha256sum listing,
+  # and the porcelain status. TOP-LEVEL only — a nested repo's .git/hooks/ is not this repo's, and a
+  # pattern that matched it would be refusing for a reason that is not true.
+  { awk '/^[<>] [dfl] /{print $5}' "$1"
+    sed -n 's/^[<>] [0-9a-f]\{64\}  \.\///p' "$1"
+    sed -n 's/^[<>] [ ?ADMRU!][ ?ADMRU!] //p' "$1"
+  } | grep -qE '^(consult_notes\.md|\.git/hooks/|\.claude/hooks/)'
+}
+
+# One sentence describing motion in a tree the skill does not own. Used by `verify` and `append`, so
+# the round record and the log describe environmental change the same way wherever it is noticed.
+real_summary(){   # $1 = a diff file produced against real.fp
+  # NAMES the paths. A refusal that becomes a note is only an acceptable trade if the note is
+  # ACTIONABLE — "3 lines differ" tells the operator nothing and would quietly convert detection into
+  # silence, which is the failure this whole loop exists to avoid. With the paths named, a file the
+  # reviewer had no business writing is visible BY NAME in the round record and in the closing
+  # record, read at the next session start. Detection is kept; only the automatic refusal is dropped,
+  # and only where attribution is impossible.
+  local d="$1" paths n moved
+  moved=$(grep -cE '^[<>] HEAD ' "$d" 2>/dev/null || true)
+  paths=$(awk '/^[<>] [dfl] /{print $5}' "$d" 2>/dev/null | sort -u | head -8 | paste -sd, - || true)
+  n=$(grep -cE '^[<>] ' "$d" 2>/dev/null || true)
+  printf '%s%s line(s) differ%s' \
+    "$( [ "${moved:-0}" -gt 0 ] && echo 'HEAD moved, ' )" \
+    "${n:-0}" "${paths:+; paths: $paths}"
+}
+
 header(){ printf '# Consult log\n\nAppend-only. One `## cycle` per cycle, an opening and a closing record each. Never authoritative — progress.json is.\n'; }
 
 case "${1:-}" in
@@ -77,11 +123,41 @@ case "${1:-}" in
     fp_tree "$CL"   > "$ST/clone.fp" || die "cannot write $ST/clone.fp"
     echo "snapshot: real $(wc -l < "$ST/real.fp") lines, clone $(wc -l < "$ST/clone.fp") lines, digest $(cat "$ST/real.fp" "$ST/clone.fp" | sha256sum | cut -c1-16)";;
   verify)
-    REAL="${2:?}"; CL="${3:?}"; ST="${4:?}"; bad=0
-    for pair in "real:$REAL" "clone:$CL"; do n=${pair%%:*}; d=${pair#*:}
-      if ! diff <(fp_tree "$d") "$ST/$n.fp" > "$ST/$n.diff"; then bad=1; echo "DRIFT in $n tree:"; sed 's/^/   /' "$ST/$n.diff" | head -40; fi
-    done
-    [ $bad -eq 0 ] && echo "posture: clean" || exit 2;;
+    # THE OWNERSHIP RULE — this is the whole design, and it replaced a list of exceptions.
+    #
+    # A guard may hard-refuse only for what the skill OWNS. Motion it does not own is recorded as
+    # evidence, never treated as a violation.
+    #
+    #   the CLONE is owned  — the skill creates it, nothing else on the machine touches it, and the
+    #                         reviewer's process runs inside it. Drift there is attributable to the
+    #                         reviewer and to nobody else. Hard refusal. Exit 2.
+    #   the REAL tree is NOT owned — the operator, concurrent sessions, builds, deploys and CI all
+    #                         write there. Drift there is dominated by environmental noise, so it can
+    #                         prove nothing about the reviewer. RECORDED, never refused.
+    #
+    # Why this is a rule and not another exception (operator, 2026-08-26: "fix it in a way that no
+    # simillar fault come again ... not everythign can be strict, it would become a never ending
+    # list"). Until now this fingerprinted BOTH trees and refused on any difference — HEAD, every
+    # ref, the stash list, `status --ignored --untracked-files=all`, and a sha256 of every file
+    # INCLUDING .git/. In a live repo that fires on a concurrent session's commit, on a build writing
+    # ignored files, even on someone else's `git fetch`. Measured in app-brm-manufacturing-products:
+    # a phase-133 commit landing mid-cycle killed round 2 and LOST the author's response and that
+    # round from the log. Carving an exception per symptom is the never-ending list; this draws the
+    # line once, at the boundary of what the skill can actually be responsible for.
+    #
+    # What is NOT lost: real-tree motion is still fully described, in the round record and in the
+    # closing record, so a write that should not have happened is visible to the operator at the next
+    # session start. Detection is kept; the automatic refusal — the part that could not tell the
+    # reviewer from the author — is what goes.
+    REAL="${2:?}"; CL="${3:?}"; ST="${4:?}"
+    if ! diff <(fp_tree "$CL") "$ST/clone.fp" > "$ST/clone.diff"; then
+      echo "DRIFT in clone tree:"; sed 's/^/   /' "$ST/clone.diff" | head -40; exit 2; fi
+    if [ -f "$ST/real.fp" ] && ! diff <(fp_tree "$REAL") "$ST/real.fp" > "$ST/real.diff"; then
+      if owned_drift "$ST/real.diff"; then
+        echo "DRIFT in a path the skill OWNS inside the real checkout:"; sed 's/^/   /' "$ST/real.diff" | head -40; exit 2; fi
+      echo "posture: clean (clone) · real tree moved — $(real_summary "$ST/real.diff")"
+      exit 0; fi
+    echo "posture: clean";;
   append)
     REAL="${2:?}"; REC="${3:?record file}"; ST="${4:?}"
     # step 5 — structural validation of the scratch record
@@ -94,7 +170,15 @@ case "${1:-}" in
     # value shapes only — a key NAME in a diff or a regex is not a credential (a name-based rule refused its own diff once)
     grep -qE '(AKIA[0-9A-Z]{16}|aws_secret_access_key[[:space:]]*[=:][[:space:]]*[A-Za-z0-9/+]{30,}|X[-_]MCP[-_]Secret[[:space:]]*[:=][[:space:]]*[A-Za-z0-9_-]{20,}|sk-[A-Za-z0-9_-]{20,}|eyJ[A-Za-z0-9_-]{15,}\.)' "$REC" && die "record looks like it carries a credential"
     # step 6 — the real tree must still equal the step-4 baseline: a write landing between verify and append is NOT the skill's
-    if [ -f "$ST/real.fp" ]; then diff <(fp_tree "$REAL") "$ST/real.fp" > "$ST/real.diff" || die "real tree drifted since verify — refusing to append:$(sed 's/^/ /' "$ST/real.diff" | head -20 | tr '\n' ';')"; fi
+    # step 6 — the real tree is NOT owned (see the ownership rule under `verify`). Motion here is
+    # recorded and the baseline is refreshed so step 7 can still isolate the skill's own write. It
+    # does NOT refuse: this line used to `die`, which is what killed a round whenever another session
+    # committed — and it killed it AFTER the reviewer had been paid for, losing the round entirely.
+    if [ -f "$ST/real.fp" ] && ! diff <(fp_tree "$REAL") "$ST/real.fp" > "$ST/real.diff"; then
+      owned_drift "$ST/real.diff" && die "a path the skill OWNS moved since verify — refusing to append:$(sed 's/^/ /' "$ST/real.diff" | head -20 | tr '\n' ';')"
+      echo "append: real tree moved before this write — $(real_summary "$ST/real.diff") (recorded, not refused)" >&2
+      fp_tree "$REAL" > "$ST/real.fp"
+    fi
     L="$REAL/$LOG"; OLD="$ST/log.before"
     [ -e "$OLD" ] && [ "$L" -ef "$OLD" ] && die "state dir aliases the log"
     [ -e "$ST/log.expected" ] && [ "$L" -ef "$ST/log.expected" ] && die "state dir aliases the log"
@@ -104,8 +188,12 @@ case "${1:-}" in
     # step 7 — prove old + record, AND that the only change in the real tree is the log; roll back otherwise
     cmp -s "$L" "$ST/log.expected" || { cp --remove-destination "$OLD" "$L"; die "log is not old bytes + record — rolled back"; }
     fp_tree "$REAL" > "$ST/real.fp.new"
+    # The LOG is owned by the skill and its bytes are proved exactly, above (old + record, or rolled
+    # back). Motion in the rest of the real tree during the write window belongs to the environment:
+    # recorded, not rolled back. Rolling the log back because someone else committed during the
+    # append discards a record the reviewer already earned.
     if [ -f "$ST/real.fp" ] && diff "$ST/real.fp.new" "$ST/real.fp" | grep -E '^[<>]' | grep -vF "$LOG" | grep -vE "^[<>] LOG " | grep -q .; then
-      cp --remove-destination "$OLD" "$L"; die "a write other than the log landed during append — rolled back:$(diff "$ST/real.fp.new" "$ST/real.fp" | grep -E '^[<>]' | grep -vF "$LOG" | grep -vE "^[<>] LOG " | head -10 | tr '\n' ';')"; fi
+      echo "append: real tree moved during this write — $(diff "$ST/real.fp.new" "$ST/real.fp" | grep -E '^[<>]' | grep -vF "$LOG" | grep -vE "^[<>] LOG " | wc -l) line(s) (recorded, not refused)" >&2; fi
     mv "$ST/real.fp.new" "$ST/real.fp"   # the skill's write is now the baseline; nothing else moved
     echo "append: +$(( $(wc -c < "$REC") + 1 )) bytes (newline + record) to $LOG, verified old+record";;
   refresh)
