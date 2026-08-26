@@ -192,10 +192,42 @@ sync_ff() {  # $1=dir ('.' for orchestration), $2=label
     || { echo "SKIP $2: no upstream (local-only) — nothing to pull"; return; }
   [ -z "$(git -C "$1" status --porcelain)" ] \
     || { echo "SKIP $2: working tree dirty — commit it, or leave it and skip this repo (see § 0a)"; return; }
-  if git -C "$1" merge-base --is-ancestor HEAD @{u} 2>/dev/null; then
-    git -C "$1" merge --ff-only @{u} && echo "OK   $2: fast-forwarded to origin-latest"
+  # Count both directions. The test here used to be `merge-base --is-ancestor HEAD @{u}`, which is
+  # false for a repo that is merely AHEAD — so a checkout holding unpushed commits and nothing else
+  # was reported "diverged / non-fast-forward, DO NOT force". That is not a divergence; it needs a
+  # push, and the message sent the reader looking for a conflict that does not exist.
+  behind=$(git -C "$1" rev-list --count HEAD..@{u} 2>/dev/null || echo 0)
+  ahead=$(git -C "$1" rev-list --count @{u}..HEAD 2>/dev/null || echo 0)
+  if [ "$behind" -gt 0 ] && [ "$ahead" -gt 0 ]; then
+    echo "SKIP $2: diverged ($ahead ahead, $behind behind) — DO NOT force; resolve per § 0a below (runs on ANY host)"
+  elif [ "$behind" -gt 0 ]; then
+    git -C "$1" merge --ff-only @{u} >/dev/null && echo "OK   $2: fast-forwarded $behind to origin-latest"
+  elif [ "$ahead" -gt 0 ]; then
+    # PUBLISH WHAT AN EARLIER SESSION STRANDED — and this is the ONE place that can.
+    #
+    # FIVE distributed defaults create commits: add-work, generate-phases, setup,
+    # setup-workflow-only, and this file's own Step 2 CLAUDE.md heal. NONE of them pushes; the
+    # design assumes /update-progress Step 10 publishes everything at session close. That holds
+    # only when a session reaches Step 10 — and a session that ends early, runs out of context, or
+    # only ever ran /start-session leaves its commit on one disk. Origin then moves without it and
+    # the checkout diverges for real.
+    #
+    # Measured 2026-08-26: doc-digital-horizon-goldsport on the box carried ONE such commit — this
+    # file's Step 2 heal, made 24 Aug and never pushed — and sat unable to take NINE distributions
+    # stacked on its origin. The project had done nothing wrong; a default committed and no default
+    # published.
+    #
+    # Fixing it here rather than at the five commit sites is deliberate: one place, it fires every
+    # session in every repo, it covers commit sites nobody has enumerated yet, and it is retroactive
+    # — a commit stranded weeks ago is published the next time anyone opens the project. Step 0 has
+    # just fast-forwarded this repo, so an ahead-only push is a fast-forward by construction.
+    if git -C "$1" push --quiet 2>/dev/null; then
+      echo "OK   $2: published $ahead commit(s) an earlier session left unpushed"
+    else
+      echo "SKIP $2: $ahead commit(s) are unpushed and the push was refused — resolve per § 0a below"
+    fi
   else
-    echo "SKIP $2: diverged / non-fast-forward — DO NOT force; resolve per § 0a below (runs on ANY host)"
+    echo "OK   $2: up to date with origin"
   fi
 }
 sync_ff "." orchestration
