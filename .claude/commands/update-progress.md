@@ -47,8 +47,17 @@ Nothing in `progress.json` is a place to park a concern that has none of those.
 ### NEVER Do:
 - ❌ Remove tasks — **never delete a task.** Whether it may be *edited* depends on whether it has
   **started**: a task is started when it carries a non-empty `started_at` (not an unsubstituted
-  `{{placeholder}}`), or its `status` is anything other than `pending`, `not_started`, `planned`,
-  `todo` or empty (case-insensitive). Everything else is **unstarted**.
+  `{{placeholder}}`), or its `status` is not one of the **pre-start** ones — `pending`,
+  `not_started`, `planned`, `todo`, `to_do`, `unstarted`, `deferred`, `postponed`, `backlog`,
+  `on_hold`, `queued`, `new`, `ready`, `future`, `tbd`, or empty. Case-insensitive, and separator
+  spellings fold together, so `not started` and `not-started` read as `not_started`. `blocked` is
+  deliberately *not* pre-start: a task is as often blocked mid-flight as before beginning, so the
+  ambiguous case errs towards a warning. `started_at` is tested first and wins — a task parked in
+  any status still counts as started once it carries a real start timestamp. Everything else is
+  **unstarted**. *(Source of truth: `UNSTARTED_STATUSES` in `progress-check`'s `progress_check.py`;
+  this list is an index of it. The parked statuses joined it on 2026-08-26, measured: 25 tasks
+  across the estate stood in `postponed`, `deferred` or `on_hold` and not one carried a
+  `started_at` — freezing work nobody had begun is the opposite of what this rule is for.)*
   - An **unstarted** task may be edited in place — `name`, `description`, `notes`, and `verify`
     when the change makes verification **stricter** (tightening). Changing what the task is for,
     its scope, its dependencies (`depends_on`, `blocked_by`, `blocks`, …), or making `verify`
@@ -56,12 +65,21 @@ Nothing in `progress.json` is a place to park a concern that has none of those.
     replacement under a new id.
   - A **started** task's descriptive fields — `name`, `description`, `verify`, dependencies — are
     **frozen**. Only the lifecycle fields in the ALLOWED list above change (`status`, timestamps,
-    `notes`, `artifacts`, `verify_result`, …). Anything else goes through `superseded` — with one
-    exception the estate makes, not the project: a central correction of a delivered
-    `estate_notice` text is replaced in place under the same id (see § *Tasks that arrive from
-    the central estate survey*). The centre writes it, and it still draws the drift warning below.
-  - Tightening versus loosening **cannot be told apart mechanically**. `progress-check` *fails*
-    only on a vanished id; since 2026-08-26 it **warns (never blocks)** when a started task's
+    `notes`, `artifacts`, `verify_result`, …). Anything else goes through `superseded` — with two
+    exceptions, both made by the framework rather than by the project:
+    - a central correction of a delivered `estate_notice` text is replaced in place under the same
+      id (see § *Tasks that arrive from the central estate survey*). The centre writes it, and it
+      still draws the drift warning below.
+    - `/repo-hygiene` Step 4 **compaction** relocates a finished task's long prose bodies —
+      `description` among them — into a committed sidecar, leaving a pointer. Every field in its
+      `KEEP_TASK` set (`name`, `verify`, `status`, ids, timestamps, dependencies) is preserved
+      verbatim, so what compaction moves is bytes, not the record. `description` is frozen against
+      *rewriting*; it is not frozen against being filed. (Named here because both are distributed
+      defaults: without this sentence `/repo-hygiene` stands in violation of `/update-progress`.)
+  - Tightening versus loosening **cannot be told apart mechanically**. `progress-check` never
+    fails on an *edit* at all — it fails when something VANISHES (a task, a phase, an
+    `estate_notice` marker) or when the file is corrupt (will not parse, duplicate key, repeated
+    task id); since 2026-08-26 it **warns (never blocks)** when a started task's
     `name` or `verify` differs from the last commit. Whether an edit was legitimate is judged by whoever
     reviews the commit, or by a consult — the rule states the boundary; people hold it.
 
@@ -1177,9 +1195,12 @@ Total: 8/20 tasks complete (40%)
 - ALWAYS update progress.json BEFORE committing
 - ALWAYS verify completed tasks
 - NEVER remove, reorder, merge or re-id tasks. A task is **started** once it has a non-empty
-  `started_at` (not a `{{placeholder}}`) or a `status` other than `pending`/`not_started`/`planned`/
-  `todo`/empty (case-insensitive); a **started** task's `name`, `description`, `verify` and
-  dependencies are frozen — only the ALLOWED lifecycle fields change
+  `started_at` (not a `{{placeholder}}`) or a `status` outside the pre-start set —
+  `pending`/`not_started`/`planned`/`todo`/`unstarted`/`deferred`/`postponed`/`backlog`/`on_hold`/
+  `queued`/`new`/`ready`/`future`/`tbd`/empty, case-insensitive, separator spellings folded, and
+  `blocked` deliberately excluded (source of truth: `UNSTARTED_STATUSES` in `progress_check.py`);
+  a **started** task's `name`, `description`, `verify` and dependencies are frozen — only the
+  ALLOWED lifecycle fields change, plus `/repo-hygiene` compaction filing long prose to a sidecar
 - An **unstarted** task may be edited in place: `name`, `description`, `notes`, and `verify` when
   tightening it. Changed intent, scope, dependencies, or a loosened `verify` → `superseded` with a
   reason, replacement under a new id

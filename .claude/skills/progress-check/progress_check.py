@@ -79,20 +79,46 @@ def iter_phases(doc):
             yield (key or f"[{i}]"), v
 
 
-def iter_tasks(phase_obj):
-    """Yield task objects for list-shaped AND dict-shaped `tasks`; skip bare strings."""
+def iter_tasks_keyed(phase_obj):
+    """Yield (dict key or None, task object) for list- AND dict-shaped `tasks`; skip bare strings.
+
+    The key is kept because it is the **id of last resort**. A `tasks` object keyed BY task id
+    whose records carry no redundant inner `id` is a shape the estate really uses, and discarding
+    the key made every id-based check silently inert on it — duplicate ids, append-only, the
+    `estate_notice` marker, and (since 2026-08-26) started-task drift all join on the id, and
+    there was none. Inert is the worst failure mode this module has: it reports "ok" over a file
+    it never examined. Measured 2026-08-26 by the phase-37 verification sweep.
+    """
     if not isinstance(phase_obj, dict):
         return
     ts = phase_obj.get("tasks")
     if isinstance(ts, list):
-        items = ts
+        items = [(None, t) for t in ts]
     elif isinstance(ts, dict):
-        items = list(ts.values())
+        items = list(ts.items())
     else:
         return
-    for t in items:
+    for k, t in items:
         if isinstance(t, dict):
-            yield t
+            yield k, t
+
+
+def iter_tasks(phase_obj):
+    """Yield task objects for list-shaped AND dict-shaped `tasks`; skip bare strings."""
+    for _k, t in iter_tasks_keyed(phase_obj):
+        yield t
+
+
+def task_id_of(key, task):
+    """The task's id: its own `id` when it has one, else the dict key it is filed under.
+
+    Returns None only for a list-shaped task with no `id` — genuinely unidentifiable, and the
+    callers skip it as they always did.
+    """
+    tid = task.get("id")
+    if tid is not None:
+        return str(tid)
+    return None if key is None else str(key)
 
 
 # --- completion dates, for the freshness warning ----------------------------
@@ -163,8 +189,8 @@ def completion_fields(doc):
             for k in COMPLETION_KEYS:
                 if k in po:
                     yield f"phase {pk}", k, po[k]
-        for t in iter_tasks(po):
-            tid = t.get("id")
+        for k, t in iter_tasks_keyed(po):
+            tid = task_id_of(k, t)
             label = f"phase {pk}: task {tid}" if tid is not None else f"phase {pk}: (task with no id)"
             for k in COMPLETION_KEYS:
                 if k in t:
@@ -180,10 +206,11 @@ def notice_markers(doc):
     """
     out = {}
     for pk, po in iter_phases(doc):
-        for t in iter_tasks(po):
-            if t.get("id") is None:
+        for k, t in iter_tasks_keyed(po):
+            tid = task_id_of(k, t)
+            if tid is None:
                 continue
-            out[(pk, str(t["id"]))] = t.get("estate_notice")
+            out[(pk, tid)] = t.get("estate_notice")
     return out
 
 
@@ -191,7 +218,7 @@ def task_ids(doc):
     """{phase_key: [task ids]} — the append-only invariant operates on these."""
     out = {}
     for pk, po in iter_phases(doc):
-        ids = [str(t["id"]) for t in iter_tasks(po) if t.get("id") is not None]
+        ids = [i for i in (task_id_of(k, t) for k, t in iter_tasks_keyed(po)) if i is not None]
         out[pk] = ids
     return out
 
@@ -203,13 +230,37 @@ def task_ids(doc):
 #: this module). This is a status vocabulary, which this module otherwise refuses to have — so it
 #: is used only to decide whether to SAY something (check() § 4b), never whether to fail.
 #: Case-insensitive.
-UNSTARTED_STATUSES = {"pending", "not_started", "planned", "todo", ""}
+#: Separator spellings are normalised before lookup (`not started`, `not-started`, `to do` →
+#: `not_started`, `to_do`), because a set that holds `not_started` and read `not started` as
+#: STARTED was not making a judgement — it was missing a synonym of a word already in the set.
+UNSTARTED_STATUSES = {
+    "pending", "not_started", "planned", "todo", "to_do", "unstarted", "",
+    # Pre-start parking. These were STARTED until 2026-08-26, on the reasoning that they carry "a
+    # history worth keeping". Measured across the estate that day: 25 tasks stand in `postponed`
+    # (13), `deferred` (11) or `on_hold` (1), and **not one carries a `started_at`** —
+    # they are work nobody began, which is precisely the case the mutability rule exists to let
+    # findings reshape ("not everything can be planned correctly"). A parked task that really did
+    # begin still reads STARTED, because `started_at` is tested first and wins.
+    "deferred", "postponed", "backlog", "on_hold", "queued", "new", "ready", "future", "tbd",
+}
+# `blocked` is deliberately NOT here: a task is as often blocked mid-flight as before starting, so
+# the ambiguous case keeps erring towards a warning. Terminal statuses stay STARTED too — a
+# finished task's words are its history.
+
+
+def norm_status(st):
+    """Fold separator spellings together: 'not started' / 'not-started' → 'not_started'."""
+    return re.sub(r"[\s\-]+", "_", str(st).strip().lower())
 
 #: The descriptive fields compared on a started task. The rule freezes `description` and the
 #: dependency fields too, but these two are the ones every shipped task carries and the two that
 #: change what "done" means — a drift check that compared everything would warn about the notes
 #: field that the same rule explicitly allows to change.
 DRIFT_FIELDS = ("name", "verify")
+
+#: How many drift warnings are printed in full before the rest are named in one line. Matches the
+#: cap the malformed-date warning uses, for the same reason: the hook prints these into a commit.
+DRIFT_SHOWN = 3
 
 _ABSENT = object()   # so "field removed" and "field set to null" both read as a difference
 
@@ -218,10 +269,14 @@ def is_started(task):
     """True when the task has begun, by the same two signals the prose rule names.
 
     `started_at` counts when present, non-empty and not an unsubstituted `{{placeholder}}` — the
-    bootstrap ships those, same carve-out as is_absent(). `status` counts when it is anything
-    outside UNSTARTED_STATUSES: "in_progress", "completed", "complete", "superseded", "deferred",
-    "blocked" all mean the task has a history worth keeping. Unknown spellings therefore lean
-    towards STARTED, which errs on the side of a warning rather than of silence.
+    bootstrap ships those, same carve-out as is_absent(). It is tested FIRST and wins: a task
+    parked in any status still reads STARTED once it carries a real start timestamp.
+
+    `status` counts when it is anything outside UNSTARTED_STATUSES: "in_progress", "completed",
+    "complete", "superseded", "blocked" all mean the task has a history worth keeping. Unknown
+    spellings still lean towards STARTED, which errs on the side of a warning rather than of
+    silence — but a *known* pre-start spelling is not an unknown one, which is why the parked
+    statuses and the separator variants were moved into the set on 2026-08-26.
     """
     sa = task.get("started_at")
     if sa is not None and not (isinstance(sa, str) and (sa.strip() == "" or is_absent(sa))):
@@ -229,16 +284,17 @@ def is_started(task):
     st = task.get("status")
     if st is None:
         return False
-    return str(st).strip().lower() not in UNSTARTED_STATUSES
+    return norm_status(st) not in UNSTARTED_STATUSES
 
 
 def tasks_by_key(doc):
     """{(phase_key, task_id): task} for every task that has an id — the join the drift check runs on."""
     out = {}
     for pk, po in iter_phases(doc):
-        for t in iter_tasks(po):
-            if t.get("id") is not None:
-                out[(pk, str(t["id"]))] = t
+        for k, t in iter_tasks_keyed(po):
+            tid = task_id_of(k, t)
+            if tid is not None:
+                out[(pk, tid)] = t
     return out
 
 
@@ -299,7 +355,8 @@ def check(text, base_text=None):
                     fail.append(f"phase {pk!r} existed in the previous commit and is now GONE "
                                 f"({len(ids)} task(s) with it)")
                     continue
-                missing = [i for i in ids if i not in set(after[pk])]
+                after_set = set(after[pk])          # hoisted: rebuilt per id, this was quadratic
+                missing = [i for i in ids if i not in after_set]
                 for i in missing:
                     fail.append(f"phase {pk}: task {i!r} existed in the previous commit and is "
                                 f"now GONE. Tasks are append-only — mark it superseded instead.")
@@ -352,21 +409,35 @@ def check(text, base_text=None):
             #     what the estate believes it asked for. A notice rewritten in place, by anyone —
             #     the centre correcting its own text included — is a change to what the estate
             #     asked for; the warning names it either way, and the commit says why.
+            #     CAPPED, like the malformed-comparison warning below it. One warning per
+            #     (task, field) is right for the handful of tasks a real change of plan touches;
+            #     a bulk edit — a sweep, a rename, a schema migration — would otherwise put
+            #     hundreds of near-identical 300-byte paragraphs into the operator's commit
+            #     output, and a warning nobody can read past is a warning that has stopped
+            #     working. The first few say the whole thing; the rest are named, not repeated.
             bt, at = tasks_by_key(base_doc), tasks_by_key(doc)
-            for key, b in bt.items():
+            drift = []
+            for key, b in sorted(bt.items(), key=lambda kv: (str(kv[0][0]), str(kv[0][1]))):
                 c = at.get(key)
                 if c is None or not (is_started(b) or is_started(c)):
                     continue
                 pk, tid = key
                 for field in DRIFT_FIELDS:
                     if b.get(field, _ABSENT) != c.get(field, _ABSENT):
-                        warn.append(
-                            f"phase {pk}: task {tid!r} is STARTED and its {field!r} differs from "
-                            f"the previous commit. Not blocking — a started task's name and verify "
-                            f"are frozen by the task-mutability rule in /update-progress; if this "
-                            f"was a change of plan, mark {tid!r} superseded and add the "
-                            f"replacement under a new id."
-                        )
+                        drift.append((pk, tid, field))
+            for pk, tid, field in drift[:DRIFT_SHOWN]:
+                warn.append(
+                    f"phase {pk}: task {tid!r} is STARTED and its {field!r} differs from "
+                    f"the previous commit. Not blocking — a started task's name and verify "
+                    f"are frozen by the task-mutability rule in /update-progress; if this "
+                    f"was a change of plan, mark {tid!r} superseded and add the "
+                    f"replacement under a new id."
+                )
+            if len(drift) > DRIFT_SHOWN:
+                rest = "; ".join(f"{pk}:{tid} {field}" for pk, tid, field in drift[DRIFT_SHOWN:])
+                warn.append(
+                    f"+{len(drift) - DRIFT_SHOWN} more started task(s) drifted, same rule: {rest}"
+                )
 
     # Warnings: real but not destructive.
     for pk, po in iter_phases(doc):

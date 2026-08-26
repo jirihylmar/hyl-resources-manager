@@ -1,6 +1,6 @@
 ---
 name: progress-check
-description: Check progress.json for corruption that destroys data — a file that does not parse, a duplicate key that silently drops a value, a repeated task id — and for the append-only rule: a task or phase that existed in the last commit and has vanished. Checks the staged bytes or the working tree. Invoke before committing progress.json, when a task or phase seems to have disappeared, when progress.json will not load, or when a project's reported state looks older than the work actually done.
+description: Check progress.json for corruption that destroys data — a file that does not parse, a duplicate key that silently drops a value, a repeated task id — and for the append-only rule: a task or phase that existed in the last commit and has vanished. Also warns (never blocks) when a task that has already STARTED has had its name or verify rewritten since the last commit — the task-mutability rule. Checks the staged bytes or the working tree. Invoke before committing progress.json, when a task or phase seems to have disappeared, when a task's wording or acceptance criteria changed after work began, when progress.json will not load, or when a project's reported state looks older than the work actually done.
 ---
 
 # progress-check
@@ -82,9 +82,15 @@ shipped bootstrap and both example playbooks staying silent).
 Since 2026-08-26 the append-only comparison also looks at tasks present in **both** the last commit
 and the candidate, and **warns** when one that has *started* carries a different `name` or `verify`
 than it did. Started means: a non-empty `started_at` that is not an unsubstituted `{{placeholder}}`,
-or a `status` other than `pending`, `not_started`, `planned`, `todo` or empty (case-insensitive) —
-in either version, so a task rewritten and started in the same commit warns by design. One warning
-per field, naming phase, id and field. An **unstarted** task may be refined in place — `name`,
+or a `status` outside the pre-start set — `pending`, `not_started`, `planned`, `todo`, `to_do`,
+`unstarted`, `deferred`, `postponed`, `backlog`, `on_hold`, `queued`, `new`, `ready`, `future`,
+`tbd`, empty — case-insensitive, with separator spellings folded (`not started` reads as
+`not_started`). `blocked` is deliberately outside the pre-start set: a task is as often blocked
+mid-flight as before beginning. `started_at` is tested first and wins, so a task parked in any
+status still counts as started once it carries a real start timestamp. Either version counts, so a
+task rewritten and started in the same commit warns by design. One warning
+per field, naming phase, id and field — the first three in full, then one line naming the rest, so
+a bulk edit cannot bury the message in its own repetitions. An **unstarted** task may be refined in place — `name`,
 `description`, `notes`, a stricter `verify` — and the checker says nothing: not everything can be
 planned correctly, and findings are allowed to change work nobody has begun. Scope, dependency and
 looser-`verify` changes still supersede, even unstarted (`/update-progress` states the rule).
