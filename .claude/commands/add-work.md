@@ -348,7 +348,9 @@ After `/add-work`:
 
 ## Notes
 
-- This command consolidates `/add-phase` and `/add-tasks`
+- This command REPLACED the former `/add-phase` and `/add-tasks`; neither exists any more, in this
+  repo or in any project. Grounded 2026-08-26 — the previous wording ("consolidates") read in the
+  present tense as though both were still there to be reached for.
 - Always apply task sizing rules
 - Always get explicit approval
 - Always capture EnterPlanMode output before session ends
