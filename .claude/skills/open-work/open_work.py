@@ -33,9 +33,17 @@ reached 43 entries against 0-4 everywhere else, and an operator reading this ren
 (/add-work § Where a recorded concern goes). A legacy `backlog` key is REPORTED as a retired
 channel and never rendered as work.
 
-No dependencies, no network, no writes. Reads one file — plus consult_notes.md beside it IF it
-exists, because the consult loop never writes progress.json and its open outcomes would
-otherwise be invisible here (see SKILL.md § Why a second file).
+No dependencies, no network, no writes. Reads ONE file: progress.json.
+
+Until 2026-08-26 it also read consult_notes.md beside it and rendered an "Open consult cycles"
+table, on the reasoning that a cycle closed `agreed-proposed` or `disputed` lives only in that log.
+That made the consult log a second open-work channel with no closure rule — a cycle whose proposal
+the operator had approved, delivered and completed as a whole phase still rendered as "awaits the
+operator", forever, and every future successful review added another permanent row. It was the
+retired `backlog` in a different file. The operator's direction, 2026-08-26: "creating growing track
+of issues separatelly is a polution. we have progress json to govern the project. consultation is in
+> discusions > task updated in progress > end." So the table is gone rather than given a grammar:
+progress.json governs, and consult_notes.md is evidence to read, not work to track.
 
 Usage:
     python3 open_work.py [--file progress.json]
@@ -53,7 +61,6 @@ Exit codes:
 
 import collections
 import json
-import os
 import sys
 
 # Terminal statuses — every spelling that means "this is finished", because the estate uses
@@ -185,79 +192,12 @@ def structural_problems(data, phases):
 def cell(value, limit=110):
     """A value safe to interpolate into a Markdown table cell.
 
-    Table values were interpolated raw, so a `|` in a task id, a phase name or a consult target
+    Table values were interpolated raw, so a `|` in a task id or a phase name
     produced extra columns and a newline broke the row entirely — the deterministic table shape
     this script exists to guarantee, destroyed by its own content. Escape the delimiter, flatten
     whitespace, then shorten."""
     text = " ".join(str(value).split()).replace("|", "\\|")
     return short(text, limit)
-
-
-# The five outcomes, EXACTLY as .claude/skills/consult-codex/consult-log.py defines them. This is
-# a deliberate second copy, not an oversight: this renderer is dependency-free by design so it works
-# in a project that has no consult skill installed. scripts/test-open-work-claims.sh pins the two
-# definitions equal, so the duplication cannot drift silently. Until 2026-08-25 no validation
-# happened at all — any backticked value counted as CLOSED and an unquoted one became "?" and also
-# counted as closed, so a grammatically broken log vanished into the benign closed-cycle count
-# instead of raising CONSULT-LOG-UNREADABLE.
-_OUTCOME_EXACT = ("agreed-applied", "agreed-proposed", "agreed-nothing", "disputed")
-_OUTCOME_NR = None   # compiled on first use; `re` is imported inside consult_cycles
-
-
-def OUTCOME_OK(value):
-    global _OUTCOME_NR
-    import re as _re
-    if _OUTCOME_NR is None:
-        _OUTCOME_NR = _re.compile(r"^not-reviewed:[A-Z][A-Z0-9-]*(:[A-Za-z0-9-]+)?$")
-    return value in _OUTCOME_EXACT or bool(_OUTCOME_NR.match(value))
-
-
-def consult_cycles(log_path):
-    """-> (open [(id, target, outcome)], closed_count, problem_or_None) from consult_notes.md.
-    Grammar (owned by .claude/skills/consult-codex/consult-log.py — this is the reader's half,
-    kept dependency-free so open-work renders in a project that has no consult skill):
-      '## cycle <id> — <target>' opens a cycle; '**Closing record**' followed by
-      '- outcome: `<value>`' closes it. Open = agreed-proposed | disputed. A cycle with no closing
-      record is in progress and is reported as open with outcome 'in-progress'. Two cycles with
-      no closing record, a duplicate id, or a closing record outside a cycle is a broken log."""
-    import os, re
-    if not os.path.exists(log_path):
-        return [], 0, None
-    try:
-        with open(log_path, encoding="utf-8") as fh:
-            lines = fh.read().split("\n")
-    except OSError as exc:
-        return [], 0, "unreadable: %s" % exc
-    head = re.compile(r"^## cycle (\S+) — (.+)$")
-    cycles, cur, seen = [], None, set()
-    for ln in lines:
-        m = head.match(ln)
-        if m:
-            if m.group(1) in seen:
-                return [], 0, "duplicate cycle id %s" % m.group(1)
-            seen.add(m.group(1)); cur = {"id": m.group(1), "target": m.group(2).strip(), "outcome": None, "closing": False}
-            cycles.append(cur); continue
-        if ln.startswith("**Closing record**"):
-            if cur is None: return [], 0, "closing record outside a cycle"
-            if cur["closing"]: return [], 0, "second closing record in cycle %s" % cur["id"]
-            cur["closing"] = True; continue
-        if cur and cur["closing"] and cur["outcome"] is None and ln.startswith("- outcome:"):
-            om = re.search(r"`([^`]+)`", ln)
-            if not om:
-                return [], 0, "closing record of cycle %s states an outcome that is not in backticks: %s" % (cur["id"], ln.strip()[:80])
-            if not OUTCOME_OK(om.group(1)):
-                return [], 0, "cycle %s closed with '%s', which is not one of the five outcomes" % (cur["id"], om.group(1)[:60])
-            cur["outcome"] = om.group(1)
-    unclosed = [c for c in cycles if not c["closing"]]
-    if len(unclosed) > 1:
-        return [], 0, "more than one cycle without a closing record (%s)" % ", ".join(c["id"] for c in unclosed)
-    open_rows, closed = [], 0
-    for c in cycles:
-        if not c["closing"]: open_rows.append((c["id"], c["target"], "in-progress"))
-        elif c["outcome"] in ("agreed-proposed", "disputed"): open_rows.append((c["id"], c["target"], c["outcome"]))
-        elif c["outcome"] is None: return [], 0, "closing record of cycle %s carries no outcome" % c["id"]
-        else: closed += 1
-    return open_rows, closed, None
 
 
 def phase_of(phases, task_id):
@@ -453,33 +393,6 @@ def main():
                           fill("what this phase is FOR, one line — not its title again"),
                           count, "" if count == 1 else "s"))
             rendered_rows += 1
-        out.append("")
-
-    # --- consult cycles: the ONE thing the loop leaves behind that is not in progress.json ---
-    # A cycle closed `agreed-proposed` or `disputed` lives only in consult_notes.md (the loop
-    # never writes progress.json, by design). Phase 28 of the examples repo is the record of a
-    # notice channel nobody read for 15 days; this section exists so a consult outcome cannot
-    # repeat that. Absent log = no cycles (nothing to say). Malformed log = say so, loudly —
-    # "no open consult work" and "I could not read the log" must never look the same.
-    open_cycles, closed_cycles, log_problem = consult_cycles(os.path.join(os.path.dirname(os.path.abspath(path)), "consult_notes.md"))
-    if log_problem:
-        out.append("> **CONSULT-LOG-UNREADABLE** — consult_notes.md exists but its grammar is broken: %s. "
-                   "Report it; do not assume there is no open consult work." % log_problem)
-        out.append("")
-    if open_cycles:
-        out.append("**Open consult cycles** (consult_notes.md — the reviewer's outcome awaits the operator)")
-        out.append("")
-        out.append("| Cycle | Target | Outcome | In plain words |")
-        out.append("|-------|--------|---------|----------------|")
-        for cid, target, outcome in open_cycles:
-            out.append("| %s | %s | `%s` | %s |"
-                       % (cell(cid, 40), cell(target, 60), outcome,
-                          fill("what the reviewer proposed or disputed, one line — read the cycle's closing rounds")))
-            rendered_rows += 1
-        out.append("")
-    if closed_cycles:
-        out.append("_%d consult cycle%s closed (applied, nothing to change, or refused) and %s not shown._"
-                   % (closed_cycles, "" if closed_cycles == 1 else "s", "is" if closed_cycles == 1 else "are"))
         out.append("")
 
     if rendered_rows == 0 and not current_block:

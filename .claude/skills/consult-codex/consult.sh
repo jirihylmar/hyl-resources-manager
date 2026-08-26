@@ -7,6 +7,7 @@
 #   consult.sh review                     run the next reviewer round (round 1 uses the template)
 #   consult.sh respond <author.md>        append the author's entry, then run the next reviewer round
 #   consult.sh close   <outcome> [sha]    closing record; log-only commit + FF push; destroy clone
+#   consult.sh abandon [<id>] [<why>]     close a cycle whose session is gone (not-reviewed:ABANDONED)
 #   consult.sh status
 #
 # Targets:  task:<id>  phase:<key>  file:<path>[,<path>…]  commit:<range>
@@ -24,6 +25,43 @@ POSTURE="$SK/consult-posture.sh"; HERE="$SK/codex-here"
 mkdir -p "$ST" "$SCR"
 st(){ cat "$ST/$1" 2>/dev/null; }; put(){ printf '%s' "$2" > "$ST/$1"; }
 say(){ echo "consult: $*" >&2; }
+# One line, no control bytes: the posture validator refuses a record carrying any, and reviewer prose
+# can contain them. Tab and newline become spaces; everything else below 0x20 (and DEL) is dropped.
+rec_clean(){ LC_ALL=C tr -d '\000-\010\013-\037\177' | tr '\t\n' '  '; }
+# The re-check text is recorded WHATEVER the verdict. Until 2026-08-26 the caller also required
+# `$O = agreed-applied`, so the reviewer's words were kept only when they said "confirmed" — the one
+# case where they carry no information — and DISCARDED whenever the re-check named a gap. The gap
+# paragraph then survived only in $SCR/recheck.out, which the next `open` deletes, so the log could
+# record "reported a gap" and never record which. Measured in app-brm-manufacturing-products and
+# reported by the operator 2026-08-26: "it closed disputed ... reported a gap, but not which gap".
+# Two traps this function exists to hold, both of them live:
+#   RECHECK_RAN — $SCR is NOT cleared by `open` (only $ST is), so a recheck.out left by a PREVIOUS
+#                 cycle would otherwise be quoted into a cycle that never ran a re-check at all.
+#   ordering    — the reviewer is instructed to END with the RECHECK line, so head-truncation drops
+#                 precisely the thing this exists to keep. The verdict line is quoted whole and
+#                 first; only the prose before it is truncated.
+# The uncommitted files a review would NOT see — excluding consult_notes.md, which is the skill's own
+# log and is therefore modified by any cycle in flight. That exclusion is the whole reason a dirty
+# tree used to block every later cycle in a project: the skill dirtied the tree it demanded be clean.
+dirty_files(){   # $1 = repo root
+  git -C "$1" status --porcelain 2>/dev/null | sed 's/^...//' | grep -v '^consult_notes\.md$' || true
+}
+# Which uncommitted files are in the review's scope. Exact for a file: target; for task:/phase:/commit:
+# it is not determinable, and '?' says so — "none" there would be a claim the runner cannot support.
+dirty_in_scope(){   # $1 = target, $2 = newline-separated dirty list
+  case "$1" in
+    file:*) local hit
+            hit="$(printf '%s\n' "${1#file:}" | tr ',' '\n' | grep -Fx -f <(printf '%s\n' "$2") 2>/dev/null | paste -sd, - || true)"
+            printf '%s' "${hit:-none}" ;;
+    *)      printf '?' ;;
+  esac
+}
+recheck_quote(){   # $1 = the reviewer's re-check output; emits '> ' lines, or nothing at all
+  [ "${RECHECK_RAN:-0}" -eq 1 ] && [ -s "$1" ] || return 0
+  printf '\n'
+  grep -m1 '^RECHECK:' "$1" | rec_clean | sed 's/^/> /'
+  printf '> %s\n' "$(grep -v '^RECHECK:' "$1" | rec_clean | cut -c1-1200)"
+}
 
 procedure_digest(){ sed -n '/<!-- procedure:begin -->/,/<!-- procedure:end -->/p' "$SK/SKILL.md" | sha256sum | cut -c1-16; }
 
@@ -57,7 +95,7 @@ refuse(){
 # publish_log's return code used to be discarded at BOTH call sites, so a commit that failed left an
 # uncommitted closing or refusal record sitting in the worktree while the runner destroyed the state
 # dir and the clone and reported success. That record could then never be published (its cycle's
-# state was gone), and it made the checkout dirty, so the project's NEXT cycle refused DIRTY-CHECKOUT.
+# state was gone), and it made the checkout dirty, which at the time refused the project's NEXT cycle (DIRTY-CHECKOUT, removed in 33.2).
 #
 # So publication is a transaction with a rollback. Two things must be snapshotted, and each is easy
 # to miss for its own reason:
@@ -169,7 +207,7 @@ publish_log(){  # scoped commit of the log alone, FF push; failure is recorded, 
   echo "- publication: LOG-COMMITTED-NOT-PUSHED $(date -u +%FT%TZ)" > "$SCR/marker.md"
   ( append "$SCR/marker.md" ) || { say "MARKER-NOT-RECORDED — the log is committed but NOT pushed, and the marker itself could not be appended (see the grammar or posture message above). Push by hand: git -C $REAL push origin HEAD"; return 0; }
   ( cd "$REAL" && git add consult_notes.md && git -c commit.gpgsign=false commit -q -m "consult: publication failed — marker" -- consult_notes.md ) \
-    || { say "MARKER-NOT-COMMITTED — the marker was appended to consult_notes.md but its own commit failed, so the checkout is left MODIFIED and the next cycle here will refuse DIRTY-CHECKOUT. Commit it by hand: git -C $REAL commit -m 'consult: publication failed — marker' -- consult_notes.md"; return 0; }
+    || { say "MARKER-NOT-COMMITTED — the marker was appended to consult_notes.md but its own commit failed, so the checkout is left MODIFIED and this cycle's publication is incomplete. Commit it by hand: git -C $REAL commit -m 'consult: publication failed — marker' -- consult_notes.md"; return 0; }
   git -C "$REAL" push -q origin HEAD 2>/dev/null && say "marker pushed on retry" || say "marker committed locally; will travel with the next push"
   return 0
 }
@@ -177,7 +215,29 @@ publish_log(){  # scoped commit of the log alone, FF push; failure is recorded, 
 case "${1:-}" in
 # =====================================================================================
 open)
-  T="${2:-}"; rm -rf "$ST"; mkdir -p "$ST"; put target "$T"
+  T="${2:-}"
+  # An abandoned cycle used to BRICK the project, permanently. This arm began with `rm -rf "$ST"` —
+  # destroying a live cycle's state, thread and clone — and then appended a new cycle heading, which
+  # the grammar refuses because a log may hold only ONE open cycle. So a session that died mid-cycle
+  # left every later consult in that project refused forever, and no command could clear it: `close`
+  # requires $ST/opened, which died with that session, and the log is append-only and guard-protected.
+  # Measured on a fixture 2026-08-26: the second opening record is refused with "more than one open
+  # cycle". Check FIRST, touch nothing, and name the recovery.
+  # This refusal deliberately does NOT go through refuse(): recording it needs an append the grammar
+  # would itself refuse, so the operator would get REFUSAL-NOT-RECORDED — a defect message for a
+  # correct state. Nothing needs recording here; the log is intact and already says what is going on.
+  if [ -f "$LOG" ]; then
+    OPENC="$(python3 "$SK/consult-log.py" validate "$LOG" 2>&1 | sed -n 's/.*open cycles: //p' | tail -1)"
+    case "$OPENC" in ""|none) : ;; *)
+      say "REFUSED CYCLE-ALREADY-OPEN — $LOG holds an open cycle: $OPENC"
+      say "  its target: $(sed -n "/^## cycle ${OPENC%%,*} — /{s/^## cycle [^ ]* — //;p;q}" "$LOG")"
+      say "  A log may hold only one open cycle, so nothing can be opened here until that one closes."
+      say "  If its session is still running, let it finish — this refusal changed nothing."
+      say "  If that session is gone, clear it:  bash .claude/skills/consult-codex/consult.sh abandon"
+      exit 3;;
+    esac
+  fi
+  rm -rf "$ST"; mkdir -p "$ST"; put target "$T"
   put cycle "$(date -u +%Y%m%d-%H%M%S)-$(git -C "$REAL" rev-parse HEAD | cut -c1-7)"   # NOT --short: git widens it past 7 in a big repo (measured: 8 in app-brm-manufacturing-products) and the grammar is exact
   [ -n "$T" ] || refuse NO-TARGET "task:<id> | phase:<key> | file:<paths> | commit:<range>"
   command -v codex >/dev/null || refuse NO-CODEX "not on PATH (non-interactive ssh? bash -lc)"
@@ -197,14 +257,36 @@ open)
   [ -f "$ENTRY" ] || refuse HOST-NOT-PREPARED "host entry $ENTRY absent — run prepare-host.sh --apply"
   grep -q "Expected procedure digest: \`$(procedure_digest)\`" "$ENTRY" || refuse PROCEDURE-DRIFT "host entry carries $(sed -n 's/.*Expected procedure digest: `\([0-9a-f]*\)`.*/\1/p' "$ENTRY" | head -1), this project's procedure is $(procedure_digest) — re-run prepare-host.sh --apply or /distribute-defaults"
   [ -d "$HOME/.claude/skills/consult-codex" ] && refuse SHADOWED "~/.claude/skills/consult-codex/ would shadow the distributed skill"
-  [ -z "$(git -C "$REAL" status --porcelain)" ] || refuse DIRTY-CHECKOUT "commit or stash first — a clone of HEAD would review stale state"
+  # A dirty tree NEVER blocks a review. Operator decision 2026-08-26: "review HEAD, say so plainly".
+  # This line used to be `refuse DIRTY-CHECKOUT` on ANY modified file — and consult_notes.md, the
+  # skill's OWN log, lives in this tree, so an in-flight cycle GUARANTEED a dirty tree and blocked
+  # every later cycle in the project. The skill blocked itself. Unrelated uncommitted work blocked it
+  # too. Measured in app-brm-manufacturing-products 2026-08-26: a session could not review at all
+  # because another session held an open cycle, and committing that other session's in-flight file to
+  # unblock its own review was — correctly — judged not worth it.
+  # The review does read a clone of HEAD, which is a real limitation. So it is STATED, twice: in the
+  # opening record, and in the reviewer's own round-1 prompt. A caveat the reader can see beats a
+  # refusal the reader must work around.
+  DIRTY_LIST="$(dirty_files "$REAL")"
+  DIRTY_N=$(printf '%s\n' "$DIRTY_LIST" | grep -c . || true)
+  SCOPE="$(dirty_in_scope "$T" "$DIRTY_LIST")"
+  put dirty "$DIRTY_N"; put dirty_scope "$SCOPE"
+  [ "$DIRTY_N" -gt 0 ] && say "reviewing HEAD — $DIRTY_N uncommitted file(s) are NOT in the clone (in scope: $SCOPE)"
   if git -C "$REAL" remote get-url origin >/dev/null 2>&1; then
     git -C "$REAL" fetch -q origin 2>/dev/null || refuse NOT-ORIGIN-LATEST "origin unreachable"
     UP="$(git -C "$REAL" rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null)" || refuse NOT-ORIGIN-LATEST "no upstream"
     BEHIND=$(git -C "$REAL" rev-list --count HEAD.."$UP"); AHEAD=$(git -C "$REAL" rev-list --count "$UP"..HEAD)
     if [ "$BEHIND" -gt 0 ] && [ "$AHEAD" -gt 0 ]; then refuse NOT-ORIGIN-LATEST "diverged: $AHEAD ahead, $BEHIND behind"; fi
-    [ "$BEHIND" -gt 0 ] && { git -C "$REAL" merge -q --ff-only "$UP" || refuse NOT-ORIGIN-LATEST "cannot fast-forward"; say "fast-forwarded $BEHIND"; }
-    put sync "origin-latest"
+    if [ "$BEHIND" -gt 0 ]; then
+      if git -C "$REAL" merge -q --ff-only "$UP"; then say "fast-forwarded $BEHIND"
+      # A fast-forward that fails BECAUSE of local edits is the dirty-tree self-block again, one step
+      # further down: the operator's uncommitted file would decide whether a review may happen. Only a
+      # fast-forward that fails on a CLEAN tree is a genuine repository problem worth refusing over.
+      elif [ "$DIRTY_N" -gt 0 ]; then put sync "behind $BEHIND — could not fast-forward with $DIRTY_N uncommitted file(s); reviewing local HEAD"
+           say "behind $BEHIND and could not fast-forward (uncommitted changes) — reviewing local HEAD"
+      else refuse NOT-ORIGIN-LATEST "cannot fast-forward"; fi
+    fi
+    [ -s "$ST/sync" ] || put sync "origin-latest"
   else put sync "local-only (no origin)"; fi
   python3 "$REAL/.claude/skills/progress-check/progress_check.py" --file "$REAL/progress.json" --quiet >/dev/null 2>&1 || refuse NOT-REVIEWABLE:progress-json
   [ -d "$REAL/.claude/commands" ] && [ -d "$REAL/.claude/skills" ] || refuse NOT-REVIEWABLE:no-claude-dir
@@ -270,6 +352,7 @@ PY
   { printf '## cycle %s — %s\n\n**Opening record**\n' "$(st cycle)" "$T"
     printf -- '- entry: B (nested) · procedure digest: %s · reviewer: %s · mode: %s\n' "$(procedure_digest)" "$(codex --version 2>&1)" "$MODE"
     printf -- '- checkout: %s · opening SHA: %s · clone: %s (no remotes, guard re-armed)\n' "$(st sync)" "$(st sha)" "$CL"
+    printf -- '- tree: reviewing HEAD; %s uncommitted file(s) are NOT in the clone (in scope: %s)\n' "$(st dirty)" "$(st dirty_scope)"
     printf -- '- binding: %s\n- identity: %s (declared %s)\n- claims (%s):\n' "$B" "$(st identity)" "${DECL:--}" "$(grep -c . "$ST/claims")"
     sed 's/^/  - /' "$ST/claims"; } > "$SCR/open.md"
   append "$SCR/open.md"; say "opened cycle $(st cycle) · mode $MODE · $(grep -c . "$ST/claims") claim(s) · clone $CL"; echo "$(st cycle)";;
@@ -281,6 +364,9 @@ review)
     AWS_LINE=""; [ "$(st mode)" = "aws-read-only" ] && AWS_LINE="AWS: read-only MCP server $(sed -n 's/.*server=\([^ ]*\).*/\1/p' "$ST/bind"), account $(st identity) — use it to check claims against live state."
     NOTE="You have no AWS access in this session; say so once if it limits you, and never fake a check you could not run."
     [ "$(st mode)" = "aws-read-only" ] && NOTE="Every claim you mark examined must name the evidence — a file:line or the live call you made."
+    # The reviewer must know it is reading a commit, not the author's desk. Without this it can
+    # report a defect the author fixed an hour ago and has not committed, and be certain about it.
+    [ "$(st dirty)" -gt 0 ] 2>/dev/null && NOTE="$NOTE You are reading a clone of HEAD. $(st dirty) file(s) in the author's checkout are uncommitted and are NOT in your clone (in scope for this target: $(st dirty_scope)); say so if it limits a claim, and do not report as missing something that may simply be uncommitted."
     python3 - "$SK/reviewer-prompt.md" "$(st cycle)" "$(st target)" "$(st mode)" "$AWS_LINE" "$ST/claims" "$NOTE" > "$SCR/r1.prompt" <<'PY'
 import sys
 tpl,cycle,target,mode,aws,claims,note=sys.argv[1:8]
@@ -331,12 +417,16 @@ close)
   if [ -f "$ST/breach" ]; then case "$O" in agreed-*) say "posture breach in $(st breach) — recording not-reviewed:POSTURE-BREACH instead of $O"; O="not-reviewed:POSTURE-BREACH";; esac; fi
   if [ -f "$ST/ledger_invalid" ]; then case "$O" in agreed-*) say "ledger invalid ($LC) — recording not-reviewed:LEDGER-INVALID instead of $O"; O="not-reviewed:LEDGER-INVALID";; esac; fi
   if [ "$O" = agreed-nothing ] && { [ -f "$ST/ledger_invalid" ] || [ "$EX" -eq 0 ] || { [ "$(st mode)" = aws-read-only ] && [ "$(st identity)" != "$(st declared)" ]; }; }; then say "agreed-nothing needs a valid ledger with examined>0 and a matched identity — recording not-reviewed:NO-PROOF instead"; O="not-reviewed:NO-PROOF"; fi
-  RECHECK="not run"
+  RECHECK="not run"; RECHECK_RAN=0
   if [ "$O" = agreed-applied ]; then
     [ -n "$SHA" ] || { say "agreed-applied needs the result SHA"; exit 1; }
     git -C "$REAL" cat-file -e "$SHA^{commit}" 2>/dev/null || { say "result SHA $SHA not in $REAL"; exit 1; }
     "$POSTURE" destroy "$CL" >/dev/null; "$POSTURE" clone "$REAL" "$CL" >/dev/null; git -C "$CL" checkout -q "$SHA"
     "$POSTURE" snapshot "$REAL" "$CL" "$ST" >/dev/null
+    # $SCR survives across cycles, so a recheck.out left by a PREVIOUS cycle would be quoted into
+    # this one if the reviewer produced nothing. It is deleted, and the fact that a re-check ran
+    # in THIS invocation is recorded, so the quote below can never speak for a different cycle.
+    rm -f "$SCR/recheck.out"; RECHECK_RAN=1
     ( cd "$CL" && timeout 600 "$HERE" --bind-from "$REAL" exec resume "$(st thread)" --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check -o "$SCR/recheck.out" \
       "The agreed changes were applied. You are now in a fresh clone at commit $SHA. Re-read progress.json and the changed files; state the commit SHA you are looking at (git rev-parse HEAD), and confirm in one paragraph whether the applied state matches what was agreed, naming any gap. End with exactly one line: RECHECK: confirmed  or  RECHECK: gap — <what>" >"$SCR/recheck.log" 2>&1 </dev/null ); RRC=$?
     "$POSTURE" verify "$REAL" "$CL" "$ST" >/dev/null && PV=clean || PV=BREACH
@@ -356,11 +446,49 @@ close)
   [ -d "$CL/.git" ] && "$POSTURE" snapshot "$REAL" "$CL" "$ST" >/dev/null || { "$POSTURE" clone "$REAL" "$CL" >/dev/null; "$POSTURE" snapshot "$REAL" "$CL" "$ST" >/dev/null; }
   { printf '**Closing record**\n- outcome: `%s`\n- opening SHA: %s · reviewed SHA: %s · result SHA: %s · author commits since opening: %s\n' "$O" "$(st sha)" "$(git -C "$CL" rev-parse HEAD 2>/dev/null || st sha)" "${SHA:--}" "$AUTHOR_COMMITS"
     printf -- '- procedure digest: %s · rounds: %s of %s · mode: %s · identity: %s\n- claims: examined %s · unavailable %s · skipped %s\n- recheck: %s\n- nothing written to progress.json by this cycle\n' "$(procedure_digest)" "$(st round)" "$CAP" "$(st mode)" "$(st identity)" "$EX" "$UN" "$SKP" "$RECHECK"
-    [ "$O" = agreed-applied ] && [ -s "$SCR/recheck.out" ] && { printf '\n> '; tr '\n' ' ' < "$SCR/recheck.out" | cut -c1-600; printf '\n'; }; } > "$SCR/close.md"
+    # The re-check text is recorded WHATEVER the verdict. Until 2026-08-26 this also required
+    # `$O = agreed-applied` — it kept the reviewer's words only when they said "confirmed", the one
+    # case where they carry no information, and DISCARDED them whenever the re-check named a gap. The
+    # gap paragraph then survived only in $SCR/recheck.out, which the next `open` deletes, so the log
+    # could record "reported a gap" and never record which. Measured in app-brm-manufacturing-products
+    # and reported by the operator 2026-08-26: "it closed disputed ... reported a gap, but not which gap".
+    # The reviewer is instructed to END with the RECHECK line, so head-truncation drops precisely the
+    # thing this exists to keep — the verdict line is therefore quoted whole and first, and only the
+    # prose that precedes it is truncated.
+    recheck_quote "$SCR/recheck.out"; } > "$SCR/close.md"
   pub_begin || pub_abort "the closing record"
   append "$SCR/close.md"
   publish_or_rollback "consult: close cycle $(st cycle) — $O" "the closing record could not be COMMITTED, so it has been rolled back out of consult_notes.md and out of the index. THE CYCLE IS STILL OPEN: its state dir and its clone are kept, and nothing uncommitted is left in the checkout. Fix the commit failure — a pre-commit hook, an unset git identity — and re-run the same close command."
   "$POSTURE" destroy "$CL" >/dev/null; rm -rf "$ST"; say "closed $O";;
+# =====================================================================================
+abandon)
+  # Recovery for a cycle whose session is gone. `close` cannot do this: it requires $ST/opened, which
+  # the dead session owned. Without this subcommand the only route back is hand-editing an
+  # append-only, guard-protected log — so in practice the project simply stopped being reviewable.
+  # Its own state dir, so a still-running session's cycle state is not disturbed by the attempt.
+  ST="$WORK/abandon"; rm -rf "$ST"; mkdir -p "$ST"
+  [ -f "$LOG" ] || { say "no consult_notes.md here — nothing to abandon"; exit 1; }
+  OPENC="$(python3 "$SK/consult-log.py" validate "$LOG" 2>&1 | sed -n 's/.*open cycles: //p' | tail -1)"
+  case "$OPENC" in
+    ""|none) say "no open cycle in $LOG — nothing to abandon"; exit 1;;
+    *,*)     say "the log holds MORE THAN ONE open cycle ($OPENC), so it is already invalid and every append is refused — this one included. This runner cannot produce that state; the log needs a hand repair."; exit 2;;
+  esac
+  WANT="${2:-}"; [ -z "$WANT" ] || [ "$WANT" = "$OPENC" ] || { say "the open cycle is $OPENC, not $WANT — nothing done"; exit 1; }
+  WHY="${3:-its session is gone}"
+  BLK="$(sed -n "/^## cycle $OPENC — /,/^## cycle .* — /p" "$LOG")"
+  OSHA="$(sed -n 's/.*opening SHA: \([0-9a-f]*\).*/\1/p' <<<"$BLK" | head -1)"
+  RN="$(grep -c '^### Round ' <<<"$BLK" || true)"
+  printf '**Closing record**\n- outcome: `not-reviewed:ABANDONED`\n- opening SHA: %s · result SHA: -\n- procedure digest: %s · rounds: %s of %s\n- claims: examined 0 · unavailable 0 · skipped 0\n- abandoned: %s\n- nothing written to progress.json by this cycle\n' \
+    "${OSHA:--}" "$(procedure_digest)" "${RN:-0}" "$CAP" "$WHY" > "$SCR/abandon.md"
+  pub_begin || pub_abort "the abandon record"
+  append "$SCR/abandon.md"
+  publish_or_rollback "consult: abandon cycle $OPENC" "the abandon record could not be COMMITTED, so it has been rolled back out of consult_notes.md and out of the index. The cycle is STILL OPEN and this project still cannot open another."
+  # The owning session's state must not survive: with a closing record now in the log, its `close`
+  # would append a SECOND one, which the grammar refuses — leaving the operator with a broken log
+  # instead of a closed cycle.
+  [ -d "$CL/.git" ] && "$POSTURE" destroy "$CL" >/dev/null 2>&1
+  rm -rf "$WORK/state" "$ST"
+  say "abandoned $OPENC — this project can open cycles again";;
 # =====================================================================================
 status) for k in cycle target mode sync sha identity declared round thread; do printf '%-9s %s\n' "$k" "$(st $k)"; done; [ -f "$ST/claims" ] && echo "claims    $(grep -c . "$ST/claims")";;
 *) sed -n '2,16p' "$0"; exit 1;;

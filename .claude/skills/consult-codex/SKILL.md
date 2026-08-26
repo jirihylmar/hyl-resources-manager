@@ -130,8 +130,40 @@ the log as a finding against the reviewer.
 
 ## Refusal codes
 
-`NO-TARGET` · `NO-CODEX` · `NOT-LOGGED-IN` · `HOST-NOT-PREPARED` · `SHADOWED` · `DIRTY-CHECKOUT` ·
+`NO-TARGET` · `NO-CODEX` · `NOT-LOGGED-IN` · `HOST-NOT-PREPARED` · `SHADOWED` ·
 `NOT-ORIGIN-LATEST` · `NOT-REVIEWABLE:progress-json` · `NOT-REVIEWABLE:no-claude-dir` ·
 `NOT-REVIEWABLE:codex-roots-present` · `NOT-REVIEWABLE:NO-REVIEWABLE-CLAIMS` · `ACCOUNT-AMBIGUOUS` ·
 `ACCOUNT-NOT-BOUND` · `ACCOUNT-MISMATCH` · `POSTURE-BREACH` · `CLONE-FAILED`. Every one is
 recorded in the log and committed. Absence and ignorance are different, and both look empty.
+
+**`DIRTY-CHECKOUT` was removed on 2026-08-26 and must not come back.** It refused on any modified
+file — but `consult_notes.md`, this skill's own log, lives in the tree it demanded be clean, so a
+cycle in flight guaranteed a dirty tree and blocked every later cycle in the project. The skill
+blocked itself, and unrelated uncommitted work blocked it too. A review now reads a clone of HEAD
+and *says so*: the opening record carries `- tree: reviewing HEAD; N uncommitted file(s) are NOT in
+the clone (in scope: …)`, and the reviewer's round-1 prompt repeats it so it cannot report as
+missing something that is merely uncommitted.
+
+**`CYCLE-ALREADY-OPEN` (exit 3, nothing written) is not recorded, and that is deliberate.**
+Recording it would need an append the grammar itself refuses — a log may hold one open cycle — so
+the operator would get `REFUSAL-NOT-RECORDED`, a defect message for a correct state.
+
+## Recovering a cycle whose session is gone
+
+```bash
+bash .claude/skills/consult-codex/consult.sh abandon [<cycle-id>] [<why>]
+```
+
+Closes the log's one open cycle with `not-reviewed:ABANDONED`, through the same validated
+publication transaction as every other record, and clears the owning session's state and clone so a
+late `close` cannot append a second closing record.
+
+**Why this exists.** `close` requires `$ST/opened`, which belongs to the session that opened the
+cycle. When that session is gone the cycle can never be closed — and because a log may hold only one
+open cycle, *every later consult in that project is refused forever*. Before `abandon`, the only
+route back was hand-editing an append-only, guard-protected log; in practice the project simply
+stopped being reviewable. The rounds count and opening SHA in the record are reconstructed from the
+log itself, since the state that held them is exactly what is missing.
+
+Use it when the owning session is genuinely gone. If it is still running, let it finish — the
+`CYCLE-ALREADY-OPEN` refusal changed nothing.

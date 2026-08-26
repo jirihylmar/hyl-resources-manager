@@ -1,6 +1,6 @@
 ---
 name: open-work
-description: Render the operator's open-work tables — current phase, stuck elsewhere, deferred, plus any open consult cycle — from this project's progress.json, with every mechanical column filled and only the plain-words column left to write. Also reports a stale or non-existent current_task/current_phase pointer. Invoke when presenting session handoff or a progress summary, or when asked what is open, what is stuck, what is deferred, or where a phase stands.
+description: Render the operator's open-work tables — current phase, stuck elsewhere, deferred — from this project's progress.json, with every mechanical column filled and only the plain-words column left to write. Also reports a stale or non-existent current_task/current_phase pointer. Invoke when presenting session handoff or a progress summary, or when asked what is open, what is stuck, what is deferred, or where a phase stands.
 ---
 
 # open-work
@@ -38,17 +38,24 @@ Paste the output verbatim into the report, then replace **every** `<FILL: …>` 
 summarise the tables into prose, and do not drop rows because a phase "isn't relevant right
 now" — deferred work being invisible is the condition this exists to end.
 
-The script reads one file — plus `consult_notes.md` beside it, **if present**. No dependencies,
-no network, no writes.
+The script reads **one file**: `progress.json`. No dependencies, no network, no writes.
 
-**Why a second file, when the design rule is one.** The consult loop (`/consult-codex`) never
-writes `progress.json`: a cycle that closed `agreed-proposed` or `disputed` exists only in the
-project's `consult_notes.md`. A renderer that reads `progress.json` alone would report *no open
-work* over an outcome the operator has not seen — the phase-28 notice channel again. So the
-renderer adds one table, **Open consult cycles**, for cycles whose closing record says
-`agreed-proposed` or `disputed` (or that have no closing record yet), counts the closed ones, and
-prints **CONSULT-LOG-UNREADABLE** when the log exists but its grammar is broken. An absent log
-renders nothing: absence and ignorance are different, and only the second is reported.
+**It used to read a second, and that was the mistake.** Until 2026-08-26 it also read
+`consult_notes.md` beside it and rendered an **Open consult cycles** table, reasoning that a cycle
+closed `agreed-proposed` or `disputed` exists nowhere else. What that actually created was a second
+open-work channel with no closure rule. `agreed-proposed` is the *success* outcome — the reviewer
+proposed work and the operator approved it — so the better a review went, the more permanently it
+sat under "awaits the operator". One cycle whose proposal had been approved, delivered and
+completed as an entire phase was still being rendered as open at every session start, and every
+future successful review would have added another row that nothing could ever remove. That is the
+retired `backlog` array in a different file.
+
+The operator's direction, 2026-08-26: *"creating growing track of issues separatelly is a polution.
+we have progress json to govern the project. consultation is in > discusions > task updated in
+progress > end."* So the table was **deleted** rather than given a disposition grammar. A consult
+that produces work produces *tasks*, through `/add-work`, in `progress.json` — which this renderer
+already reads. `consult_notes.md` remains the full evidence trail, committed and pushed with the
+project: every word the reviewer wrote is in it, and it is read by opening it, not by this script.
 
 ## Exit codes
 
