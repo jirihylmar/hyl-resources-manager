@@ -46,7 +46,7 @@ ls -la
 
 ```bash
 # Check for existing playbook files
-ls CLAUDE.md progress.json .claude/commands/ 2>/dev/null || echo "none"
+ls CLAUDE.md AGENTS.md progress.json .claude/commands/ .agents/skills/ 2>/dev/null || echo "none"
 ```
 
 If any exist, ask:
@@ -121,6 +121,11 @@ fi
 mkdir -p .claude/skills
 cp -r $EXAMPLES_PATH/_project-template/.claude/skills/* .claude/skills/
 echo "Skills copied ($(ls -1d .claude/skills/*/ | wc -l) present)"
+
+# Codex adapters are additive and inert for Claude-only projects.
+mkdir -p .agents/skills
+cp -r $EXAMPLES_PATH/_project-template/.agents/skills/* .agents/skills/
+echo "Codex skills copied ($(ls -1d .agents/skills/*/ | wc -l) present)"
 ```
 
 ### 4.2 Session Notes (if missing)
@@ -178,6 +183,18 @@ Ask user for:
 - AWS account/region (if applicable)
 - MCP tool name (if applicable)
 - Any project-specific rules
+
+### 4.3b AGENTS.md (merge or create)
+
+Do not duplicate the project-owned prose from `CLAUDE.md`. If `AGENTS.md` is absent, copy the thin
+Codex entry and fill its project placeholders:
+
+```bash
+cp $EXAMPLES_PATH/_project-template/AGENTS.md.template ./AGENTS.md
+```
+
+If `AGENTS.md` already exists, it is project-owned: preserve it and add only a short pointer to
+`CLAUDE.md` plus the `.agents/skills/` entry convention when those facts are not already present.
 
 ### 4.4 Verify This Host Can Report Knowledge (the syndicate inbox)
 
@@ -371,17 +388,19 @@ Use Edit tool to remove the `syndicate-playbooks-examples/` line from `.gitignor
 ## Step 9: Commit Workflow Files
 
 ```bash
-git add .claude/ progress.json session_notes.md CLAUDE.md
+git add .claude/ .agents/ progress.json session_notes.md CLAUDE.md AGENTS.md
 [ -f .gitignore ] && git add .gitignore   # only if present — new projects may not have one yet
 git commit -m "workflow: Add playbook session discipline
 
 Added:
 - .claude/commands/ (distributed default commands)
+- .agents/skills/ (Codex workflow adapters)
 - progress.json (task tracking)
 - session_notes.md (session handoff)
 
 Updated:
 - CLAUDE.md (workflow rules merged)
+- AGENTS.md (Codex entry merged/created)
 
 Removed:
 - syndicate-playbooks-examples/ (no longer needed)
@@ -403,6 +422,7 @@ Removed:
 | `progress.json` | Created | Task and phase tracking |
 | `session_notes.md` | Created | Session handoff notes |
 | `CLAUDE.md` | Merged/Created | Workflow rules appended |
+| `AGENTS.md` | Merged/Created | Thin Codex entry; detailed rules remain in CLAUDE.md |
 
 ### Commands Available
 Enumerate the live directory rather than trusting a list (counts drift; the directory is truth):

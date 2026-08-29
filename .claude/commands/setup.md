@@ -127,8 +127,14 @@ cp syndicate-playbooks-examples/_project-template/.claude/commands/*.md .claude/
 mkdir -p .claude/skills
 cp -r syndicate-playbooks-examples/_project-template/.claude/skills/* .claude/skills/
 
-# Copy CLAUDE.md template
+# Copy Codex repository skills. They are inert for Claude and require no Codex installation.
+mkdir -p .agents/skills
+cp -r syndicate-playbooks-examples/_project-template/.agents/skills/* .agents/skills/
+
+# Materialize both executor entries. CLAUDE.md remains the detailed project-rule source;
+# AGENTS.md is the native Codex entry and points to it.
 cp syndicate-playbooks-examples/_project-template/CLAUDE.md.template ./CLAUDE.md
+cp syndicate-playbooks-examples/_project-template/AGENTS.md.template ./AGENTS.md
 
 # Install the commit guard (mechanical protection against `git add -A` sweeping
 # build artifacts) + the baseline .gitignore, and arm it for this clone.
@@ -152,8 +158,9 @@ git config core.hooksPath .claude/hooks    # repo-local config — arms the guar
 - Update resource names in verify steps
 - Reset task statuses if needed
 
-**Update CLAUDE.md:**
-- Fill in all `{{PLACEHOLDER}}` values from environment
+**Update executor instructions:**
+- Fill in all `{{PLACEHOLDER}}` values in `CLAUDE.md` and `AGENTS.md` from environment
+- Keep detailed project rules in `CLAUDE.md`; `AGENTS.md` is the thin Codex entry
 
 ### 5. Verify Prerequisites
 
@@ -274,7 +281,7 @@ cdk bootstrap aws://{account}/{region}
 # Scoped add by named paths — NEVER `git add -A` (that is the exact pattern that
 # once swept a 36MB build zip into history). List only the framework paths that
 # exist; drop any that don't.
-git add -- CLAUDE.md progress.json IMPLEMENTATION_PLAN.md session_notes.md .gitignore .claude/ tasks/ input/
+git add -- CLAUDE.md AGENTS.md progress.json IMPLEMENTATION_PLAN.md session_notes.md .gitignore .claude/ .agents/ tasks/ input/
 git commit -m "setup: Initialize from {playbook} template
 
 Template: {playbook}
@@ -300,12 +307,13 @@ Check what exists:
 ### 2. Copy Commands
 
 ```bash
-mkdir -p .claude/commands .claude/hooks .claude/skills
+mkdir -p .claude/commands .claude/hooks .claude/skills .agents/skills
 cp syndicate-playbooks-examples/_project-template/.claude/commands/*.md .claude/commands/
 
 # Skills (each a directory). Without these, § 5b, /start-session § 4.0 and /update-progress § 12
 # reference files that would not exist until the next /distribute-defaults.
 cp -r syndicate-playbooks-examples/_project-template/.claude/skills/* .claude/skills/
+cp -r syndicate-playbooks-examples/_project-template/.agents/skills/* .agents/skills/
 
 # Commit guard (mechanical protection against `git add -A` sweeping build artifacts)
 cp syndicate-playbooks-examples/_project-template/.claude/hooks/pre-commit .claude/hooks/
@@ -341,14 +349,18 @@ If no `progress.json`, create from existing spec:
 
 Ask user to define tasks or read from existing task documentation.
 
-### 4. Create CLAUDE.md (if missing)
+### 4. Create executor instruction entries (if missing)
+
+Create or preserve `CLAUDE.md` as the detailed project-owned instruction source. Create
+`AGENTS.md` from `_project-template/AGENTS.md.template` when absent; if it exists, preserve its
+project-owned content and add only the missing pointer/invocation facts.
 
 Copy template and fill in values.
 
 ### 5. Commit Changes
 
 ```bash
-git add -- .claude/ progress.json CLAUDE.md .gitignore
+git add -- .claude/ .agents/ progress.json CLAUDE.md AGENTS.md .gitignore
 git commit -m "setup: Add playbook commands to existing project
 
 🤖 Generated with Claude Code"
@@ -377,7 +389,9 @@ git commit -m "setup: Add playbook commands to existing project
 - IMPLEMENTATION_PLAN.md [created/existed]
 - progress.json [created/existed]
 - CLAUDE.md [created/updated]
+- AGENTS.md [created/updated]
 - .claude/commands/ [created]
+- .agents/skills/ [created]
 - tasks/ [created/existed]
 
 ### Repositories

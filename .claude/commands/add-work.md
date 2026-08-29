@@ -113,6 +113,16 @@ from the central repo, never written from here.
 
 ### 2. Collect Work Details
 
+**For every approved phase or task, collect two identities before proposing it:**
+
+- `authored_by` — who wrote the progress entry (for example `Codex`, `Claude`, or a person's name)
+- `assigned_to` — whose job execution is; this may differ from the author
+
+Use stable executor names, not a transient model/version string. These are provenance and
+responsibility, not status. Never infer a human assignee from who approved the work; if the user
+does not assign it elsewhere, the agent adding the entry assigns it to itself and says so in the
+proposal.
+
 **For tasks (A):**
 - What needs to be done?
 - What's the expected deliverable?
@@ -187,9 +197,9 @@ If you cannot restate it for a cold reader, that is evidence it should not be tr
 **Count**: N items
 **Source**: [EnterPlanMode / Discussion / Discovery]
 
-| ID | Name | Size | Verify |
-|----|------|------|--------|
-| X.Y | [description] | small | [check] |
+| ID | Name | Size | Authored by | Assigned to | Verify |
+|----|------|------|-------------|-------------|--------|
+| X.Y | [description] | small | [author] | [executor/owner] | [check] |
 | ... | ... | ... | ... |
 
 ---
@@ -212,7 +222,9 @@ Add these to progress.json?
   "status": "pending",
   "size": "small",
   "verify": "verification step",
-  "added_reason": "From [source] - [context]"
+  "added_reason": "From [source] - [context]",
+  "authored_by": "Codex|Claude|person",
+  "assigned_to": "Codex|Claude|person"
 }
 ```
 
@@ -222,9 +234,11 @@ Add these to progress.json?
 "phase_4_featurename": {
   "name": "Feature Name",
   "status": "pending",
+  "authored_by": "Codex|Claude|person",
+  "assigned_to": "Codex|Claude|person",
   "tasks": [
-    {"id": "4.1", "name": "...", "status": "pending", ...},
-    {"id": "4.2", "name": "...", "status": "pending", ...}
+    {"id": "4.1", "name": "...", "status": "pending", "authored_by": "...", "assigned_to": "...", ...},
+    {"id": "4.2", "name": "...", "status": "pending", "authored_by": "...", "assigned_to": "...", ...}
   ]
 }
 ```
@@ -333,13 +347,16 @@ After `/add-work`:
 - Add tasks with sub-IDs (X.Ya)
 - Add tasks at phase end (X.N+1)
 - Create new phases with user approval
-- Maximum 7 tasks per invocation
+- Maximum 7 tasks per ordinary flat invocation. An explicitly approved staged phase may exceed
+  seven only when the proposal groups the tasks into named stages and records one phase goal,
+  `authored_by`, and `assigned_to`; task sizing rules still apply to every task.
 
 ### NEVER:
 - Remove existing tasks
 - Change existing task IDs
 - Reorder existing tasks
 - Add work without user approval
+- Add a phase or task without both `authored_by` and `assigned_to`
 - Create "large" tasks (break them down)
 - Record an unauthorized concern in `progress.json` under any key — no catch-all array, no
   free-string list, no "notes" field standing in for one. Route it by *The Four Destinations*.

@@ -26,8 +26,9 @@ Measured across 34 live projects: `phases` is a dict in 30 and a LIST in 2; `tas
 most and a DICT in one; some tasks are bare strings; status vocabularies disagree ("complete" vs
 "completed"). A checker that enforced the template's shape would block commits in real projects and
 be disabled within a day — which is worse than no checker. So: no schema, no vocabulary, no style.
-Four failures only — three that destroy data, plus the append-only policy (a vanished task id
-or phase key) enforced mechanically.
+Five failures only — three that destroy data, the append-only policy (a vanished task id or phase
+key), and missing authorship/responsibility on a NEW phase or task. The fifth is comparison-based,
+not a retrospective schema migration: historical records keep their historical shape.
 """
 import argparse
 import datetime
@@ -361,7 +362,35 @@ def check(text, base_text=None):
                     fail.append(f"phase {pk}: task {i!r} existed in the previous commit and is "
                                 f"now GONE. Tasks are append-only — mark it superseded instead.")
 
-            # 4a. An `estate_notice` marker may not be stripped from a task that kept its id.
+            # 4a. Every NEW work record says who wrote it and whose job it is. Operator decision,
+            #     2026-08-29: authorship and assignment are different facts, and progress.json must
+            #     preserve both. Comparison makes this prospective: the estate's historical tasks
+            #     are not rewritten merely to adopt a new field, while every addition from this
+            #     point is checked at the staged commit where it enters history.
+            bp = {pk: po for pk, po in iter_phases(base_doc)}
+            ap = {pk: po for pk, po in iter_phases(doc)}
+
+            def require_identity(label, obj):
+                if not isinstance(obj, dict):
+                    return
+                for field in ("authored_by", "assigned_to"):
+                    value = obj.get(field)
+                    if not isinstance(value, str) or not value.strip():
+                        fail.append(
+                            f"{label} is NEW and has no non-empty {field!r}. Every new phase and "
+                            f"task must record who authored the entry and whose job execution is."
+                        )
+
+            for pk, po in ap.items():
+                if pk not in bp:
+                    require_identity(f"phase {pk!r}", po)
+
+            bt_new, at_new = tasks_by_key(base_doc), tasks_by_key(doc)
+            for (pk, tid), task in sorted(at_new.items(), key=lambda kv: (str(kv[0][0]), str(kv[0][1]))):
+                if (pk, tid) not in bt_new:
+                    require_identity(f"phase {pk}: task {tid!r}", task)
+
+            # 4b. An `estate_notice` marker may not be stripped from a task that kept its id.
             #     Reported by a receiving project 2026-08-06: /update-progress lists "remove the
             #     estate_notice key" under NEVER Do and states the consequence — the next central
             #     run appends a SECOND copy — while nothing checked it. Deleting the task was
@@ -383,7 +412,7 @@ def check(text, base_text=None):
                                 f"DECLINE the check, mark the task superseded and add the probe "
                                 f"name to .claude/estate-align.skip; do not remove the key.")
 
-            # 4b. DRIFT on a STARTED task — a WARNING, never a failure (phase 37, 2026-08-26).
+            # 4c. DRIFT on a STARTED task — a WARNING, never a failure (phase 37, 2026-08-26).
             #     The consult that reshaped the never-modify rule (cycle 20260826-094406-418e380)
             #     established that this checker had never seen a same-id rewrite at all: check 4
             #     fails when an id vanishes, and a task whose name and verify were replaced under

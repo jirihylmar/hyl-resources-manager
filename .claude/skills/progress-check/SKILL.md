@@ -1,6 +1,6 @@
 ---
 name: progress-check
-description: Check progress.json for corruption that destroys data — a file that does not parse, a duplicate key that silently drops a value, a repeated task id — and for the append-only rule: a task or phase that existed in the last commit and has vanished. Also warns (never blocks) when a task that has already STARTED has had its name or verify rewritten since the last commit — the task-mutability rule. Checks the staged bytes or the working tree. Invoke before committing progress.json, when a task or phase seems to have disappeared, when a task's wording or acceptance criteria changed after work began, when progress.json will not load, or when a project's reported state looks older than the work actually done.
+description: Check progress.json for corruption that destroys data, enforce append-only history, and require authored_by plus assigned_to on every newly added phase/task. Also warns when a started task's name or verify changes. Invoke before committing progress.json or investigating missing, changed, malformed, stale, or unattributed work.
 ---
 
 # progress-check
@@ -30,7 +30,7 @@ without either gets no check and no message saying so. And the hook runs only in
 `core.hooksPath` is `.claude/hooks` — `/distribute-defaults` sets that per clone (`arm_hookspath`);
 a fresh clone has no hook until then. When it matters, run it by hand.
 
-## What it fails on — three corruptions that lose data at read time, and one rule enforced mechanically
+## What it fails on — three corruptions that lose data at read time, plus two prospective rules
 
 | Failure | Why it matters |
 |---|---|
@@ -38,6 +38,7 @@ a fresh clone has no hook until then. When it matters, run it by hand.
 | **Duplicate key in one object** | **This is valid JSON.** `json.load` keeps the last and drops the first, silently. A parse check passes and the value is already gone. |
 | **Duplicate task id in a phase** | Two records claim to be the same task; which one any tool reads is arbitrary. |
 | **A task or phase present in the last commit is absent** | Not necessarily data loss — the previous commit still holds a removed task's text, and an empty phase has none to lose: this is the framework's oldest rule — *never remove a task, mark it superseded* — the **append-only policy**, enforced mechanically instead of by prose. It compares ids only, so it refuses the removal of an **empty** phase exactly as it refuses a full one (`phase 'x' existed in the previous commit and is now GONE (0 task(s) with it)`). Uniform on purpose: the checker cannot judge whether what vanished mattered, so it does not try. — And, since 2026-08-06, an `estate_notice` marker stripped from a task that kept its id, for the same reason: the next central run would append a second copy. |
+| **A newly added phase or task lacks `authored_by` or `assigned_to`** | Operator decision 2026-08-29: the record must say who wrote an entry and whose job execution is. This is prospective, detected by comparison with the previous commit; historical work is not rewritten to adopt a new schema. The two values may differ. |
 
 ## Plus one thing it warns about: a stale `last_updated`
 
@@ -109,13 +110,13 @@ Pinned by `scripts/test-progress-check-mutability.sh` in the central repo.
 
 ## What it deliberately does NOT enforce
 
-No schema, no vocabulary, no style. Measured across 34 real projects: `phases` is a dict in 30 and a
+No retrospective schema migration, no status vocabulary and no style policing. Measured across 34 real projects: `phases` is a dict in 30 and a
 **list** in 2; `tasks` is a list in most and a **dict** in one; some tasks are bare strings; status
 values include both `complete` and `completed`. All of that is tolerated.
 
 **A checker that enforced the template's shape would block commits in real projects and be switched
 off within a day** — which is worse than no checker. It fails only on things that lose data, plus
-the one append-only rule above.
+the append-only and new-entry identity rules above.
 
 ## The three corruptions it was built from
 
