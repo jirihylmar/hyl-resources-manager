@@ -86,6 +86,13 @@ not a permitted modification of it; route by the table above instead.
 
 ## Procedure
 
+### 0. Reconcile existing open work first
+
+Render and inspect every planned, ongoing and deferred task and phase. If a non-terminal item can
+coherently represent the requested outcome, refine, combine, divide, reassign, re-scope or relocate
+it instead of creating a duplicate. Related work that serves the same outcome and is closable
+belongs in the same phase. Terminal tasks are references only and are never rewritten.
+
 ### 1. Determine Work Type
 
 Use AskUserQuestion:
@@ -103,7 +110,8 @@ C) **Untracked observation** - No owner, no authorization: it goes in the sessio
 Which applies?
 ```
 
-Wait for explicit answer.
+If the user's request already authorizes and classifies the work, do not ask again. Ask only when
+the destination or product outcome is genuinely ambiguous.
 
 **C is not a way to record work without approval.** If the concern has an owner here and the
 operator has said to do it, it is A or B and takes the ordinary approval; if it does not, it is not

@@ -95,7 +95,7 @@ To add work to existing phases, use `/add-work` instead.
 ## Task Sizing Rules
 
 ### Each Task MUST:
-1. **Single deliverable** - one file, one endpoint, one component
+1. **Single outcome** - one coherent, independently verifiable result
 2. **Verifiable** - has a concrete verification step
 3. **Session-sized** - completable in <30 min of Claude time
 4. **Deployable state** - code works after task completes
@@ -104,10 +104,15 @@ To add work to existing phases, use `/add-work` instead.
 ### Sizing Checklist (for each task):
 - [ ] Can I describe the deliverable in one sentence?
 - [ ] Can I verify it with one command/action?
-- [ ] Does it touch ≤3 files?
+- [ ] Is the boundary determined by one outcome rather than an arbitrary file count?
 - [ ] If I stop after this task, is code deployable?
 
 **If any answer is NO → break it down further**
+
+Before creating phases or tasks, render all existing planned, ongoing and deferred work. Reuse or
+reshape non-terminal entries when they already represent the outcome. Build a dependency graph and
+mark every independent safe lane for parallel execution; do not manufacture sequential tasks from
+work that can run concurrently.
 
 ---
 

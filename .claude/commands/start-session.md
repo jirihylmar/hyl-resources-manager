@@ -20,6 +20,9 @@ allowed-tools:
 
 Initialize context and verify previous work before starting new tasks.
 
+Read `PROJECT_CHARTER.md` completely before acting. It is the executor-neutral delivery contract;
+if older project prose conflicts with it, the charter governs.
+
 ---
 
 ## Multi-Agent Discipline

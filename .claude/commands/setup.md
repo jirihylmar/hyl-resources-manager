@@ -31,7 +31,7 @@ Full setup from playbook template:
 1. Choose playbook template
 2. Copy template files (spec, phases, tasks, progress)
 3. Customize for this project
-4. Create sub-repositories
+4. Keep the cohesive product in one repository unless a real independent lifecycle justifies a split
 
 ### Scenario B: Existing Project (has IMPLEMENTATION_PLAN.md)
 
@@ -89,11 +89,11 @@ differently from its repo.**
 
 | Thing | Name | Rule |
 |---|---|---|
-| Orchestration repo | `<prefix>-orchestration` | **The principal manager.** It governs every other part of this project — sub-repos, resources, workflows all answer to it, and its name must say so unmistakably. |
-| Each sub-repo | `<prefix>-<part>` (e.g. `<prefix>-infrastructure`, `<prefix>-backend`) | The part name says what it is; the prefix says what it belongs to. Never a bare `backend`/`infrastructure` — a generic name carries no ownership. |
+| Product repository | `<prefix>` or the confirmed product name | **Default.** It contains application, infrastructure, operations, schemas, tests, docs and work state so one clean clone is sufficient. |
+| Justified separate repo | `<prefix>-<part>` | Exception only for a real independent lifecycle or boundary: distinct access, release/legal ownership, or reuse across products. Never split merely because a component could be managed separately. |
 | Local folder of ANY repo | **identical to the repo name** | Folder = repo = origin name, always. A folder named differently from its origin is drift you cannot grep for. |
 | AWS resources | `<prefix>-{service}-{env}` (projects may extend, e.g. with component/account segments) | Holds **whether the resource is provisioned via CDK or created individually** — the convention is about the name, not the tool that made it. |
-| `input/`, `docs/`, `exports/`, `imports/`, … | plain directories **inside the orchestration repo** | Orchestration-repo CONTENT, never repos of their own. The orchestration repo both manages the parts and carries the project's working material. |
+| `input/`, `docs/`, `exports/`, `imports/`, application and infrastructure directories | plain directories **inside the product repo** | Product content, never repos of their own without the justified exception above. |
 
 **Why folder = repo = origin is a rule and not taste:** this framework's own bootstrap used to run
 `mkdir {repo_name}` but `gh repo create {org}/{project}-{repo_name}` — quietly creating a folder
@@ -135,6 +135,7 @@ cp -r syndicate-playbooks-examples/_project-template/.agents/skills/* .agents/sk
 # AGENTS.md is the native Codex entry and points to it.
 cp syndicate-playbooks-examples/_project-template/CLAUDE.md.template ./CLAUDE.md
 cp syndicate-playbooks-examples/_project-template/AGENTS.md.template ./AGENTS.md
+cp syndicate-playbooks-examples/_project-template/PROJECT_CHARTER.md ./PROJECT_CHARTER.md
 
 # Install the commit guard (mechanical protection against `git add -A` sweeping
 # build artifacts) + the baseline .gitignore, and arm it for this clone.
@@ -281,7 +282,7 @@ cdk bootstrap aws://{account}/{region}
 # Scoped add by named paths — NEVER `git add -A` (that is the exact pattern that
 # once swept a 36MB build zip into history). List only the framework paths that
 # exist; drop any that don't.
-git add -- CLAUDE.md AGENTS.md progress.json IMPLEMENTATION_PLAN.md session_notes.md .gitignore .claude/ .agents/ tasks/ input/
+git add -- CLAUDE.md AGENTS.md PROJECT_CHARTER.md progress.json IMPLEMENTATION_PLAN.md session_notes.md .gitignore .claude/ .agents/ tasks/ input/
 git commit -m "setup: Initialize from {playbook} template
 
 Template: {playbook}
@@ -314,6 +315,7 @@ cp syndicate-playbooks-examples/_project-template/.claude/commands/*.md .claude/
 # reference files that would not exist until the next /distribute-defaults.
 cp -r syndicate-playbooks-examples/_project-template/.claude/skills/* .claude/skills/
 cp -r syndicate-playbooks-examples/_project-template/.agents/skills/* .agents/skills/
+cp syndicate-playbooks-examples/_project-template/PROJECT_CHARTER.md ./PROJECT_CHARTER.md
 
 # Commit guard (mechanical protection against `git add -A` sweeping build artifacts)
 cp syndicate-playbooks-examples/_project-template/.claude/hooks/pre-commit .claude/hooks/
@@ -360,7 +362,7 @@ Copy template and fill in values.
 ### 5. Commit Changes
 
 ```bash
-git add -- .claude/ .agents/ progress.json CLAUDE.md AGENTS.md .gitignore
+git add -- .claude/ .agents/ progress.json CLAUDE.md AGENTS.md PROJECT_CHARTER.md .gitignore
 git commit -m "setup: Add playbook commands to existing project
 
 🤖 Generated with Claude Code"

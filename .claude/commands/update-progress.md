@@ -27,8 +27,8 @@ Update progress tracking after completing tasks. Follow conservative rules stric
 - Add `started_at` timestamp
 - Add entries to `artifacts` array
 - Add or update `notes` on a task (any stage)
-- Edit an **unstarted** task's `name`, `description`, `notes`, or tighten its `verify` — see NEVER
-  Do, first row; a started task's descriptive fields are frozen
+- Refine, combine, divide, reassign, re-scope or relocate any **non-terminal** task so planned,
+  ongoing and deferred work accurately describe what is now required
 - Add `verify_result` field
 - Add NEW tasks with NEW IDs
 - Update `current_task` pointer
@@ -45,52 +45,21 @@ permits is scoped to a *task* — a thing with an id, an owner, a verify step an
 Nothing in `progress.json` is a place to park a concern that has none of those.
 
 ### NEVER Do:
-- ❌ Remove tasks — **never delete a task.** Whether it may be *edited* depends on whether it has
-  **started**: a task is started when it carries a non-empty `started_at` (not an unsubstituted
-  `{{placeholder}}`), or its `status` is not one of the **pre-start** ones — `pending`,
-  `not_started`, `planned`, `todo`, `to_do`, `unstarted`, `deferred`, `postponed`, `backlog`,
-  `on_hold`, `queued`, `new`, `ready`, `future`, `tbd`, or empty. Case-insensitive, and separator
-  spellings fold together, so `not started` and `not-started` read as `not_started`. `blocked` is
-  deliberately *not* pre-start: a task is as often blocked mid-flight as before beginning, so the
-  ambiguous case errs towards a warning. `started_at` is tested first and wins — a task parked in
-  any status still counts as started once it carries a real start timestamp. Everything else is
-  **unstarted**. *(Source of truth: `UNSTARTED_STATUSES` in `progress-check`'s `progress_check.py`;
-  this list is an index of it. The parked statuses joined it on 2026-08-26, measured: 25 tasks
-  across the estate stood in `postponed`, `deferred` or `on_hold` and not one carried a
-  `started_at` — freezing work nobody had begun is the opposite of what this rule is for.)*
-  - An **unstarted** task may be edited in place — `name`, `description`, `notes`, and `verify`
-    when the change makes verification **stricter** (tightening). Changing what the task is for,
-    its scope, its dependencies (`depends_on`, `blocked_by`, `blocks`, …), or making `verify`
-    **weaker** (loosening) is a change of plan: mark it `superseded` with a reason and add the
-    replacement under a new id.
-  - A **started** task's descriptive fields — `name`, `description`, `verify`, dependencies — are
-    **frozen**. Only the lifecycle fields in the ALLOWED list above change (`status`, timestamps,
-    `notes`, `artifacts`, `verify_result`, …). Anything else goes through `superseded` — with two
-    exceptions, both made by the framework rather than by the project:
-    - a central correction of a delivered `estate_notice` text is replaced in place under the same
-      id (see § *Tasks that arrive from the central estate survey*). The centre writes it, and it
-      still draws the drift warning below.
-    - `/repo-hygiene` Step 4 **compaction** relocates a finished task's long prose bodies —
-      `description` among them — into a committed sidecar, leaving a pointer. Every field in its
-      `KEEP_TASK` set (`name`, `verify`, `status`, ids, timestamps, dependencies) is preserved
-      verbatim, so what compaction moves is bytes, not the record. `description` is frozen against
-      *rewriting*; it is not frozen against being filed. (Named here because both are distributed
-      defaults: without this sentence `/repo-hygiene` stands in violation of `/update-progress`.)
-  - Tightening versus loosening **cannot be told apart mechanically**. `progress-check` never
-    fails on an *edit* at all — it fails when something VANISHES (a task, a phase, an
-    `estate_notice` marker) or when the file is corrupt (will not parse, duplicate key, repeated
-    task id); since 2026-08-26 it **warns (never blocks)** when a started task's
-    `name` or `verify` differs from the last commit. Whether an edit was legitimate is judged by whoever
-    reviews the commit, or by a consult — the rule states the boundary; people hold it.
-
-  *Why it changed (operator, 2026-08-26; consult cycle 20260826-094406-418e380): the previous
-  rows were a blanket never-remove / never-rename ("Remove tasks (mark as `superseded` instead)",
-  "Rename task names (add note instead)"). The operator found that "not everything can be planned
-  correctly" and wanted findings to reshape not-yet-started work without a supersede for every
-  refinement. The consult established that the checker never detected a same-id rewrite anyway —
-  the old wording protected nothing mechanically that this one does not.*
-- ❌ Reorder tasks
-- ❌ Consolidate/merge tasks
+- ❌ Remove tasks or phases — preserve their ids; close unwanted open work as `superseded`,
+  `dropped` or `cancelled` with a reason.
+- ❌ Rewrite a **terminal** task's semantic history. `complete`, `completed`, `superseded`, `done`,
+  `closed`, `dropped`, `cancelled`, `canceled`, `resolved`, `obsolete` and `abandoned` are immutable
+  references: do not retell their scope, outcome, verification or evidence. Later action belongs in
+  non-terminal work linked back to the record. Git preserves earlier bytes; the live file preserves
+  what was declared closed.
+- ✅ Every **non-terminal** task is editable planning state — planned, pending, ongoing,
+  in-progress, blocked and deferred alike. Refine, combine, divide, reassign, re-scope or relocate
+  it when new evidence makes the plan more accurate or executable. Before adding a task, inspect
+  all open work and reuse or reshape an existing item when it can represent the issue coherently.
+- `/repo-hygiene` compaction may file a terminal task's long prose into its committed sidecar while
+  preserving the semantic fields verbatim. That is archival, not a rewrite.
+- `progress-check` blocks vanished ids and warns when a task already terminal in the previous
+  commit changes its semantic fields. It deliberately stays silent for every non-terminal edit.
 - ❌ Change task IDs
 - ❌ Delete from `artifacts` array
 - ❌ Remove the `estate_notice` key from a task (see below)
@@ -112,8 +81,8 @@ exactly as they stand.
   the task itself, not the table.
 - **Do not remove the `estate_notice` key.** It is what makes re-notification a no-op; delete it
   and the next central run appends a second copy. The text is replaced in place by the centre,
-  under the same task id, if the central rule is corrected (if the task has already started, this
-  draws the non-blocking drift warning from `progress-check` — expected; say so in the commit).
+  under the same task id if the central rule is corrected. Once the project makes it terminal, the
+  centre leaves it untouched and later corrections require new open work.
 - **To decline** a given check, list its probe name (or `*`) in `.claude/estate-align.skip`, one
   per line. A refusal is reported as REFUSED and is never overridden.
   - **Before delivery** — stops the notice arriving at all. Only possible for a probe you have
@@ -130,16 +99,16 @@ exactly as they stand.
   before delivery", which made declining structurally impossible for any genuinely new probe. The
   mechanism always allowed the two-step path; only the sentence forbade it.*
 
-### When Task Scope Changed During Work:
+### When Task Scope Changes During Work
 
-This is the path for **any** change of intent, scope or dependencies, started or not; a refinement
-of an *unstarted* task that keeps its intent is edited in place instead — see § *NEVER Do*, first row.
+If the task is non-terminal, edit it in place or reshape the surrounding open work. If it is
+terminal, leave it as history and represent later action in a new or existing open task.
 ```json
-// Mark OLD task as superseded (don't delete)
-{"id": "2.1", "name": "Original task", "status": "superseded", "superseded_by": "2.1a", "notes": "Scope changed because..."}
+// Open: reshape in place because the plan changed before closure
+{"id": "2.1", "name": "Revised task description", "status": "in_progress", "notes": "Scope reconciled after..."}
 
-// Add NEW task with new ID
-{"id": "2.1a", "name": "Revised task description", "status": "pending", "added_reason": "Supersedes 2.1 due to..."}
+// Closed: keep 2.1 unchanged and put later action in open work
+{"id": "2.1a", "name": "Later work discovered after 2.1 closed", "status": "pending", "references": ["2.1"]}
 ```
 
 ### When New Task Discovered Mid-Work:
@@ -188,7 +157,8 @@ When multiple agents work in the same repo simultaneously, shared files (`progre
 
 - **ALWAYS use the Edit tool** (find-and-replace) to modify progress.json — **NEVER use Write** (full file overwrite)
 - **Re-read progress.json immediately before each edit** — don't rely on what you read at session start
-- **Only modify YOUR task entry** — never touch another task's fields
+- A lane executor modifies only its assigned task. The coordinating executor may reconcile any
+  non-terminal task after re-reading the whole open-work landscape; never rewrite terminal history
 - **Never modify `current_task` or `current_phase`** unless you are the only agent working — in multi-agent setups, that's the orchestrator's responsibility
 - **One Edit call per field change** — smaller edits reduce the collision window
 
@@ -201,7 +171,8 @@ When multiple agents work in the same repo simultaneously, shared files (`progre
 ### Task-Scoped Identity
 
 - **Your task is what the user assigned you** — not whatever `current_task` says in progress.json
-- **Only report on and modify your assigned task** — leave other tasks untouched
+- A lane executor reports its assigned task; the coordinating executor reports and reconciles the
+  combined outcome across every related non-terminal task
 - **Include task ID in commit messages** — so concurrent commits are traceable: `progress: complete task X.Y - [description]`
 
 ---
@@ -428,8 +399,9 @@ explicit disposition. None may be left `pending` in a closed phase.**
 | **Re-homed** | Real work that does **not** serve this phase's goal | A task in a **new phase**, **rewritten to stand alone** (see § When New Task Discovered Mid-Work). Mark the original `superseded` with `superseded_by`. Never move it verbatim — a note that made sense in-session is worthless out of it. |
 | **Dropped** | Speculative, overtaken, or no longer justified | `superseded` with a **reason someone can disagree with**. "Not needed" is not a reason. "No measured problem; re-raise with a benchmark" is. |
 
-**Propose all dispositions to the operator and get approval before closing the phase.** You may
-recommend — you may not decide. Present them plainly:
+The executor owns routine dispositions. Consult the operator only when dropping, deferring or
+re-scoping work would change the agreed product outcome, architecture or risk. Otherwise reconcile
+the open-work landscape, record the reasons, and close autonomously. Present any genuine decision plainly:
 
 ```
 ### Phase 2 close — 2 tasks still open
@@ -445,7 +417,7 @@ recommend — you may not decide. Present them plainly:
      Speculative, raised in passing, 5 weeks old.
      → DROP as superseded, reason: "no measured problem; re-raise with a benchmark."
 
-Approve these dispositions to close phase 2?
+Decision required only if these dispositions change the agreed outcome or risk.
 ```
 
 **If a task cannot be honestly restated for a cold reader, that is evidence to drop it, not to carry
@@ -1194,19 +1166,10 @@ Total: 8/20 tasks complete (40%)
 ## Notes
 - ALWAYS update progress.json BEFORE committing
 - ALWAYS verify completed tasks
-- NEVER remove, reorder, merge or re-id tasks. A task is **started** once it has a non-empty
-  `started_at` (not a `{{placeholder}}`) or a `status` outside the pre-start set —
-  `pending`/`not_started`/`planned`/`todo`/`unstarted`/`deferred`/`postponed`/`backlog`/`on_hold`/
-  `queued`/`new`/`ready`/`future`/`tbd`/empty, case-insensitive, separator spellings folded, and
-  `blocked` deliberately excluded (source of truth: `UNSTARTED_STATUSES` in `progress_check.py`);
-  a **started** task's `name`, `description`, `verify` and dependencies are frozen — only the
-  ALLOWED lifecycle fields change, plus `/repo-hygiene` compaction filing long prose to a sidecar
-- An **unstarted** task may be edited in place: `name`, `description`, `notes`, and `verify` when
-  tightening it. Changed intent, scope, dependencies, or a loosened `verify` → `superseded` with a
-  reason, replacement under a new id
-- Tightening vs loosening is not mechanically enforceable — `progress-check` only warns on a started
-  task's `name`/`verify` drift (since 2026-08-26; started in base OR candidate, so rewrite-and-start
-  in one commit warns by design); the commit reviewer and the consult hold the rule
+- NEVER remove or re-id tasks. Every non-terminal task is editable planning state and may be
+  refined, combined, divided, reassigned, re-scoped or relocated after reconciling the whole open-
+  work landscape. A task already terminal in the previous commit is immutable reference history;
+  `progress-check` warns if its semantic fields drift.
 - Add new tasks with sub-IDs (2.3a, 2.3b)
 - Document everything in session_notes.md
 - Knowledge extraction is best-effort (skip if no learnings)

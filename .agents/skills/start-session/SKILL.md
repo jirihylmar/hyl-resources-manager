@@ -5,7 +5,7 @@ description: Start or resume work in a syndicate playbook project by synchronizi
 
 # Start a playbook session
 
-Read `AGENTS.md` and `CLAUDE.md` completely when they exist. Then read
+Read `PROJECT_CHARTER.md`, `AGENTS.md` and `CLAUDE.md` completely when they exist. Then read
 `.claude/commands/start-session.md` completely and execute its procedure as the canonical workflow.
 
 The canonical file is shared with existing Claude executors. Ignore its YAML `allowed-tools` list

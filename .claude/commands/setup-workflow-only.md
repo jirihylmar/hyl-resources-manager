@@ -125,6 +125,7 @@ echo "Skills copied ($(ls -1d .claude/skills/*/ | wc -l) present)"
 # Codex adapters are additive and inert for Claude-only projects.
 mkdir -p .agents/skills
 cp -r $EXAMPLES_PATH/_project-template/.agents/skills/* .agents/skills/
+cp $EXAMPLES_PATH/_project-template/PROJECT_CHARTER.md ./PROJECT_CHARTER.md
 echo "Codex skills copied ($(ls -1d .agents/skills/*/ | wc -l) present)"
 ```
 

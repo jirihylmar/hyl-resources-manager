@@ -1,6 +1,6 @@
 ---
 name: progress-check
-description: Check progress.json for corruption that destroys data, enforce append-only history, and require authored_by plus assigned_to on every newly added phase/task. Also warns when a started task's name or verify changes. Invoke before committing progress.json or investigating missing, changed, malformed, stale, or unattributed work.
+description: Check progress.json for corruption that destroys data, preserve task and phase identity, require authored_by plus assigned_to on new work, and warn when a terminal task's semantic record changes. Invoke before committing progress.json or investigating missing, changed, malformed, stale, or unattributed work.
 ---
 
 # progress-check
@@ -78,33 +78,23 @@ the one moment it was written for.
 Pinned by `scripts/test-progress-check-freshness.sh` in the central repo (16 cases, including the
 shipped bootstrap and both example playbooks staying silent).
 
-## Plus one more warning since 2026-08-26: started-task drift
+## Terminal-task drift warning
 
-Since 2026-08-26 the append-only comparison also looks at tasks present in **both** the last commit
-and the candidate, and **warns** when one that has *started* carries a different `name` or `verify`
-than it did. Started means: a non-empty `started_at` that is not an unsubstituted `{{placeholder}}`,
-or a `status` outside the pre-start set — `pending`, `not_started`, `planned`, `todo`, `to_do`,
-`unstarted`, `deferred`, `postponed`, `backlog`, `on_hold`, `queued`, `new`, `ready`, `future`,
-`tbd`, empty — case-insensitive, with separator spellings folded (`not started` reads as
-`not_started`). `blocked` is deliberately outside the pre-start set: a task is as often blocked
-mid-flight as before beginning. `started_at` is tested first and wins, so a task parked in any
-status still counts as started once it carries a real start timestamp. Either version counts, so a
-task rewritten and started in the same commit warns by design. One warning
-per field, naming phase, id and field — the first three in full, then one line naming the rest, so
-a bulk edit cannot bury the message in its own repetitions. An **unstarted** task may be refined in place — `name`,
-`description`, `notes`, a stricter `verify` — and the checker says nothing: not everything can be
-planned correctly, and findings are allowed to change work nobody has begun. Scope, dependency and
-looser-`verify` changes still supersede, even unstarted (`/update-progress` states the rule).
+Every **non-terminal** task is editable planning state, including work that is planned, ongoing,
+blocked or deferred. Findings may refine, combine, divide, reassign, re-scope or relocate it so the
+open-work landscape remains coherent and phases can close. The checker deliberately says nothing
+when semantic fields change on such work.
 
-A **warning, never a failure** — exit stays `0`, for the same reason as freshness: a reworded task
-destroys no bytes, and this checker is a pre-commit hook estate-wide. It compares raw field values
-and cannot tell a stricter `verify` from a weaker one. If what changed was a change of plan — a
-different scope, different dependencies (which the checker does not compare), a looser `verify` —
-restore the started task's fields, mark it `superseded` with a reason, and add the replacement
-under a new id. If it was a legitimate edit, whoever reviews the commit judges that; the checker
-only says it happened. Until 2026-08-26 same-id rewrites were never detected at all (consult cycle
-20260826-094406-418e380), so the old blanket never-modify wording was never enforced by this
-checker either; this warning is the first mechanical signal a same-id rewrite has ever produced.
+Closure is the immutability boundary. When a task was already terminal in the previous commit —
+`complete`, `completed`, `superseded`, `done`, `closed`, `dropped`, `cancelled`, `canceled`,
+`resolved`, `obsolete` or `abandoned` — the checker **warns** if its `name`, `description`, `verify`,
+`verify_result`, `dependencies` or `depends_on` changes. These fields state what the historical
+record meant and what evidence closed it. Later work belongs in a non-terminal task that links back.
+
+Candidate-only terminal status does not warn: the same commit may legitimately refine open work and
+then close it. The next commit sees it as history. The warning never blocks because Git still holds
+the previous bytes and historical projects use varied schemas; it makes the retelling visible at
+review instead of pretending it did not happen. Warnings are capped after three full entries.
 
 Pinned by `scripts/test-progress-check-mutability.sh` in the central repo.
 
@@ -141,7 +131,7 @@ An **already-damaged** file does not hold the repo hostage — the guard fires o
 ## Related
 
 - `/update-progress` — the conservative edit rules this enforces mechanically (append-only, never
-  remove, never change ids; since 2026-08-26, a warning when a started task's `name` or `verify`
+  remove, never change ids; a warning when a terminal task's semantic fields
   drifts). Reordering is forbidden there and not detected here.
 - `/open-work` — renders the tables from this file; exits 2 when it cannot read it. If `open-work`
   reports it cannot read `progress.json`, run this to find out why.
