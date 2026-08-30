@@ -1,7 +1,7 @@
 {
   "_comment": "Written by /distribute-defaults. Proves the engine delivered these exact bytes. /repo-hygiene reads this BEFORE classifying any default as hand-edited. A hash match here means DELIVERED, whatever the git state. Never edit by hand.",
-  "written_at": "2026-08-29T17:58:11Z",
-  "canonical_commit": "39ed0d1247792aef797a7b85a2c1acef5a24de77",
+  "written_at": "2026-08-30T08:05:56Z",
+  "canonical_commit": "f2bdca3c61ac4e21098167e97c087a6abcd9d4b3",
   "files": {
     ".claude/commands/add-work.md": { "sha256": "50d1465f08f37545483d7cf94cd8a6d37ec00a83d9b31af1d4e9bd3ad9543b63", "source": "canonical" },
     ".claude/commands/check-aws.md": { "sha256": "24178c91d34397b4deb7714d8779e7db28d4fa288a4cdccbf79512b4c9a8818c", "source": "canonical" },
@@ -20,7 +20,7 @@
     ".claude/skills/progress-check/progress_check.py": { "sha256": "a201c81164d165ea0d91e2bf4dfcb902e1c33807e50c0a3ce9c8a19a6eddc99d", "source": "canonical" },
     ".claude/skills/progress-check/SKILL.md": { "sha256": "eb4d78c8642977cff633350a40f385fb4ba688589c5314a45433d0acbf435ac5", "source": "canonical" },
     ".claude/skills/consult-codex/prepare-host.sh": { "sha256": "09a59009cfcec40bd50d9d7377167f4dd954169508c0d7c7cbd290149efbb012", "source": "canonical" },
-    ".claude/skills/consult-codex/consult.sh": { "sha256": "45e1f6cb9ee0eadd4cc083da6b533c119ebc25912467ebf7057ad70a0ee67758", "source": "canonical" },
+    ".claude/skills/consult-codex/consult.sh": { "sha256": "008f9db64425d57376956bbbc94ae6cbb086e0fdec2fff802aed92600e56882c", "source": "canonical" },
     ".claude/skills/consult-codex/host-entry.SKILL.md": { "sha256": "6610b8b1e6cad26698af0721fc0bf75cb8251f0e8d055b4501fe77f84b5e0d85", "source": "canonical" },
     ".claude/skills/consult-codex/consult-posture.sh": { "sha256": "a9c9b12569bd76befca12e1558f9003a55116a19caa0f02e382e2268a27e68ed", "source": "canonical" },
     ".claude/skills/consult-codex/SKILL.md": { "sha256": "f89c9535938105d24b338addd2075c2ab7590ee44123adc41c215438744c4835", "source": "canonical" },
@@ -30,13 +30,18 @@
     ".claude/skills/open-work/SKILL.md": { "sha256": "db2883ba25e03b35c4d5de90d2ad6191d7a5d758a2c0b6b82b00d14513390914", "source": "canonical" },
     ".claude/skills/open-work/open_work.py": { "sha256": "4b13b72de8cc238301c38962f8f42bd1fa41c196977ac6bca05f574ffebf4370", "source": "canonical" },
     ".agents/skills/generate-architecture/SKILL.md": { "sha256": "1a58f671fff68263265dc687d1728057d3d7b57f805d033ffcf010745a4f3e9a", "source": "canonical" },
+    ".agents/skills/server-report/SKILL.md": { "sha256": "78f9c8954068cab76b618e53c0ec556241478c5be963d473b6a32211c1d89b92", "source": "canonical" },
     ".agents/skills/setup-workflow-only/SKILL.md": { "sha256": "2323ae7ff7eee1c7afeb5760d4f178e7a90fa4b8a0997d2122d9d67ebbfef3b7", "source": "canonical" },
     ".agents/skills/start-session/SKILL.md": { "sha256": "31a5a49c77ce7b0da46d99401090dc699bc44c5866528fe33affeaa3338d769d", "source": "canonical" },
     ".agents/skills/repo-hygiene/SKILL.md": { "sha256": "c621fa975d3758933c6da070b3eb3c8c924d84d3b3f2ecca882c92ccdbf87a7c", "source": "canonical" },
+    ".agents/skills/syndicate-connect/SKILL.md": { "sha256": "96a4ea11605fc9d6c5c860f5ac87aa1b0813d4cea8412df0653e025a4453ff3f", "source": "canonical" },
+    ".agents/skills/consult-claude/SKILL.md": { "sha256": "ff6ec781845f3de1ab5a75ebfb466877b9672b526d8f3387c31a825d99ba9143", "source": "canonical" },
     ".agents/skills/syndicate-refresh-remote/SKILL.md": { "sha256": "95ed6c33cebd309994cd91357b48c503487912294bfb746416c736ea4995153e", "source": "canonical" },
     ".agents/skills/setup/SKILL.md": { "sha256": "ee182f03c7928f108622c78451c50cdc0e6d609303e1775284c6b8062cf5e299", "source": "canonical" },
+    ".agents/skills/progress-check/SKILL.md": { "sha256": "c7ae46f45fd90576156f5c682a737b68896f54bbb37cff29d82921b66041a19e", "source": "canonical" },
     ".agents/skills/add-work/SKILL.md": { "sha256": "95ae7a07b4fea4d9b116bb5a239dec85af4e40a0ff45df07c3d51e9ca53be9d3", "source": "canonical" },
     ".agents/skills/check-aws/SKILL.md": { "sha256": "5cc6cddfdd3bdd783d409d0f1adb2db54360ab421e22b324296222f4e9303c2b", "source": "canonical" },
+    ".agents/skills/open-work/SKILL.md": { "sha256": "aee95cda2c20561d541453d482f5237c71c822258ea3490d313c393f4663b2d8", "source": "canonical" },
     ".agents/skills/update-progress/SKILL.md": { "sha256": "c69985811eb2952dfebbb84c075d89bb19fdac19b10d9cee7c724234fdda1654", "source": "canonical" },
     ".agents/skills/generate-phases/SKILL.md": { "sha256": "8e5e28495b6477c10dee4d264d6634caf076b419347cc38789d4c58b62350071", "source": "canonical" }
   }

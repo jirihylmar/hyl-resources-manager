@@ -316,7 +316,10 @@ open)
   else put sync "local-only (no origin)"; fi
   python3 "$REAL/.claude/skills/progress-check/progress_check.py" --file "$REAL/progress.json" --quiet >/dev/null 2>&1 || refuse NOT-REVIEWABLE:progress-json
   [ -d "$REAL/.claude/commands" ] && [ -d "$REAL/.claude/skills" ] || refuse NOT-REVIEWABLE:no-claude-dir
-  { [ -e "$REAL/.codex" ] || [ -e "$REAL/.agents/skills" ]; } && refuse NOT-REVIEWABLE:codex-roots-present
+  # `.codex/` may execute project-provided MCP commands when a checkout is trusted. In contrast,
+  # `.agents/skills/` is the tracked prose workflow surface distributed by this repository and is
+  # expected in dual-executor projects; refusing it would make every such project unreviewable.
+  [ -e "$REAL/.codex" ] && refuse NOT-REVIEWABLE:codex-roots-present
   # AWS binding — by command, via codex-here's own rules; 3 = refusal, else aws or no-infra
   B="$("$HERE" --project "$REAL" --dry-run exec x 2>&1 >/dev/null)"; rc=$?
   # Every other refusal code is a literal; this one is EXTRACTED, and it lands in `not-reviewed:<CODE>`,
