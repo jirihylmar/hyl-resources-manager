@@ -554,7 +554,7 @@ def _cwd(pid):
 
 
 def sessions(snap):
-    """Group by project, keyed on each claude root's cwd.
+    """Group by executor and project, keyed on each Claude/Codex root's cwd.
 
     Attribution = union(ppid subtree, SID group). Measured: NEITHER is a superset of
     the other — `setsid` leaves the process tree (and on WSL orphans reparent to the
@@ -580,7 +580,15 @@ def sessions(snap):
     for pid, p in snap.items():
         by_sid[p["sid"]].append(pid)
 
-    roots = [pid for pid, p in snap.items() if p["comm"] == "claude" and "claude" in p["cmd"]]
+    def executor(p):
+        comm, cmd = p["comm"].lower(), p["cmd"].lower()
+        if comm == "claude" and "claude" in cmd:
+            return "claude"
+        if comm == "codex" and "codex" in cmd:
+            return "codex"
+        return None
+
+    roots = [pid for pid, p in snap.items() if executor(p)]
     claimed, groups = set(), []
     for r in roots:
         # Read `claimed` INSIDE the loop: a nested root (a session running `claude -p`
@@ -591,7 +599,7 @@ def sessions(snap):
         members = set(subtree(r, {r})) | set(by_sid.get(snap[r]["sid"], []))
         members -= claimed
         claimed |= members
-        groups.append((r, members))
+        groups.append((r, members, executor(snap[r])))
     return roots, claimed, groups
 
 
@@ -648,10 +656,10 @@ def main():
 
     per_project = collections.defaultdict(
         lambda: {"sessions": 0, "procs": 0, "mcp": 0, "mem": 0, "pct": 0.0})
-    for r, members in groups:
+    for r, members, executor in groups:
         cwd = _cwd(r)
         proj = (cwd.replace(os.path.expanduser("~"), "~") if cwd else "(cwd unreadable)")
-        d = per_project[proj]
+        d = per_project[(executor, proj)]
         d["sessions"] += 1
         d["procs"] += len(members)
         d["mcp"] += sum(1 for m in members if m != r and _is_mcp(m))
@@ -746,15 +754,15 @@ def main():
         print("  hypervisor or host OS — leaves no trace here, so this is not proof none occurred)")
     print()
 
-    print("USAGE BY PROJECT (claude session cwd)")
-    print("  %-34s%5s%6s%5s%7s%9s%7s" % ("project", "sess", "proc", "mcp", "cpu%", "mem", "mem%"))
+    print("USAGE BY PROJECT AND EXECUTOR (session cwd)")
+    print("  %-8s%-26s%5s%6s%5s%7s%9s%7s" % ("executor", "project", "sess", "proc", "mcp", "cpu%", "mem", "mem%"))
     print("  " + "-" * 73)
-    for proj, v in sorted(per_project.items(), key=lambda kv: -kv[1]["mem"]):
-        print("  %-34s%5d%6d%5d%6.0f%%%9s%6.1f%%"
-              % (proj[:34], v["sessions"], v["procs"], v["mcp"], v["pct"],
+    for (executor, proj), v in sorted(per_project.items(), key=lambda kv: -kv[1]["mem"]):
+        print("  %-8s%-26s%5d%6d%5d%6.0f%%%9s%6.1f%%"
+              % (executor, proj[:26], v["sessions"], v["procs"], v["mcp"], v["pct"],
                  human(v["mem"]), pct_of(v["mem"])))
-    print("  %-34s%5s%6d%5s%6.0f%%%9s%6.1f%%"
-          % ("unattributed processes", "", len(unclaimed), "", unattr_pct,
+    print("  %-8s%-26s%5s%6d%5s%6.0f%%%9s%6.1f%%"
+          % ("", "unattributed processes", "", len(unclaimed), "", unattr_pct,
              human(unattr_mem), pct_of(unattr_mem)))
     print("  " + "-" * 73)
 
@@ -793,11 +801,12 @@ def main():
     # one that catches a broken root-finder. Deleting every session root does NOT
     # break accounting: the memory simply moves into the (measured) unattributed row
     # and the residual is unchanged. What it breaks is ATTRIBUTION — and the symptom
-    # is visible: claude processes sitting in the unattributed row.
+    # is visible: executor processes sitting in the unattributed row.
     orphans = [pid for pid in unclaimed
-               if s1[pid]["comm"] == "claude" and "claude" in s1[pid]["cmd"]]
+               if ((s1[pid]["comm"] == "claude" and "claude" in s1[pid]["cmd"])
+                   or (s1[pid]["comm"] == "codex" and "codex" in s1[pid]["cmd"]))]
     if orphans:
-        print("  ! ATTRIBUTION FAILURE: %d claude process(es) are unattributed (pids %s)."
+        print("  ! ATTRIBUTION FAILURE: %d executor process(es) are unattributed (pids %s)."
               % (len(orphans), ", ".join(str(p) for p in orphans[:5])))
         print("  ! The root-finder is not recognising live sessions. The per-project rows")
         print("  ! below-count by an unknown amount. Do not trust them.")

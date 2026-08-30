@@ -1,7 +1,7 @@
 {
   "_comment": "Written by /distribute-defaults. Proves the engine delivered these exact bytes. /repo-hygiene reads this BEFORE classifying any default as hand-edited. A hash match here means DELIVERED, whatever the git state. Never edit by hand.",
-  "written_at": "2026-08-30T12:38:42Z",
-  "canonical_commit": "56c5608c44265320cbd193bdf8d73414c01a34b7",
+  "written_at": "2026-08-30T14:05:22Z",
+  "canonical_commit": "098f6aaedc6d37b1b9de0d8ba14149bd367e1e12",
   "files": {
     ".claude/commands/add-work.md": { "sha256": "2f33f6c65d598c4631401988c4fb05ba3e60926c7269d1f3d8898a3360546e40", "source": "canonical" },
     ".claude/commands/check-aws.md": { "sha256": "24178c91d34397b4deb7714d8779e7db28d4fa288a4cdccbf79512b4c9a8818c", "source": "canonical" },
@@ -13,8 +13,8 @@
     ".claude/commands/setup.md": { "sha256": "cfb40311ff2e5389573ca78289d8b20e758b146c4c0fc4c4f7f7bf41df324634", "source": "canonical" },
     ".claude/commands/start-session.md": { "sha256": "1aaae336b4abc01236a4fd682e46fd93aa948c5b92c7ee1e6e12d9c035dd938b", "source": "canonical" },
     ".claude/commands/update-progress.md": { "sha256": "848761982a13b19b7cd8dd66899fdd2067990bbb615c71608d1c0a0a5f77502b", "source": "canonical" },
-    ".claude/skills/server-report/report.py": { "sha256": "a96944afba04903151a129f9ac389c43f966bec16ba2cc5cbc8b57e93c15ac0b", "source": "canonical" },
-    ".claude/skills/server-report/SKILL.md": { "sha256": "cbf9ee54eb5fdc7132a8d21ed5c1158c9c5495947f4850cddf6ff19380cb18b0", "source": "canonical" },
+    ".claude/skills/server-report/report.py": { "sha256": "1556b3bb39dcd168462dea6c7acf5b60a356153bb316e6f631fff64101912bb4", "source": "canonical" },
+    ".claude/skills/server-report/SKILL.md": { "sha256": "80cfaa9a3211f29e28833d52f8484c7f05b8f5e457761f76c8828b7d22807ef5", "source": "canonical" },
     ".claude/skills/syndicate-connect/connect.sh": { "sha256": "d82c836496aa9bc307babefe0143afbcfec2cf89f099852d45fd7a5873d3ebb1", "source": "canonical" },
     ".claude/skills/syndicate-connect/SKILL.md": { "sha256": "0c74edac4dd578892ae495d4afe4d64f40b3d0f73852cdbb35dae3ca1bf38c75", "source": "canonical" },
     ".claude/skills/progress-check/progress_check.py": { "sha256": "af2650cf8b60137f67f9a64f89923d750fef572d55f666b9e25cbf2a6ff2098b", "source": "canonical" },

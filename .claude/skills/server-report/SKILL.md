@@ -1,6 +1,6 @@
 ---
 name: server-report
-description: Report the capacity and usage of the host this session is running on, attributed per project/Claude session — CPU, RAM, swap, disk, OOM kills and MCP process sprawl — and name the binding constraint. Works on any host: it resolves what it is running on by probing, rather than assuming. Invoke when asked about server or machine usage, capacity, how loaded the host is, what is consuming memory or disk, whether another session will fit, or why something was killed.
+description: Report the capacity and usage of the host this session is running on, attributed per project and Claude/Codex executor session — CPU, RAM, swap, disk, OOM kills and MCP process sprawl — and name the binding constraint. Works on any host by probing rather than assuming. Invoke for machine usage, capacity, load, resource consumers, session headroom, or kill diagnosis.
 ---
 
 # server-report
@@ -19,9 +19,9 @@ success**. A wrong confident number is worse than no number.
 Nothing about capacity is hardcoded. Every run reads the current host live, so it self-adjusts across
 a resize, a move to a different machine, or a run inside a container, with no edits.
 
-The unit of usage is **the work that generates it**: each Claude session, labelled by its
-project/repo working directory, plus every process it spawns. Projects can span multiple AWS
-accounts, so accounts are not the grouping key.
+The unit of usage is **the work that generates it**: each Claude or Codex session, labelled by
+executor and project/repo working directory, plus every process it spawns. Projects can span
+multiple AWS accounts, so accounts are not the grouping key.
 
 ## Procedure
 
@@ -60,7 +60,7 @@ buffer is wiped by a restart, a journal starts at boot, `kern.log` spans weeks. 
 never printed as fact when a source was unreadable — `dmesg` restricted, or a counter absent, means
 *unknown*, not zero.
 
-**Usage by project** — sessions, procs, MCP procs, CPU%, memory, %RAM. Below it, `unattributed
+**Usage by project and executor** — Claude/Codex, sessions, procs, MCP procs, CPU%, memory, %RAM. Below it, `unattributed
 processes` (**measured**, not inferred), and a residual checked against independently measured kernel
 accounting.
 
