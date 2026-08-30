@@ -1,7 +1,7 @@
 {
   "_comment": "Written by /distribute-defaults. Proves the engine delivered these exact bytes. /repo-hygiene reads this BEFORE classifying any default as hand-edited. A hash match here means DELIVERED, whatever the git state. Never edit by hand.",
-  "written_at": "2026-08-30T08:05:56Z",
-  "canonical_commit": "f2bdca3c61ac4e21098167e97c087a6abcd9d4b3",
+  "written_at": "2026-08-30T08:10:18Z",
+  "canonical_commit": "346cdec69d63b3f0fd76cab3bbd17d5809622b39",
   "files": {
     ".claude/commands/add-work.md": { "sha256": "50d1465f08f37545483d7cf94cd8a6d37ec00a83d9b31af1d4e9bd3ad9543b63", "source": "canonical" },
     ".claude/commands/check-aws.md": { "sha256": "24178c91d34397b4deb7714d8779e7db28d4fa288a4cdccbf79512b4c9a8818c", "source": "canonical" },
