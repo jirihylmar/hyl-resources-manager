@@ -19,6 +19,25 @@ allowed-tools:
 
 Update progress tracking after completing tasks. Follow conservative rules strictly.
 
+## Task boundary is not session boundary
+
+Classify the invocation before doing anything:
+
+| Mode | Trigger | Required outcome |
+|---|---|---|
+| `TASK_BOUNDARY` | A task completed while the current request still authorizes further ready work | Verify and record the task, reconcile phase state, commit and push its recoverable files, announce one concise transition, then **continue immediately with the next ready task in the same turn** |
+| `SESSION_CLOSE` | The operator asked to stop/handoff; a declared approval checkpoint or genuine blocker requires a reply; context or safe authorized work is exhausted | Run the complete close procedure, including consolidation, knowledge delivery and Step 12 handoff, then yield |
+
+Completion, a green test run, a progress update, a commit, a push, or a changed `current_task` does
+not convert `TASK_BOUNDARY` into `SESSION_CLOSE`. A final-looking task summary is itself a yield: do
+not emit one mid-run. The correct transition is: `Task X.Y complete and pushed. Continuing with
+X.Z: <plain-language outcome>.` Then invoke tools for X.Z in the same response.
+
+For `TASK_BOUNDARY`, run Steps 1, 2, 3, 3b, 3a when applicable, 4, 6–10, and the task-scoped portion
+of Step 5. Defer Step 2b, the full session handoff in Step 5, Step 11, and Step 12 until an actual
+`SESSION_CLOSE`. This keeps publication reliable without making every commit pay the cost—or adopt
+the stopping posture—of ending a session.
+
 ## Ultra-Conservative Update Rules (CRITICAL)
 
 ### ALLOWED Modifications to progress.json:

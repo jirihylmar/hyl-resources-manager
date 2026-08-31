@@ -1,6 +1,6 @@
 ---
 name: update-progress
-description: Close or hand off work in a syndicate playbook project by verifying the task, updating progress.json and session notes, committing scoped changes, and pushing at the repository's defined boundary. Use after completing tracked work or before ending a session.
+description: Publish a completed task or close a syndicate project session by verifying work, updating progress.json, committing scoped changes, and pushing at the defined boundary. A task-boundary update continues directly into the next authorized task; use full handoff only when the session is actually ending.
 ---
 
 # Update playbook progress
@@ -14,6 +14,17 @@ and translate Claude-specific tool identifiers to equivalent available Codex cap
 command named in that procedure means its corresponding repository skill when one exists.
 
 Preserve these boundaries:
+
+- First classify the invocation as `TASK_BOUNDARY` or `SESSION_CLOSE`. Completing, verifying,
+  committing, pushing, or advancing from one task to the next is `TASK_BOUNDARY`; it is never by
+  itself a reason to yield.
+- In `TASK_BOUNDARY`, run the task verification/progress/publication steps, announce the result in
+  one concise transition, and immediately work on the next ready authorized task in the same turn.
+  Do not produce the Step 12 handoff or end the response unless a declared approval checkpoint,
+  genuine blocker, explicit stop request, or absence of safe authorized work makes this a real
+  `SESSION_CLOSE`.
+- Run session-only consolidation, knowledge extraction, handoff notes, and the final summary only
+  for `SESSION_CLOSE` (or when closing a phase explicitly requires its hygiene gate).
 
 - Re-read `progress.json` immediately before editing because another executor may have changed it.
 - Complete a task only after its concrete verification passes; record the actual result.
