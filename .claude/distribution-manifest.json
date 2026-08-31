@@ -1,7 +1,7 @@
 {
   "_comment": "Written by /distribute-defaults. Proves the engine delivered these exact bytes. /repo-hygiene reads this BEFORE classifying any default as hand-edited. A hash match here means DELIVERED, whatever the git state. Never edit by hand.",
-  "written_at": "2026-08-31T05:03:36Z",
-  "canonical_commit": "b053ce97134967f27540e9b8531cda444ee10508",
+  "written_at": "2026-08-31T05:59:01Z",
+  "canonical_commit": "b0a7192868724fe40845019628a3fbc7bc298e72",
   "files": {
     ".claude/commands/add-work.md": { "sha256": "2f33f6c65d598c4631401988c4fb05ba3e60926c7269d1f3d8898a3360546e40", "source": "canonical" },
     ".claude/commands/check-aws.md": { "sha256": "24178c91d34397b4deb7714d8779e7db28d4fa288a4cdccbf79512b4c9a8818c", "source": "canonical" },
@@ -17,7 +17,7 @@
     ".claude/skills/server-report/SKILL.md": { "sha256": "80cfaa9a3211f29e28833d52f8484c7f05b8f5e457761f76c8828b7d22807ef5", "source": "canonical" },
     ".claude/skills/syndicate-connect/connect.sh": { "sha256": "d82c836496aa9bc307babefe0143afbcfec2cf89f099852d45fd7a5873d3ebb1", "source": "canonical" },
     ".claude/skills/syndicate-connect/SKILL.md": { "sha256": "0c74edac4dd578892ae495d4afe4d64f40b3d0f73852cdbb35dae3ca1bf38c75", "source": "canonical" },
-    ".claude/skills/progress-check/progress_check.py": { "sha256": "af2650cf8b60137f67f9a64f89923d750fef572d55f666b9e25cbf2a6ff2098b", "source": "canonical" },
+    ".claude/skills/progress-check/progress_check.py": { "sha256": "eca931380025ee8f384f8e033c2b5d0ed20e14cf693e3eb2b896ca28df503eb6", "source": "canonical" },
     ".claude/skills/progress-check/SKILL.md": { "sha256": "66a1f69bc71e6081074858a5340822b8dad101a04e2fc22e7f63ff6299517e7b", "source": "canonical" },
     ".claude/skills/consult-codex/prepare-host.sh": { "sha256": "09a59009cfcec40bd50d9d7377167f4dd954169508c0d7c7cbd290149efbb012", "source": "canonical" },
     ".claude/skills/consult-codex/consult.sh": { "sha256": "008f9db64425d57376956bbbc94ae6cbb086e0fdec2fff802aed92600e56882c", "source": "canonical" },

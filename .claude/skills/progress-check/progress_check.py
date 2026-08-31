@@ -26,9 +26,8 @@ Measured across 34 live projects: `phases` is a dict in 30 and a LIST in 2; `tas
 most and a DICT in one; some tasks are bare strings; status vocabularies disagree ("complete" vs
 "completed"). A checker that enforced the template's shape would block commits in real projects and
 be disabled within a day — which is worse than no checker. So: no schema, no vocabulary, no style.
-Five failures only — three that destroy data, the append-only policy (a vanished task id or phase
-key), and missing authorship/responsibility on a NEW phase or task. The fifth is comparison-based,
-not a retrospective schema migration: historical records keep their historical shape.
+Failures stay prospective where estate history varies: new records and newly terminal phases must
+be complete, while historical terminal records receive a warning rather than a surprise migration.
 """
 import argparse
 import datetime
@@ -174,6 +173,11 @@ def is_absent(v):
     return isinstance(v, str) and v.startswith("{{") and v.endswith("}}")
 
 
+def unresolved_template(v):
+    """True only for a whole unresolved template token, not ordinary literal braces."""
+    return isinstance(v, str) and bool(re.fullmatch(r"\{\{[A-Z][A-Z0-9_]*\}\}", v.strip()))
+
+
 def completion_fields(doc):
     """Yield (label, key, raw_value) for every completion field on every phase and every task.
 
@@ -301,6 +305,16 @@ def check(text, base_text=None):
         fail.append(f"root of progress.json is {type(doc).__name__}, not an object")
         return fail, warn
 
+    # Required root identity must describe the project, not the template it came from. Limit this
+    # to whole tokens in required metadata: braces in task prose and code examples are legitimate.
+    for field in ("project", "description", "created_at"):
+        if unresolved_template(doc.get(field)):
+            message = (f"required root metadata {field!r} still contains unresolved template token "
+                       f"{doc[field]!r}; project setup must substitute it before work is recorded")
+            # Base-less checks are also used directly against the intentionally unsubstituted
+            # bootstrap/example files. Once a project has a committed base, the same token blocks.
+            (fail if base_text is not None else warn).append(message)
+
     # 3. Duplicate task ids inside one phase — two records claiming to be the same task.
     for pk, ids in task_ids(doc).items():
         seen = set()
@@ -353,6 +367,18 @@ def check(text, base_text=None):
             for pk, po in ap.items():
                 if pk not in bp:
                     require_identity(f"phase {pk!r}", po)
+
+            # A phase becoming terminal in this candidate commit must acquire a real completion
+            # date in the same boundary. Historical terminal phases are not retroactively blocked.
+            for pk, po in ap.items():
+                if not isinstance(po, dict) or not is_terminal(po):
+                    continue
+                before_phase = bp.get(pk)
+                was_terminal = isinstance(before_phase, dict) and is_terminal(before_phase)
+                raw = next((po[k] for k in COMPLETION_KEYS if k in po), None)
+                if not was_terminal and iso_date(raw) is None:
+                    fail.append(f"phase {pk!r} becomes TERMINAL in this commit but has no valid "
+                                f"completed_at/completed ISO date")
 
             bt_new, at_new = tasks_by_key(base_doc), tasks_by_key(doc)
             for (pk, tid), task in sorted(at_new.items(), key=lambda kv: (str(kv[0][0]), str(kv[0][1]))):
@@ -413,6 +439,17 @@ def check(text, base_text=None):
     for pk, po in iter_phases(doc):
         if isinstance(po, dict) and po.get("tasks") is None:
             warn.append(f"phase {pk}: no `tasks` key")
+        if base_text is not None and isinstance(po, dict) and is_terminal(po):
+            raw = next((po[k] for k in COMPLETION_KEYS if k in po), None)
+            if iso_date(raw) is None:
+                try:
+                    base_doc_for_warning, _ = parse_strict(base_text)
+                    old = dict(iter_phases(base_doc_for_warning)).get(pk)
+                except ValueError:
+                    old = None
+                if isinstance(old, dict) and is_terminal(old):
+                    warn.append(f"phase {pk!r} was already TERMINAL but has no valid completion "
+                                f"date; historical compatibility leaves it unblocked")
     ct = doc.get("current_task")
     if ct:
         every = {i for ids in task_ids(doc).values() for i in ids}
