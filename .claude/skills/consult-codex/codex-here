@@ -190,7 +190,7 @@ def main(argv):
         print(" ".join(shlex.quote(c) for c in cmd))
         return 0
     os.chdir(project)
-    os.execvpe("codex", cmd, penv)
+    os.execvpe(codex_bin, cmd, penv)
 
 
 if __name__ == "__main__":
