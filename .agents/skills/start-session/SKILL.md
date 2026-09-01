@@ -23,3 +23,11 @@ Preserve these boundaries:
 - The session-start status is a checkpoint. Continue immediately only when the user's current
   request already authorized that work.
 - Every newly added phase/task needs `authored_by` and `assigned_to`.
+- A queued or running asynchronous job is ongoing work, not a blocker or session boundary. Retain
+  its job/session handle and wait or poll in bounded intervals no longer than 60 seconds, using
+  commentary for interim updates. A final response ends active execution: never claim to be monitoring after sending one,
+  and never send one while a required job remains non-terminal.
+- Continue through the terminal result: inspect and proceed after success; collect evidence and
+  fix/retry in scope or report a genuine blocker after failure. Use Codex's durable goal mechanism
+  only when the operator explicitly creates or requests a persistent goal; ordinary waiting stays
+  in the current turn.
