@@ -47,6 +47,16 @@ def die(code, msg):
     sys.exit(3 if code else 1)
 
 
+def executable(name):
+    """Resolve a host tool without assuming a login shell populated ~/.local/bin."""
+    import shutil
+    found = shutil.which(name)
+    if found:
+        return found
+    user_bin = os.path.expanduser(os.path.join("~/.local/bin", name))
+    return user_bin if os.path.isfile(user_bin) and os.access(user_bin, os.X_OK) else None
+
+
 def main(argv):
     project = os.getcwd()
     bind_from = None      # --bind-from <real checkout>: run in a CLONE, bind from the real project's entry
@@ -114,29 +124,30 @@ def main(argv):
         # scan this host's AWS profiles for the one whose sts identity IS the declared account, and run the
         # same awslabs server the workstation uses — the pipx binary if present, else `uvx` fetches it.
         # No install, no host setting written; the binding is derived from the declared account every run.
-        import shutil, subprocess
-        if not shutil.which("aws"):
+        import subprocess
+        aws_cli = executable("aws")
+        if not aws_cli:
             die(3, f"ACCOUNT-NOT-BOUND — aws_account {declared} declared, no awslabs server for {project}, and no `aws` CLI to scan profiles")
-        profiles = subprocess.run(["aws", "configure", "list-profiles"], capture_output=True, text=True).stdout.split()
+        profiles = subprocess.run([aws_cli, "configure", "list-profiles"], capture_output=True, text=True).stdout.split()
         match = None
         for prof in profiles:
-            r = subprocess.run(["aws", "sts", "get-caller-identity", "--profile", prof, "--query", "Account", "--output", "text"],
+            r = subprocess.run([aws_cli, "sts", "get-caller-identity", "--profile", prof, "--query", "Account", "--output", "text"],
                                capture_output=True, text=True, timeout=25)
             if r.returncode == 0 and r.stdout.strip() == str(declared):
                 match = prof; break
         if not match:
             die(3, f"ACCOUNT-NOT-BOUND — aws_account {declared} declared; none of {len(profiles)} profiles on this host resolves to it")
-        region = subprocess.run(["aws", "configure", "get", "region", "--profile", match], capture_output=True, text=True).stdout.strip() or "eu-central-1"
+        region = subprocess.run([aws_cli, "configure", "get", "region", "--profile", match], capture_output=True, text=True).stdout.strip() or "eu-central-1"
         if len(cands) == 1:
             # Reuse the configured central command. On the box it is runnable by Codex even when
             # neither its absolute binary nor uvx is exposed on a non-login shell PATH. Copy it:
             # adding the proved profile is per invocation and must not mutate Claude's config.
             server = dict(next(iter(cands.values())))
             server["env"] = dict(server.get("env") or {})
-        elif shutil.which(AWSLABS):
-            server = {"command": shutil.which(AWSLABS), "args": []}
-        elif shutil.which("uvx"):
-            server = {"command": shutil.which("uvx"), "args": [AWSLABS]}
+        elif executable(AWSLABS):
+            server = {"command": executable(AWSLABS), "args": []}
+        elif executable("uvx"):
+            server = {"command": executable("uvx"), "args": [AWSLABS]}
         else:
             die(3, f"ACCOUNT-NOT-BOUND — profile {match} matches {declared}, but neither {AWSLABS} nor uvx is on PATH to run the server")
         server.setdefault("env", {})
