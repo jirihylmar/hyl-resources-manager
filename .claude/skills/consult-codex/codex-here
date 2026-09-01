@@ -147,7 +147,11 @@ def main(argv):
         elif executable(AWSLABS):
             server = {"command": executable(AWSLABS), "args": []}
         elif executable("uvx"):
-            server = {"command": executable("uvx"), "args": [AWSLABS]}
+            # aws-api-mcp-server 1.5.4 declares mcp>=1.23 with no upper bound but imports an API
+            # removed in mcp 2.x (`McpError`). A fresh uvx resolution therefore starts with an
+            # ImportError and Codex silently exposes no call_aws tool. Keep the compatible major
+            # explicit until the server itself supports mcp 2.x.
+            server = {"command": executable("uvx"), "args": ["--with", "mcp<2", AWSLABS]}
         else:
             die(3, f"ACCOUNT-NOT-BOUND — profile {match} matches {declared}, but neither {AWSLABS} nor uvx is on PATH to run the server")
         server.setdefault("env", {})
