@@ -178,7 +178,10 @@ def main(argv):
                  "AWS_SHARED_CREDENTIALS_FILE": "/nonexistent"})
 
     # codex accepts -c before the subcommand (global option); resume needs them re-passed each call
-    cmd = ["codex"] + flags + args
+    codex_bin = executable("codex")
+    if not codex_bin:
+        die(3, "HOST-NOT-PREPARED — Codex executable not found on PATH or in ~/.local/bin")
+    cmd = [codex_bin] + flags + args
     banner = (f"codex-here: {os.path.basename(project)} · mode={mode}"
               + (f" · server={bound[0]} · profile={bound[1].get('env', {}).get('AWS_PROFILE')}"
                  f" · declared={declared or '-'}" if bound else " · no AWS server, none declared"))
