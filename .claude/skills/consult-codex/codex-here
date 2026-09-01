@@ -14,9 +14,10 @@ What it does, in order:
      Candidates are the entries whose COMMAND is the awslabs aws-api MCP server.
      By command, never by name: server names encode no account (rule 4 of the estate).
   2. Reads <project>/progress.json  ->  context_hints.aws_account (the declared primary).
-  3. Binds exactly one candidate, or refuses:
+  3. Binds exactly one account-bound candidate, or refuses:
         ACCOUNT-AMBIGUOUS  more than one candidate and no way to pick   (exit 3)
-        profile-scan       an account is declared but Claude has no server for it (the box:
+        profile-scan       an account is declared but Claude has no account-bound server for it
+                           (including a sole central server with no AWS_PROFILE; the box:
                            its AWS reach is a user-level proxy whose --read-only drops every
                            executor tool) -> scan this host's AWS profiles for the one whose
                            sts identity IS the declared account, run the awslabs server via
@@ -88,12 +89,24 @@ def main(argv):
     # 3. bind exactly one, or refuse, or no-infra
     flags = ['-c', 'project_doc_fallback_filenames=["CLAUDE.md"]', '-c', 'project_doc_max_bytes=262144']
     mode, bound = "no-infra", None
-    if len(cands) == 1:
-        bound = next(iter(cands.items()))
+    # A sole awslabs process is not necessarily an account binding. The central-server model is
+    # deliberately unbound so a bare call fails loudly; selecting it here used to bypass the
+    # account-number profile scan and made consult preflight receive `none`. A candidate counts as
+    # bound only when its process environment names a profile. The caller still proves that
+    # profile's live account with STS, so this is routing—not trust in a nickname.
+    def has_profile_binding(server):
+        env = server.get("env") or {}
+        return bool(env.get("AWS_PROFILE") or env.get("AWS_DEFAULT_PROFILE"))
+
+    bound_cands = {name: server for name, server in cands.items() if has_profile_binding(server)}
+    if declared and len(bound_cands) == 1:
+        # An unbound central candidate may coexist with the one project-bound process. It is not
+        # an ambiguity: only one candidate claims a profile, and STS will verify that claim.
+        bound = next(iter(bound_cands.items()))
         mode = "aws-read-only"
-    elif len(cands) > 1:
-        die(3, f"ACCOUNT-AMBIGUOUS — {len(cands)} awslabs servers for {project}: "
-               f"{', '.join(cands)}; declare ONE primary or pass --project to a narrower checkout")
+    elif declared and len(bound_cands) > 1:
+        die(3, f"ACCOUNT-AMBIGUOUS — {len(bound_cands)} profile-bound awslabs servers for {project}: "
+               f"{', '.join(bound_cands)}; declare ONE primary or pass --project to a narrower checkout")
     elif declared:
         # No per-project server in Claude's map (the box has none: its AWS reach is a user-level proxy whose
         # --read-only drops every executor tool — measured 2026-08-25, task 30.9). Bind by PROOF instead:
@@ -122,6 +135,12 @@ def main(argv):
         server["env"] = {"AWS_PROFILE": match, "AWS_REGION": region}
         bound = (f"aws-scan-{str(declared)[-3:]}", server)
         mode = "aws-read-only (profile-scan)"
+    elif len(cands) == 1:
+        bound = next(iter(cands.items()))
+        mode = "aws-read-only"
+    elif len(cands) > 1:
+        die(3, f"ACCOUNT-AMBIGUOUS — {len(cands)} awslabs servers for {project}: "
+               f"{', '.join(cands)}; declare ONE primary or pass --project to a narrower checkout")
 
     if bound:
         name, s = bound
