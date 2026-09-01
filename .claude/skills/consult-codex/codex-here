@@ -20,8 +20,9 @@ What it does, in order:
                            (including a sole central server with no AWS_PROFILE; the box:
                            its AWS reach is a user-level proxy whose --read-only drops every
                            executor tool) -> scan this host's AWS profiles for the one whose
-                           sts identity IS the declared account, run the awslabs server via
-                           the pipx binary or `uvx`. Bound by proof, re-derived every run.
+                           sts identity IS the declared account, then reuse that configured
+                           central command (or fall back to the pipx binary / `uvx`). Bound by
+                           proof, re-derived every run.
         ACCOUNT-NOT-BOUND  declared, and no profile on this host resolves to it (exit 3)
         no-infra           nothing declared, nothing configured -> launch WITHOUT AWS, say so
   4. Injects the bound server per invocation with -c mcp_servers.<name>.…  — every env
@@ -126,13 +127,20 @@ def main(argv):
         if not match:
             die(3, f"ACCOUNT-NOT-BOUND — aws_account {declared} declared; none of {len(profiles)} profiles on this host resolves to it")
         region = subprocess.run(["aws", "configure", "get", "region", "--profile", match], capture_output=True, text=True).stdout.strip() or "eu-central-1"
-        if shutil.which(AWSLABS):
+        if len(cands) == 1:
+            # Reuse the configured central command. On the box it is runnable by Codex even when
+            # neither its absolute binary nor uvx is exposed on a non-login shell PATH. Copy it:
+            # adding the proved profile is per invocation and must not mutate Claude's config.
+            server = dict(next(iter(cands.values())))
+            server["env"] = dict(server.get("env") or {})
+        elif shutil.which(AWSLABS):
             server = {"command": shutil.which(AWSLABS), "args": []}
         elif shutil.which("uvx"):
             server = {"command": shutil.which("uvx"), "args": [AWSLABS]}
         else:
             die(3, f"ACCOUNT-NOT-BOUND — profile {match} matches {declared}, but neither {AWSLABS} nor uvx is on PATH to run the server")
-        server["env"] = {"AWS_PROFILE": match, "AWS_REGION": region}
+        server.setdefault("env", {})
+        server["env"].update({"AWS_PROFILE": match, "AWS_REGION": region})
         bound = (f"aws-scan-{str(declared)[-3:]}", server)
         mode = "aws-read-only (profile-scan)"
     elif len(cands) == 1:
