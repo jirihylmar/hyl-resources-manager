@@ -37,7 +37,7 @@ What it does, in order:
 Nothing here proves the binding is CORRECT — that is the caller's sts check
 (see scripts/test-codex-here.sh).  This script only makes the binding explicit and visible.
 """
-import json, os, shlex, sys
+import json, os, re, shlex, sys
 
 AWSLABS = "awslabs.aws-api-mcp-server"
 
@@ -96,9 +96,17 @@ def main(argv):
     except FileNotFoundError:
         cj = {}
     servers = ((cj.get("projects") or {}).get(bind_from) or {}).get("mcpServers") or {}
-    def is_awslabs(s):  # the pipx binary, or `uvx awslabs.aws-api-mcp-server[@ver]` — by command, never by name
+    def is_awslabs(s):  # the pipx binary, or `uvx [pins...] awslabs.aws-api-mcp-server[@ver|==ver]`
+        # Scan EVERY arg, not args[0]. Once a host pins per docs/mcp-server-pinning-policy.md the
+        # package stops being first: `uvx --with fastmcp==3.4.7 --with mcp==1.29.1 <pkg>==1.5.4`.
+        # Matching on args[0] would silently stop recognising exactly the configs we now prescribe,
+        # and codex-here would fall through to profile-scan with no account binding.
         cmd = os.path.basename(str(s.get("command", ""))); args = s.get("args") or []
-        return cmd == AWSLABS or (cmd == "uvx" and args and str(args[0]).split("@")[0] == AWSLABS)
+        if cmd == AWSLABS:
+            return True
+        if cmd in ("uvx", "uv"):
+            return any(re.split(r"[@=<>!]", str(a), 1)[0] == AWSLABS for a in args)
+        return False
     cands = {n: s for n, s in servers.items() if is_awslabs(s)}
 
     # 2. the declared primary account
