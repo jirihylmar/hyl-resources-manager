@@ -37,6 +37,36 @@ one packet: the decision, viable options, consequences, recommendation and lates
 point. Batch related questions. Do not request permission for ordinary reading, editing, testing,
 committing, pushing, deploying or continuing authorised work.
 
+### Checkpoints
+
+Pause and wait for the operator at these points, and at no others:
+
+| Checkpoint | When |
+|---|---|
+| Session start | After the session-start status has been presented |
+| Specification approval | The blocking specification-approval task |
+| Major decision | Architecture, scope, a trade-off the operator owns |
+| Irreversible or outward-facing | Deleting data, publishing, anything a third party outside the operator's estate will see |
+
+**This list is closed.** If a pause is not architectural, not a scope change and not irreversible,
+it is not a checkpoint. Reading, searching, editing, building, testing, linting, installing,
+creating directories, committing, pushing, deploying and recording tracked progress are ordinary
+work — and so is **finishing a task and starting the next one**.
+Completion is announced, not asked about: state the task, its verified outcome and the next task,
+then continue in the same turn. Being unsure of something you can find out is not a checkpoint
+either; choose, say what you chose and what you assumed, and keep going.
+
+<!-- The sentence above is the EXPECT_PHRASE of scripts/lenses/themes/escalation-contract.theme and
+     is kept on ONE line deliberately: the lens matches per line, so a reflow that wraps it silently
+     unpoints the lens exactly as a reword would. Keep it whole, and keep it free of any count. -->
+
+**Where a project's own entry file disagrees with this section, this charter governs — and one
+disagreement is live, so it is named here rather than left to judgement.** A project `CLAUDE.md` or
+`AGENTS.md` that lists *task completion* among its approval checkpoints is superseded by the table
+above. Those files are project-owned, they were written when the project was set up, and no central
+channel maintains them; this charter is the surface that both executors read and that is centrally
+delivered, which is why the contract lives here and not there.
+
 ## 4. Work from outcomes and keep open work coherent
 
 Every phase has one stakeholder-verifiable outcome, explicit scope and non-goals, acceptance

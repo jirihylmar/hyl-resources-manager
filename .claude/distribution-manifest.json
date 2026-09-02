@@ -1,7 +1,7 @@
 {
   "_comment": "Written by /distribute-defaults. Proves the engine delivered these exact bytes. /repo-hygiene reads this BEFORE classifying any default as hand-edited. A hash match here means DELIVERED, whatever the git state. Never edit by hand.",
-  "written_at": "2026-09-01T14:57:44Z",
-  "canonical_commit": "62b7396d837c4f8db54b8e1b51a7ddf2b2cb80c0",
+  "written_at": "2026-09-02T07:32:27Z",
+  "canonical_commit": "5b6ed7bbe89f90fa7fd38c29969f72f1f53b0ae5",
   "files": {
     ".claude/commands/add-work.md": { "sha256": "2f33f6c65d598c4631401988c4fb05ba3e60926c7269d1f3d8898a3360546e40", "source": "canonical" },
     ".claude/commands/check-aws.md": { "sha256": "24178c91d34397b4deb7714d8779e7db28d4fa288a4cdccbf79512b4c9a8818c", "source": "canonical" },
@@ -44,6 +44,6 @@
     ".agents/skills/open-work/SKILL.md": { "sha256": "aee95cda2c20561d541453d482f5237c71c822258ea3490d313c393f4663b2d8", "source": "canonical" },
     ".agents/skills/update-progress/SKILL.md": { "sha256": "56e2e6ad334b3a2f89811296afbb8c02aad95b64924862b191365200a3bedd95", "source": "canonical" },
     ".agents/skills/generate-phases/SKILL.md": { "sha256": "8e5e28495b6477c10dee4d264d6634caf076b419347cc38789d4c58b62350071", "source": "canonical" },
-    "PROJECT_CHARTER.md": { "sha256": "9adf7ae4a3ad652746410ae25afcc4e7a29653449c4752db6124659efe9f1f06", "source": "canonical" }
+    "PROJECT_CHARTER.md": { "sha256": "f2e018ffe3a0181ffbbe5e1c2fb9d49a6592eb89b5fdd02678684b06a831bc8b", "source": "canonical" }
   }
 }
