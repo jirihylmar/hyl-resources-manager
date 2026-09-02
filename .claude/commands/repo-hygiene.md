@@ -370,6 +370,9 @@ DONE = ("complete", "completed", "superseded", "done", "closed", "dropped",
         "cancelled", "canceled", "resolved", "obsolete", "abandoned")
 
 # NEVER moved. Two grounds, both checkable: machinery reads it (start-session EXECUTES `verify`;
+# update-progress Step 12 reads `verify_result` to report completions that carry no evidence —
+# archiving it made every compacted task read as unverified and made progress-check warn about
+# terminal drift its own sanctioned operation had just caused;
 # open-work renders id/name/status/size and the dependency keys; progress-check compares
 # estate_notice; this script's own selection reads the timestamps), or it identifies the task.
 # Everything else that is long prose in a FINISHED task moves.
@@ -379,7 +382,7 @@ DONE = ("complete", "completed", "superseded", "done", "closed", "dropped",
 # relief — and projects invent keys weekly (one estate project's tasks carry 556 distinct keys).
 # What must be KEPT is finite and knowable; what may be moved is not.
 KEEP_TASK = {"id", "name", "title", "status", "size", "priority", "type", "phase", "owner",
-             "repo", "branch", "verify", "estate_notice",
+             "repo", "branch", "verify", "verify_result", "estate_notice",
              "depends_on", "depends_on_shipped", "blocked_by", "blocked_on", "blocks",
              "superseded_by", "parent_task", "subtasks", "decomposed_into",
              "added_by", "added_at", "added_on", "started_at", "completed_at", "superseded_at",
@@ -492,7 +495,14 @@ for idx, (key, ph) in enumerate(items):
     if cur_phase and cur_phase in (key, str(ph.get("id")), str(ph.get("name"))) or (cur_task and cur_task in ids):
         skipped.append((key, "holds current_phase/current_task", blob(ph))); continue
     finished.append((eff_date(ph, ts), idx, key, ph))
-finished.sort(key=lambda r: r[0])
+def date_key(v):
+    # Mixed stamp formats sort inconsistently as raw strings: a bare "2026-09-02" compares BEFORE
+    # every same-day timestamp, so a phase closed late that day with a date-only stamp reads as
+    # OLDER than one closed that morning with a full one, and loses the KEEP_RECENT window. Bias a
+    # bare date to the end of its day: when the time is unknown the safe error is to PROTECT a
+    # recently-closed phase, never to archive it.
+    return (v + "T23:59:59Z") if re.fullmatch(r"\d{4}-\d{2}-\d{2}", v or "") else (v or "")
+finished.sort(key=lambda r: date_key(r[0]))
 targets = finished[:-KEEP_RECENT] if len(finished) > KEEP_RECENT else []
 for d, i, k, ph in (finished[-KEEP_RECENT:] if len(finished) > KEEP_RECENT else finished):
     skipped.append((k, "newest %d finished (KEEP_RECENT)" % KEEP_RECENT, blob(ph)))
