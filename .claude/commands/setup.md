@@ -155,6 +155,15 @@ git config core.hooksPath .claude/hooks    # repo-local config — arms the guar
 - Adjust phases if project scope differs
 
 **Update progress.json:**
+- **Substitute every `{{PLACEHOLDER}}` the copied file carries** — `{{PROJECT_NAME}}`,
+  `{{PROJECT_DESCRIPTION}}`, `{{CREATION_DATE}}` and `{{PROJECT_EXECUTOR}}`. Default the display
+  name to **the repository name**: § 2b already makes folder = repo = origin a rule, so the repo
+  name is unique at the hosting provider and this inherits that uniqueness for free. The
+  description is one sentence saying what the project is for — it is the only project-level prose
+  any estate-wide reader ever sees. **This file is the project's own.** The central repository
+  delivers commands and skills and never writes `progress.json`, so a placeholder left here is
+  never repaired from outside; `/start-session` § 3.5 can transcribe the name from origin if it is
+  still a token, but nothing anywhere can invent the description.
 - Update `context_hints` with environment values
 - Update resource names in verify steps
 - Reset task statuses if needed

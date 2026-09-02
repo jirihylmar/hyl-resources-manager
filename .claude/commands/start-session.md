@@ -709,7 +709,333 @@ Would you like me to:
 Use AskUserQuestion.
 
 #### If tasks exist:
-Proceed to session handoff (Step 4).
+Proceed to Step 3.5, then the session handoff (Step 4).
+
+### 3.5. Project Metadata Contract (fill what is proven, report what only the operator can choose)
+
+**Where this step sits, and why it sits there — four reasons, so nobody moves it.**
+(a) *After Step 3*, which has just proved `progress.json` exists, parses and carries tasks. Step 3's
+`#### If no progress.json exists:` and `#### If no tasks exist` branches already own the other two
+cases, so this step needs no branch of its own.
+(b) *After Step 0*, so a fill is never written onto a checkout that could not fast-forward and then
+made to diverge by a commit made here.
+(c) *After Step 0.5*, whose stated contract is to arm the commit guard **before any commit this
+session makes** — so this step's commit is validated by `.claude/hooks/pre-commit`, which runs
+`progress_check.py --staged --file progress.json --quiet` on exactly the bytes being written.
+(d) *Before Step 4*, because § 4.0 renders `open_work.py` against this file and a fill must be
+complete before it renders, and because the findings belong in a ⚠ section of the § 4.1 handoff
+template alongside Steps 0.7 / 2.5 / 2.7.
+
+**Why the step exists.** `progress.json` is project-owned: the central repository delivers commands
+and skills into a project and never writes that file, so a metadata gap there can only ever be
+closed by the project itself, at the one command every project runs every session. The estate
+dashboard reads the root `project`, `description` and `current_task` fields verbatim; a field left
+as a template token is nulled by the collector, which records a `project_name_unavailable` read
+error and labels the project's row by its **directory basename on whichever machine was scanned** —
+so the project appears on the board under a per-machine nickname with an error attached. Measured
+2026-09-02 across 15 local projects: **2 carry `{{PROJECT_NAME}}`, 6 carry `current_task: null`, 1
+carries `current_task` as an object.** Only the first of those three is something a session may fix.
+
+**THE GOVERNING RULE, and it is a rule: this step transcribes; it never composes.** The only name
+it may write is the one `git remote get-url origin` returns with any path or host prefix and a
+trailing `.git` stripped — the derivation Step 8's `check_name()` already uses, plus the scp-style
+`host:path` form that its `sed` leaves alone — because a repository's identity is its name and is
+host-independent (§ Two Environments). It must **never**
+derive a name from `basename "$PWD"`, from the directory tree, from `CLAUDE.md`, from `README.md`,
+nor by title-casing, de-hyphenating or expanding anything. A composed name is a choice, and choices
+here belong to the operator; `basename` is the per-machine nickname § Two Environments forbids
+writing into a file that travels, and the dashboard already falls back to it — writing it into the
+file would freeze one machine's answer as the estate's.
+
+#### Block A — classify. Read-only, and it never writes on any path.
+
+```bash
+python3 - <<'PY'
+# METADATA_CLASSIFIER_BEGIN
+import json, re, subprocess
+from pathlib import Path
+
+PLACEHOLDER = re.compile(r"^\{\{[A-Z0-9_]+\}\}$")
+
+def usable(v):
+    """The collector's own predicate: a value counts only if it is a non-empty string after
+    trimming and is not a whole {{TOKEN}}. Mirroring it is the point — this step reports what
+    the dashboard will say before it says it."""
+    if not isinstance(v, str) or not v.strip():
+        return None
+    s = v.strip()
+    return None if PLACEHOLDER.match(s) else s
+
+def why(doc, key):
+    if key not in doc:
+        return "absent"
+    v = doc[key]
+    if v is None:
+        return "absent"
+    if isinstance(v, str):
+        s = v.strip()
+        if not s:
+            return "empty"
+        return "the placeholder " + s if PLACEHOLDER.match(s) else "the string " + repr(s)
+    return "a " + type(v).__name__
+
+def origin_name():
+    """git remote get-url origin, path and .git stripped. Nothing else is a source of a name."""
+    try:
+        r = subprocess.run(["git", "remote", "get-url", "origin"],
+                           capture_output=True, text=True, timeout=15)
+    except Exception:
+        return None
+    if r.returncode != 0:
+        return None
+    s = r.stdout.strip().rstrip("/")
+    if not s:
+        return None
+    s = s.rsplit("/", 1)[-1].rsplit(":", 1)[-1]
+    if s.endswith(".git"):
+        s = s[:-4]
+    return s or None
+
+def anchor_lines(text, key, value):
+    """THE ANCHOR PREDICATE, defined here so Block A and Block B cannot disagree about what a
+    writable line is. A line is the anchor for top-level key K iff it assigns a JSON string to K
+    and nothing else on that line, AND that string equals the parsed top-level value of K. The
+    value-equality clause is what makes the same predicate safe for `description`, which also
+    appears on phases and on tasks."""
+    pat = re.compile(r'^\s*"' + re.escape(key) + r'"\s*:\s*("(?:[^"\\]|\\.)*")\s*,?\s*$')
+    out = []
+    for n, line in enumerate(text.splitlines(), 1):
+        m = pat.match(line)
+        if not m:
+            continue
+        try:
+            if json.loads(m.group(1)) == value:
+                out.append(n)
+        except ValueError:
+            pass
+    return out
+
+def objects(v):
+    if isinstance(v, list):
+        return [x for x in v if isinstance(x, dict)]
+    if isinstance(v, dict):
+        return [x for x in v.values() if isinstance(x, dict)]
+    return []
+
+p = Path("progress.json")
+if not p.exists():
+    print("METADATA: UNKNOWN — no progress.json at the orchestration repo root; Step 3 owns that "
+          "case and this step classifies nothing")
+    raise SystemExit(0)
+raw = p.read_text(encoding="utf-8")
+try:
+    doc = json.loads(raw)
+    if not isinstance(doc, dict):
+        raise ValueError("root is not an object")
+except ValueError as e:
+    print("METADATA: UNKNOWN — progress.json does not parse (%s); no field can be classified "
+          "(progress-check will name the corruption)" % e)
+    raise SystemExit(0)
+
+# 1. project — the one field this step may ever write, and only from origin.
+name = usable(doc.get("project"))
+if name:
+    print("METADATA: ok project=%s" % name)
+elif "project" not in doc:
+    print('METADATA: MISSING-KEY project — progress.json carries no top-level "project" key; not '
+          "inserting one (an insertion chooses a position in a file this repo does not own)")
+else:
+    hits = anchor_lines(raw, "project", doc.get("project"))
+    if len(hits) != 1:
+        print("METADATA: AMBIGUOUS project — %d line(s) in progress.json assign this key as a JSON "
+              "string with this value; a write needs exactly one; not writing" % len(hits))
+    else:
+        origin = origin_name()
+        if origin:
+            print("METADATA: FILLABLE project=%s — the value is %s and origin proves the repo's "
+                  "identity name" % (origin, why(doc, "project")))
+        else:
+            print("METADATA: UNPROVABLE project — the value is %s and this repo has no origin; only "
+                  "the operator can choose a name (this step will not invent one)"
+                  % why(doc, "project"))
+
+# 2. description — reported, never written. Nothing on disk proves a purpose.
+if usable(doc.get("description")):
+    print("METADATA: ok description")
+else:
+    print("METADATA: OPERATOR description — %s; nothing on disk proves a one-line purpose, so this "
+          "step never writes one" % why(doc, "description"))
+
+# 3. current_task — reported in three DIFFERENT words, because absence, wrong-shape and
+#    unresolved are three different facts and collapsing them hides two of them.
+ct = doc.get("current_task")
+if ct is None or (isinstance(ct, str) and not ct.strip()):
+    print("METADATA: ABSENT current_task — no task is pointed at")
+elif isinstance(ct, (dict, list)):
+    print("METADATA: NOT-AN-ID current_task — the value is a %s, so nothing can point at it"
+          % type(ct).__name__)
+else:
+    ids = set()
+    for phase in objects(doc.get("phases")):
+        for task in objects(phase.get("tasks")):
+            if task.get("id") is not None:
+                ids.add(str(task["id"]))
+    if str(ct) in ids:
+        print("METADATA: ok current_task=%s" % ct)
+    else:
+        print("METADATA: UNRESOLVED current_task=%s — no task in any phase carries that id" % ct)
+# METADATA_CLASSIFIER_END
+PY
+MD_RC=$?
+[ "$MD_RC" -eq 0 ] || echo "METADATA: DID-NOT-RUN (interpreter exit $MD_RC) — this project's dashboard metadata is UNKNOWN for this session, which is NOT ok"
+```
+
+> **Why the `DID-NOT-RUN` line is not belt-and-braces.** Every verdict above is *printed by the
+> interpreter*, so an interpreter that dies prints nothing — and nothing is exactly what a healthy
+> project prints. Same shape as Steps 0.7 and 2.7, and the same reason.
+
+**Cardinality rule: exactly three `METADATA:` lines, or exactly one `UNKNOWN` / `DID-NOT-RUN` line
+saying why there are none.** A field with no line is a dropped field, and a dropped field is how
+metadata stays broken while the session reports clean. Count them before you write the handoff.
+
+The verdicts, and what each one means:
+
+| Verdict | Meaning | Next move |
+|---|---|---|
+| `ok project=… / ok description / ok current_task=…` | The dashboard will read a real value. | Nothing. Omit from the handoff. |
+| `FILLABLE project=…` | The value is absent, empty or the placeholder, and origin proves the repository's name. | Run Block B. |
+| `UNPROVABLE project` | Same, but this repository has no origin. | Report it. Only the operator can supply a name; **do not propose one**. |
+| `AMBIGUOUS project` | The key is not assigned on exactly one writable line — usually a duplicate key, which is itself corruption `progress-check` reports. | Report it; fix the file by hand, then re-run. |
+| `MISSING-KEY project` | No top-level `project` key at all. | Report it. Inserting a key chooses a position in a file this repository does not own. |
+| `OPERATOR description` | Absent or the placeholder. | Report it. A README's first line is composing, not transcribing. |
+| `ABSENT current_task` | No task is claimed — **a legitimate state at a clean close**, and § Multi-Agent Discipline forbids this step from changing it. | Report it once, without alarm. Never fix it here. |
+| `NOT-AN-ID current_task` | The value is an object or a list; nothing can point at it and the dashboard shows it as unresolvable. | Report it. The task's own record is where that detail belongs; only the orchestrator moves the pointer. |
+| `UNRESOLVED current_task=…` | A string that matches no task id. | Report it; § 4.0's pointer check reports it in full. |
+| `UNKNOWN` / `DID-NOT-RUN` | The contract could not be classified. | Surface it. An unknown contract is not a satisfied contract, and it looks identical to a clean one. |
+
+#### Block B — fill. Runs **only** when Block A printed `FILLABLE`, and re-proves every guard itself.
+
+```bash
+python3 - <<'PY'
+# METADATA_FILL_BEGIN
+import json, re, subprocess
+from pathlib import Path
+
+PLACEHOLDER = re.compile(r"^\{\{[A-Z0-9_]+\}\}$")
+
+def git(*args):
+    return subprocess.run(["git", *args], capture_output=True, text=True)
+
+def withheld(reason):
+    print("METADATA: WITHHELD — " + reason)
+    raise SystemExit(0)
+
+# This block NEVER trusts Block A's output. Block A is a report; a report can be stale by the time
+# anyone acts on it, and the cost of acting on a stale one is a write to a file this repository
+# does not own.
+
+# 1. A tracked file in a work tree, or there is nothing to write.
+if git("rev-parse", "--is-inside-work-tree").returncode != 0:
+    withheld("not inside a git work tree")
+if git("ls-files", "--error-unmatch", "progress.json").returncode != 0:
+    withheld("progress.json is not tracked here")
+
+# 2. Concurrency: another agent may be mid-edit. Same guard Step 2 applies to its heal.
+if git("status", "--porcelain", "--", "progress.json").stdout.strip():
+    withheld("progress.json already has uncommitted changes (another agent may be editing it)")
+
+# 3. Not behind origin. Re-derived here rather than remembered from Step 0, and via @{u} — never
+#    origin/HEAD, which many clones simply do not have. No upstream at all is fine: a local-only
+#    repository cannot be behind anything.
+u = git("rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}")
+if u.returncode == 0 and u.stdout.strip():
+    counts = git("rev-list", "--left-right", "--count", u.stdout.strip() + "...HEAD")
+    if counts.returncode != 0:
+        withheld("the upstream count could not be computed; not writing on an unknown state")
+    if int(counts.stdout.split()[0]) != 0:
+        withheld("the orchestration repo is behind origin; Step 0 could not fast-forward it")
+
+# 4. Exactly one writable anchor line, and its current value is fillable.
+raw = Path("progress.json").read_text(encoding="utf-8")
+doc = json.loads(raw)
+if not isinstance(doc, dict) or "project" not in doc:
+    withheld('progress.json carries no top-level "project" key; this step never inserts one')
+cur = doc["project"]
+if isinstance(cur, str) and cur.strip() and not PLACEHOLDER.match(cur.strip()):
+    withheld("project already holds a substantive value (%r); this step never replaces one" % cur)
+pat = re.compile(r'^\s*"project"\s*:\s*("(?:[^"\\]|\\.)*")\s*,?\s*$')
+lines = raw.splitlines(True)
+
+def anchor_at(line):
+    m = pat.match(line)
+    if not m:
+        return None
+    try:
+        return m if json.loads(m.group(1)) == cur else None
+    except ValueError:
+        return None
+
+hits = [n for n, line in enumerate(lines, 1) if anchor_at(line)]
+if len(hits) != 1:
+    withheld('%d writable "project" line(s); a write needs exactly one' % len(hits))
+
+# 5. The name, transcribed from origin and from nowhere else.
+r = git("remote", "get-url", "origin")
+name = r.stdout.strip().rstrip("/") if r.returncode == 0 else ""
+name = name.rsplit("/", 1)[-1].rsplit(":", 1)[-1]
+if name.endswith(".git"):
+    name = name[:-4]
+if not name:
+    withheld("origin yields no repository name; only the operator can choose one")
+
+# 6. Replace the quoted value on that ONE line. NO json.load/json.dump round-trip: reserialising
+#    reformats the whole file into an unreadable diff and, worse, silently collapses a duplicate
+#    key — turning the corruption progress-check exists to DETECT into silent data loss.
+i = hits[0] - 1
+m = anchor_at(lines[i])
+lines[i] = lines[i][:m.start(1)] + json.dumps(name) + lines[i][m.end(1):]
+Path("progress.json").write_text("".join(lines), encoding="utf-8")
+
+# 7. Mechanical proof that nothing else moved: exactly one line added, one removed.
+stat = git("diff", "--numstat", "--", "progress.json").stdout.strip()
+if stat != "1\t1\tprogress.json":
+    git("checkout", "--", "progress.json")
+    withheld("the edit touched more than one line (%r); progress.json restored" % stat)
+
+# 8. Commit by pathspec — never `git add -A`. No push: /update-progress Step 10 publishes at close.
+c = git("commit", "progress.json", "-m",
+        "metadata: set project to %s from origin (start-session § 3.5)" % name)
+if c.returncode != 0:
+    tail = (c.stdout + c.stderr).strip().splitlines()
+    withheld("the commit was refused: %s" % (tail[-1] if tail else "no output"))
+print("METADATA: FILLED project=%s — transcribed from origin; the operator can override it with "
+      "one word" % name)
+# METADATA_FILL_END
+PY
+FILL_RC=$?
+[ "$FILL_RC" -eq 0 ] || echo "METADATA: DID-NOT-RUN (fill, interpreter exit $FILL_RC) — nothing was written; the value is still whatever Block A reported"
+```
+
+**Authorization.** This is a one-line, reported, git-tracked change to a value the dashboard already
+reads as nothing. § *NOT Checkpoints* in `CLAUDE.md` lists git commits as work to just do, and the
+change is neither irreversible nor outward-facing, so it needs no approval — but it is **reported,
+every time**, in the § 4.1 handoff.
+
+**What this step NEVER does:**
+
+- It never writes `description`. Nothing on disk proves a one-sentence purpose, and repurposing a
+  README's first line is composing, not transcribing.
+- It never writes `current_task` or `current_phase`. § Multi-Agent Discipline reserves both for the
+  orchestrator, and a parked pointer is a legitimate state, not a defect.
+- It never re-fills a name that is already a substantive string. The predicate is *absent, empty or
+  placeholder* — never *differs from the origin repo name*, which would fight the operator's chosen
+  name every session.
+- It never inserts a missing key, never reformats the file, and never pushes.
+
+**Idempotence.** After a fill the value is a substantive non-placeholder string, so the next
+session's Block A prints `ok` and Block B does not run. Block A alone never writes on any path, and
+a `WITHHELD` run leaves the file byte-identical and simply re-offers the fill next session. The fill
+is a floor, not a policy: once any name is present, this step is permanently silent about it.
 
 ### 4. Present Session Handoff
 
@@ -840,6 +1166,19 @@ or not an id. Report those lines; do not quietly fix `progress.json` here.
  /update-progress § 11.b / local-overlay / restore). A drift line that appears session after
  session with no decision is itself a finding — say so.]
 
+### ⚠ Project metadata  (omit ONLY if § 3.5 reported ok for all three fields)
+[One line per field that is not ok, verbatim from § 3.5 — never summarised into prose.
+ FILLED: say what was set and from what proof, and that the operator can override it in one
+ word. UNPROVABLE / MISSING-KEY / AMBIGUOUS / OPERATOR: say that this is a name or a sentence
+ only the operator can supply, and DO NOT PROPOSE ONE — a name this session invents is a name
+ nothing on disk proves, and it is the label the whole estate will then read this project by.
+ ABSENT / NOT-AN-ID / UNRESOLVED current_task: say that the dashboard cannot report what this
+ project is doing; the pointer itself is reported in full by the § 4.0 pointer check and is not
+ fixed here (§ Multi-Agent Discipline reserves current_task for the orchestrator, and a parked
+ pointer is a legitimate state at a clean close, not a defect).
+ WITHHELD: name the guard that refused and leave the file alone. UNKNOWN / DID-NOT-RUN: surface
+ it — an unknown contract is not a satisfied contract, and it looks identical to a clean one.]
+
 ---
 **What would you like to do?**
 1. **Continue** — [what Task X.Y actually is, in plain words] (Task X.Y)
@@ -865,6 +1204,11 @@ or not an id. Report those lines; do not quietly fix `progress.json` here.
 - If yes, follow `/add-work` workflow
 - If no, it is an untracked observation: `session_notes.md` only, never `progress.json` under any
   key (`/add-work` § *The Four Destinations*)
+- If the operator supplies the project's display name or its one-line description in the
+  discussion, write it with § 3.5's Block B — the same anchor predicate, the same guards, the same
+  one-line diff assertion, the same pathspec commit. That is the operator supplying a value, not
+  this step inventing one, so it is the only route by which `description` is ever written, and the
+  only route by which a substantive `project` value is ever replaced.
 
 ### 5. Verify AWS Account (CRITICAL)
 

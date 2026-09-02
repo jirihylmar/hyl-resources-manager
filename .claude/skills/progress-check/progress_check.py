@@ -164,7 +164,10 @@ def is_absent(v):
       "{{...}}"     an unsubstituted template placeholder. progress.json.bootstrap ships
                     `{{CREATION_DATE}}` as last_updated and on task 0.1, and both example playbooks
                     carry it, so every freshly bootstrapped project would otherwise open its life
-                    with a warning about a value the framework itself put there. /setup substitutes it.
+                    with a warning about a value the framework itself put there. Substituting it is
+                    the project's own job at bootstrap — nothing outside the project may fill it in
+                    — and once the project has a committed base the required-root-metadata rule in
+                    check() blocks the token outright instead of merely tolerating it here.
     Calling either malformed would put a false warning on a large share of the estate, and a checker
     that cries wolf is a checker that gets switched off.
     """
@@ -174,8 +177,15 @@ def is_absent(v):
 
 
 def unresolved_template(v):
-    """True only for a whole unresolved template token, not ordinary literal braces."""
-    return isinstance(v, str) and bool(re.fullmatch(r"\{\{[A-Z][A-Z0-9_]*\}\}", v.strip()))
+    """True only for a whole unresolved template token, not ordinary literal braces.
+
+    The character class matches the collector's own placeholder rule (`collector/src/progress.ts`
+    nulls the anchored pattern {{[A-Z0-9_]+}}), so a token this checker calls substituted is
+    never a token the dashboard calls unset. The two disagreed on a leading digit only —
+    `{{2ND_NAME}}` — which no live file carries; ordinary prose braces are unaffected either way
+    because they are lower-case.
+    """
+    return isinstance(v, str) and bool(re.fullmatch(r"\{\{[A-Z0-9_]+\}\}", v.strip()))
 
 
 def completion_fields(doc):
@@ -270,6 +280,27 @@ def tasks_by_key(doc):
             if tid is not None:
                 out[(pk, tid)] = t
     return out
+
+
+def parse_base(base_text):
+    """The base document, or None when there is no usable one.
+
+    None means "no ground to judge against" and covers all three ways that happens: no base was
+    supplied (`--base none`, or a first commit), the base does not parse (a file committed with
+    `--no-verify`), or its root is not an object. Every prospective rule that blocks must consult
+    this and DOWNGRADE to a warning when it is None: a base nobody can read may not ground a block,
+    because the alternative is a project whose last commit is broken being unable to commit the fix.
+
+    The two older ad-hoc re-parses below are deliberately left alone; they answer different
+    questions and rewriting them is not this change.
+    """
+    if base_text is None:
+        return None
+    try:
+        base_doc, _ = parse_strict(base_text)
+    except ValueError:
+        return None
+    return base_doc if isinstance(base_doc, dict) else None
 
 
 # --- the four checks --------------------------------------------------------
@@ -452,6 +483,41 @@ def check(text, base_text=None):
                 if (pk, tid) not in bt_new:
                     require_identity(f"phase {pk}: task {tid!r}", task)
 
+            # A task becoming terminal in this candidate commit should record WHEN, in the same
+            # boundary — /update-progress already instructs it. This is a WARNING, and the reason
+            # is arithmetic rather than taste: measured 2026-09-02, 415 of ~2872 terminal tasks
+            # estate-wide (14%) carry no completed_at/completed, including 24 of 319 in this repo's
+            # own file. A phase becomes terminal rarely; a task becomes terminal in nearly every
+            # /update-progress commit, so failing here would block roughly one commit in seven —
+            # the "disabled within a day" signature this module's DESIGN RULE was written against.
+            #
+            # PROMOTION CRITERION, so this does not sit as a warning forever by default: promote to
+            # FAIL once two consecutive full-estate probe runs show ZERO new dateless terminal
+            # transitions. At that point the rule costs nobody a commit and blocks a real gap.
+            dateless = []
+            for (pk, tid), task in sorted(at_new.items(), key=lambda kv: (str(kv[0][0]), str(kv[0][1]))):
+                if not is_terminal(task):
+                    continue
+                before_task = bt_new.get((pk, tid))
+                if isinstance(before_task, dict) and is_terminal(before_task):
+                    continue          # already history — not this commit's doing
+                raw = next((task[k] for k in COMPLETION_KEYS if k in task), None)
+                if iso_date(raw) is None:
+                    dateless.append((pk, tid))
+            for pk, tid in dateless[:DRIFT_SHOWN]:
+                warn.append(
+                    f"phase {pk}: task {tid!r} becomes TERMINAL in this commit but records no "
+                    f"valid completed_at/completed ISO date. Not blocking — 14% of the estate's "
+                    f"terminal tasks predate the rule; set the date /update-progress asks for so "
+                    f"the freshness comparison and the phase's closure date have something to read."
+                )
+            if len(dateless) > DRIFT_SHOWN:
+                rest = "; ".join(f"{pk}:{tid}" for pk, tid in dateless[DRIFT_SHOWN:])
+                warn.append(
+                    f"+{len(dateless) - DRIFT_SHOWN} more task(s) become TERMINAL with no "
+                    f"completion date, same rule: {rest}"
+                )
+
             # 4b. An `estate_notice` marker may not be stripped from a task that kept its id.
             #     Reported by a receiving project 2026-08-06: /update-progress lists "remove the
             #     estate_notice key" under NEVER Do and states the consequence — the next central
@@ -517,10 +583,37 @@ def check(text, base_text=None):
                 if isinstance(old, dict) and is_terminal(old):
                     warn.append(f"phase {pk!r} was already TERMINAL but has no valid completion "
                                 f"date; historical compatibility leaves it unblocked")
+    # The root current-work pointer. Severity is bounded by what the estate is PERMITTED and able
+    # to fix, which splits this field into three outcomes rather than one:
+    #
+    #   dict / list  — only machinery writes a container here, and every reader stringifies the
+    #                  value, so the project publishes a current task nobody can resolve ("[object
+    #                  Object]" on the dashboard, no id ever matching). Prospective: it blocks at
+    #                  the commit where it ENTERS history, and warns where the base already carried
+    #                  one (one live offender, since 2026-07-07) or where no base can be read.
+    #   scalar that matches no id — a warning. It costs readability, not data, and the estate has
+    #                  shapes where no task is identifiable at all; with no ids to match against,
+    #                  the comparison has nothing to say and says nothing.
+    #   null / absent — SILENT, and this is not politeness. `/start-session` forbids modifying
+    #                  `current_task` or `current_phase`, and `/open-work` calls a null pointer a
+    #                  legitimate state at a clean close. Nobody is permitted to fill it, so no
+    #                  severity above silence could ever be acted on. Measured 2026-09-02: 6 of 15
+    #                  local projects are parked this way.
     ct = doc.get("current_task")
-    if ct:
+    if isinstance(ct, (dict, list)):
+        kind = "dict" if isinstance(ct, dict) else "list"
+        message = (f"current_task is a {kind}, not a task id. Readers stringify this field, so the "
+                   f"dashboard shows '[object Object]' and no task id can ever match it — the "
+                   f"project reports a current task that resolves to nothing. Put the task id here "
+                   f"as a string and record the detail on the task itself.")
+        base_doc_for_pointer = parse_base(base_text)
+        base_ct = base_doc_for_pointer.get("current_task") if base_doc_for_pointer is not None else None
+        already_broken = isinstance(base_ct, (dict, list))
+        (warn if (base_doc_for_pointer is None or already_broken) else fail).append(message)
+    elif ct:
         every = {i for ids in task_ids(doc).values() for i in ids}
-        if str(ct) not in every:
+        # `every` empty means no task in the file is identifiable, not that the pointer is wrong.
+        if every and str(ct) not in every:
             warn.append(f"current_task {ct!r} does not match any task id")
 
     # FRESHNESS — `last_updated` older than the newest completion date recorded in the file.

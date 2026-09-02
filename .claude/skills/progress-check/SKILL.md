@@ -30,7 +30,12 @@ without either gets no check and no message saying so. And the hook runs only in
 `core.hooksPath` is `.claude/hooks` — `/distribute-defaults` sets that per clone (`arm_hookspath`);
 a fresh clone has no hook until then. When it matters, run it by hand.
 
-## What it fails on — three corruptions that lose data at read time, plus two prospective rules
+## What it fails on
+
+<!-- No count in this heading, and that is deliberate. It read "three corruptions … plus two
+     prospective rules" while the table below listed five failures and the code enforced more
+     than either number; nothing would have caught the drift. A hand-maintained total is the rot
+     this repo keeps curing. The table is the index; `progress_check.py` is the source of truth. -->
 
 | Failure | Why it matters |
 |---|---|
@@ -39,6 +44,101 @@ a fresh clone has no hook until then. When it matters, run it by hand.
 | **Duplicate task id in a phase** | Two records claim to be the same task; which one any tool reads is arbitrary. |
 | **A task or phase present in the last commit is absent** | Not necessarily data loss — the previous commit still holds a removed task's text, and an empty phase has none to lose: this is the framework's oldest rule — *never remove a task, mark it superseded* — the **append-only policy**, enforced mechanically instead of by prose. It compares ids only, so it refuses the removal of an **empty** phase exactly as it refuses a full one (`phase 'x' existed in the previous commit and is now GONE (0 task(s) with it)`). Uniform on purpose: the checker cannot judge whether what vanished mattered, so it does not try. — And, since 2026-08-06, an `estate_notice` marker stripped from a task that kept its id, for the same reason: the next central run would append a second copy. |
 | **A newly added phase or task lacks `authored_by` or `assigned_to`** | Operator decision 2026-08-29: the record must say who wrote an entry and whose job execution is. This is prospective, detected by comparison with the previous commit; historical work is not rewritten to adopt a new schema. The two values may differ. |
+| **Required root metadata still holds an unresolved `{{TOKEN}}`** | `project`, `description` and `created_at` say what this project is; a template token there means the record describes the template it was copied from. Shipped since before this rule was written down. With no committed base — the shipped bootstrap and both example playbooks, which carry the tokens on purpose — it downgrades to a warning, so a freshly bootstrapped project is not blocked before it has substituted anything. |
+| **An `unattended` block that describes an operation incompletely** | `PROJECT_CHARTER.md` section 11 makes the difference between a watched operation and an unwatched one a fact about recorded state. A half-described operation reads as supervised and is not. Strict rather than prospective, and deliberately so: the key did not exist before 2026-09-02, so there is no historical vocabulary to tolerate. The required fields and the permitted values live in `progress_check.py` and are not restated here. |
+| **A phase that becomes TERMINAL in this commit with no completion date** | Closing a phase is the moment its date is known, and a phase closes rarely — so the rule costs almost nothing and the record keeps saying when the work ended. Prospective: a phase already terminal in the previous commit is left alone. The same rule on *tasks* is a warning, not a failure — see below. |
+| **`current_task` written as an object or a list** | Every reader stringifies this field, so a container publishes `[object Object]` as the project's current work and no task id can ever match it. Prospective, and narrowly so: it blocks at the commit where the shape ENTERS history, and warns where the previous commit already carried one (one live project has, since 2026-07-07) or where the previous commit cannot be read. A project this repository must never write may always commit the fix to its own file. |
+
+## The project-identity and current-work block
+
+Everything above is about *not losing what is written*. This section is about the handful of root
+keys that say what the project **is** and what it is **doing** — the only fields a reader outside
+the project can use, and the ones the estate dashboard reads verbatim
+(`syndicate-dashboard/collector/src/progress.ts`).
+
+Severity is not uniform here, and the rule that sets it is worth stating once because every row
+below is derived from it: **a field's severity may not exceed what the estate is permitted and able
+to fix.** A field a project can fill from proof it already holds may block a commit. A field only
+the operator can decide is reported, never enforced. A field nobody is permitted to write is not
+reported at all — a complaint no one may act on is noise, and noise is how a checker gets switched
+off.
+
+| Root key | What a good value is | Who fills it | If it is wrong |
+|---|---|---|---|
+| `project` | Non-empty single-line string naming this project. Default it to the **repository name** — `/setup` § Naming Convention already makes folder = repo = origin a rule, so the repo name is unique at the hosting provider and inherits that uniqueness for free. | The project itself, once, at setup; afterwards only the operator. No other repository ever writes it. | **FAIL** on an unresolved `{{TOKEN}}` once a committed base exists. Nothing else about the name is enforced — see *What is deliberately not enforced about the name*. |
+| `description` | One sentence saying what the project is for. It is the dashboard's only project-level prose. | The operator, at setup, refreshed when the specification is approved. | **FAIL** on an unresolved `{{TOKEN}}` (same rule as `project`). Nothing may compose one: no file on disk proves a project's purpose. |
+| `created_at` | ISO-8601 date or timestamp, set once. | Setup. | **FAIL** on an unresolved `{{TOKEN}}` (same rule). |
+| `last_updated` | ISO-8601 date or timestamp; the input to the staleness comparison below. | `/update-progress` when it closes a task. | Warning only — see the next section. |
+| `current_task` | **`string \| null`.** When a string: the `id` of exactly one task under `phases`. `/open-work` treats anything longer than 40 characters as prose rather than a pointer and says so. | The executor at session start and `/update-progress`; in multi-agent setups, the orchestrator alone. | An object or list **FAILS prospectively** (table above). A string matching no task id is a **warning**, and is suppressed entirely when no task in the file is identifiable — with no ids to compare against, the comparison has nothing to say. `null` or absent is **SILENT**. |
+| `current_phase` | `string \| null`; when a string, a key of `phases`. | As `current_task`. | Not checked here at all. `/open-work` reports a stale, absent or non-existent pointer when it renders. |
+
+Per task, the record says: `id` (non-empty, unique within its phase, never changed — enforced
+above), `name` (a one-line statement of what it delivers; this is the string the dashboard shows as
+the project's current work), `status` from the project's own vocabulary (this checker enforces
+none), `authored_by` and `assigned_to` on every new entry (enforced above), and — once the task
+reaches a terminal status — the date it closed, as `completed_at` or the older `completed`.
+
+**`null` means PARKED, and parked is a legitimate state.** No task is claimed. `/open-work` says so
+in as many words when it renders — *"that is a legitimate state at a clean close; it is reported so
+it cannot be mistaken for a lost pointer"* — and `/start-session` forbids modifying `current_task`
+or `current_phase` outright. So nobody is permitted to fill it, and a checker that complained about
+it would be demanding a fix no reader of the message is allowed to make. Measured 2026-09-02 across
+15 local projects: **6 parked (`null`), 1 an object, 8 resolving strings, 0 absent** — the silence
+is load-bearing for 6 of 15, and the object is the one shape that is genuinely unreadable.
+
+**A task that becomes terminal with no completion date is a WARNING, not a failure — this phase.**
+Measured 2026-09-02: 415 of ~2872 terminal tasks estate-wide (14%) carry no `completed_at` or
+`completed`, including 24 of 319 in this repo's own file. A *phase* becomes terminal rarely, so
+blocking there costs nothing; a *task* becomes terminal in nearly every `/update-progress` commit,
+so blocking here would stop roughly one commit in seven — the "disabled within a day" signature the
+design rule at the top of `progress_check.py` was written against. The promotion criterion is
+written beside the rule in the code: promote it to a failure once two consecutive full-estate probe
+runs show zero new dateless terminal transitions.
+
+**Per-task dates are not what the dashboard reads.** The collector reads root `last_updated` and
+the resolved current task's id, name and status — nothing else. The date is required because *this*
+checker's freshness comparison reads it, and because a record of closed work that cannot say when it
+closed is not a record.
+
+### What a local check can and cannot prove about the name
+
+A project cannot see the estate, so it cannot prove its own name is unique. What it can prove is
+that the name is present, substituted and its own — and that is the whole of what is enforced here.
+
+Global identity does not come from the name. `deriveIdentity`
+(`syndicate-dashboard/contracts/src/identity.ts`) returns `origin:<normalized origin>` with
+`verified: true` **whenever a git origin normalizes**, and falls back to `host:<host>/<display
+name>` only where there is none. Every project measured in this estate on 2026-09-02 had a GitHub
+origin, so for all of them identity is unique by construction and the display name is a **label**,
+not a key. Estate-wide name collision is a separate, weaker signal computed only where every project
+is visible at once (`classifyConflicts` in the same file), never by a project about itself.
+
+The live cost of a placeholder or missing name is therefore narrower than it first looks, and worth
+stating exactly so nobody argues from the overstatement: the collector nulls the placeholder, records
+a `project_name_unavailable` read error, and labels the project's row by its **directory basename**
+on whichever machine was scanned. The project appears on the board under a per-machine nickname with
+an error attached. That is a real defect and it is why the token blocks — it is not a lost identity.
+
+### What is deliberately not enforced about the name
+
+No length limit, no reserved-word list, no trim rule, no capitalisation policy. The three that were
+actually proposed — a maximum length, a list of reserved generic names, and an untrimmed value —
+were measured across the whole estate on 2026-09-02 and had **zero** offenders each. This module
+does not add a failure that fires on nobody; that is the same standard applied everywhere else here.
+Style observations belong in an estate survey, which costs nobody a commit.
+
+```json
+{
+  "project": "myproject-voucher-portal",
+  "description": "Issue and redeem prepaid vouchers for the myproject storefront.",
+  "created_at": "2026-01-14",
+  "last_updated": "2026-09-02",
+  "current_task": "2.3",
+  "current_phase": "phase_2_redemption"
+}
+```
+
+Pinned by `scripts/test-progress-check-metadata-contract.sh` in the central repo.
 
 ## Plus one thing it warns about: a stale `last_updated`
 

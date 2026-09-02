@@ -158,6 +158,36 @@ action, name genuine blockers, and ensure another executor can continue from a c
 without conversation history. Session context is temporary; repository state is durable. Do not
 recreate a missing resource from memory when its authoritative location can be discovered.
 
+### The record of identity and current work
+
+Continuity requires a durable record of what this project is and what it is doing, readable by an
+executor who has never seen the conversation and by anyone surveying every project at once.
+
+The root of the tracked-work record carries the project's display name, one sentence saying what
+the project is for, the time the record was last written, and a pointer to the single task
+currently claimed — or an explicit statement that none is. Each tracked task carries an identifier
+unique within its phase, a one-line statement of what it delivers, a status, who authored the
+entry, whose job execution is, and, once it reaches a terminal status, the date it closed.
+
+The display name is a label, not an identity. Where the repository has an origin, the project is
+told apart by that origin and is unique by construction; the name only decides how legibly it
+appears to a reader. Where there is no origin, the display name is the only thing distinguishing
+the project from another checkout, and the record states that condition deliberately rather than
+leaving it to be inferred.
+
+A project cannot see the estate, so it cannot prove its own name unique. Its obligation is the
+locally decidable half: the name is present, substituted rather than left as the template's
+placeholder, and its own rather than the template's. Uniqueness across the estate is decided only
+where every project is visible at once, and is reported back, never assumed locally.
+
+An absent current-work pointer means no task is claimed. That is a legitimate state at a clean
+close, written as an explicit absence and never confused with a pointer that names a task which
+does not exist. The two are different facts, and reporting them as one hides the second.
+
+Each project owns its own record, and no other repository writes it. A finding raised centrally
+arrives as an appended notice for this project to verify and act on — never as an edit made from
+outside.
+
 ### Unattended operations
 
 An operation whose outcome depends on a future external state change — a capacity request, a build,
