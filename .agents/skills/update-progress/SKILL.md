@@ -41,3 +41,11 @@ Preserve these boundaries:
 - Stage and commit only work in scope; the shipped Git hook is the mechanical integrity backstop.
 - Push only at the project's defined boundary and never force a remote branch.
 - Task 0.5 cannot complete without explicit operator approval of the implementation specification.
+- An operation that outlives this turn is governed by `PROJECT_CHARTER.md` section 11,
+  *Unattended operations*: every such operation is session-watched, durably-supervised or
+  unmonitored; a final response requires the supervisor proof recorded there; process exit status
+  never means delivery; and a watcher owns its next transition, not merely the observation. The
+  bullet above covers a job you are still watching inside this turn. The charter covers the case it
+  cannot: a supervisor that dies, stalls, misses its deadline or reaches a non-delivery terminal
+  state AFTER you have yielded. Read it there — do not restate its rules here, because four copies
+  of one contract is how they diverge.

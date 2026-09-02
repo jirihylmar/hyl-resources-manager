@@ -23,6 +23,14 @@ Preserve these boundaries:
 - The session-start status is a checkpoint. Continue immediately only when the user's current
   request already authorized that work.
 - Every newly added phase/task needs `authored_by` and `assigned_to`.
+- An operation that outlives this turn is governed by `PROJECT_CHARTER.md` section 11,
+  *Unattended operations*: every such operation is session-watched, durably-supervised or
+  unmonitored; a final response requires the supervisor proof recorded there; process exit status
+  never means delivery; and a watcher owns its next transition, not merely the observation. The
+  bullet above covers a job you are still watching inside this turn. The charter covers the case it
+  cannot: a supervisor that dies, stalls, misses its deadline or reaches a non-delivery terminal
+  state AFTER you have yielded. Read it there — do not restate its rules here, because four copies
+  of one contract is how they diverge.
 - A queued or running asynchronous job is ongoing work, not a blocker or session boundary. Retain
   its job/session handle and wait or poll in bounded intervals no longer than 60 seconds, using
   commentary for interim updates. A final response ends active execution: never claim to be monitoring after sending one,

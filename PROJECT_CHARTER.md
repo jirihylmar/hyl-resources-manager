@@ -158,6 +158,70 @@ action, name genuine blockers, and ensure another executor can continue from a c
 without conversation history. Session context is temporary; repository state is durable. Do not
 recreate a missing resource from memory when its authoritative location can be discovered.
 
+### Unattended operations
+
+An operation whose outcome depends on a future external state change — a capacity request, a build,
+a long job, a deployment — is in exactly one of three states. **The state is a fact about what is
+running, never about what was said.**
+
+| State | What is true | What may be said |
+|---|---|---|
+| **Session-watched** | This turn is still open and observes at intervals no longer than sixty seconds | "watching" — and the turn must not end while the operation is non-terminal |
+| **Durably-supervised** | A scheduler outside the conversation owns observation *and the next transition*, and has been proved alive | "supervised by *&lt;named supervisor&gt;*", only with the proof below |
+| **Unmonitored** | Neither of the above is true | **"no watcher is running."** Never "monitoring", "watching", "will retry", nor any promise of periodic reports |
+
+Say only what is running. An executor that has sent a final response is no longer session-watched,
+whatever it said before sending it.
+
+#### Before yielding, prove the supervisor
+
+While tracked work depends on a future external state change, a final response requires a
+command-backed check that records, for each such operation: its identifier; the owning supervisor's
+identifier; that supervisor's active state; the durable state or journal location; the last
+observation time; the next scheduled observation or action time; the absolute deadline; the retry
+count and retry limit; the delivery state, separately from process state; the cleanup lease and the
+independent cleanup owner; the notification route; and the declared behaviour at each terminal
+state.
+
+**Refuse the final response** if the operation is non-terminal and no durable supervisor is proved;
+if the supervisor is inactive before delivery; if the next observation time is absent or already
+past; if the deadline has passed with no terminal result; if no one owns cleanup; or if periodic
+reporting was promised and no scheduler and notification route exist.
+
+#### Process completion is not delivery
+
+A supervisor's exit status describes its own process. It never, on its own, means the outcome was
+delivered. Every durable supervisor distinguishes at least: **delivery succeeded**, **bounded
+capacity exhausted**, **workload failed**, **controller crashed**, **cleanup failed**, and
+**deadline missed**. A supervisor may exit zero and not restart when bounded capacity is exhausted,
+but it must not report that as delivery. Service status, journal and progress reporting all preserve
+the distinction.
+
+#### A watcher owns the next action, not just the observation
+
+Noticing a state change does not complete a watcher. Its durable state machine owns what happens
+next: capacity granted runs the workload; a failed candidate within budget launches the next
+authorized one; exhausted candidates record exhaustion and notify; a reached deadline stops
+launches, releases resources, records the deadline result and notifies; a completed workload
+persists its evidence, releases resources and notifies; and a failed cleanup leaves an independent
+guardian running that reports the failure. Where a transition needs fresh human authority, the
+watcher raises the established expiring informational notice rather than terminating in silence.
+
+#### Do not promise reports nothing will send
+
+Commentary inside an open turn is not durable reporting. Promise periodic reports only when a
+scheduled reporting mechanism is installed and verified. Where the platform gives an executor no
+route to speak into a conversation on its own — which is the normal case — say that periodic chat
+reporting is unavailable and route status to a durable project notice instead. Never imply the
+session will wake itself.
+
+#### Reconcile claimed operations before doing anything else
+
+At session start, before ordinary task work, every open task claiming an unattended operation is
+classified: running and healthy, terminal-success, terminal-non-delivery, overdue, watcher missing
+or inactive, or state unknown. A watcher that is missing, inactive or overdue makes its own recovery
+the first task of that session, ahead of unrelated work.
+
 ## 12. Improve the mechanism
 
 Repeated operator instructions are evidence of a missing or ineffective default. Prefer: change

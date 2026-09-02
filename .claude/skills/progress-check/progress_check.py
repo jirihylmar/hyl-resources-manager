@@ -323,6 +323,73 @@ def check(text, base_text=None):
                 fail.append(f"phase {pk}: task id {i!r} appears more than once")
             seen.add(i)
 
+    # 3a. An unattended operation is described completely, or it is not described at all.
+    #
+    # PROJECT_CHARTER.md section 11 makes the difference between a watched operation and an
+    # unwatched one a fact about recorded state plus a live probe. That only works if the state is
+    # there and well-formed, so this blocks at the commit where the block enters history.
+    #
+    # It is strict rather than prospective, and that is deliberate: no task in the estate carried an
+    # `unattended` block before 2026-09-02, so there is no historical vocabulary to tolerate. The
+    # rule this file states in its own DESIGN RULE — tolerate every shape that really exists — is
+    # satisfied by strictness here precisely because nothing else exists yet. That is the one moment
+    # a schema can be imposed without breaking anybody, and it does not come back.
+    UNATTENDED_REQUIRED = ("operation_id", "supervisor_id", "supervisor_mode", "state_ref",
+                           "started_at", "last_observed_at", "next_action_at", "deadline_at",
+                           "retry_count", "retry_limit", "delivery_state", "cleanup_state",
+                           "cleanup_owner", "notification_state")
+    UNATTENDED_MODES = ("session-watched", "durably-supervised", "unmonitored")
+    UNATTENDED_DELIVERY = ("pending", "delivered", "capacity-exhausted", "workload-failed",
+                           "controller-crashed", "cleanup-failed", "deadline-missed")
+    # These travel between hosts inside progress.json, so a path true on one machine is a lie on
+    # the next. `state_ref` and `liveness_check` are deliberately NOT here: they are host-owned.
+    UNATTENDED_TRAVELS = ("operation_id", "supervisor_id", "supervisor_mode", "started_at",
+                          "last_observed_at", "next_action_at", "deadline_at", "delivery_state",
+                          "cleanup_state", "cleanup_owner", "notification_state")
+    _hostpath = re.compile(r"(^|[\s\"'])(/home/|/Users/|/root/|[A-Za-z]:\\)")
+
+    for pkey, pobj in iter_phases(doc):
+        for tkey, task in iter_tasks_keyed(pobj):
+            if not isinstance(task, dict):
+                continue
+            op = task.get("unattended")
+            if op is None:
+                continue
+            tid = task_id_of(tkey, task)
+            if not isinstance(op, dict):
+                fail.append(f"task {tid!r}: 'unattended' must be an object describing the "
+                            f"operation, not {type(op).__name__}.")
+                continue
+            for field in UNATTENDED_REQUIRED:
+                v = op.get(field)
+                if isinstance(v, int) and field in ("retry_count", "retry_limit"):
+                    continue
+                if not isinstance(v, str) or not v.strip():
+                    fail.append(f"task {tid!r}: unattended.{field} is missing or empty. An "
+                                f"operation that cannot be reconciled by a later session is the "
+                                f"failure this block exists to prevent.")
+            mode = op.get("supervisor_mode")
+            if isinstance(mode, str) and mode.strip() and mode.strip() not in UNATTENDED_MODES:
+                fail.append(f"task {tid!r}: unattended.supervisor_mode {mode!r} is not one of "
+                            f"{', '.join(UNATTENDED_MODES)}.")
+            if isinstance(mode, str) and mode.strip() == "durably-supervised" \
+                    and not str(op.get("liveness_check") or "").strip():
+                fail.append(f"task {tid!r}: unattended claims 'durably-supervised' but declares no "
+                            f"'liveness_check', so the supervisor can never be proved alive. A "
+                            f"claim that cannot be checked is the thing being forbidden.")
+            dstate = op.get("delivery_state")
+            if isinstance(dstate, str) and dstate.strip() and dstate.strip() not in UNATTENDED_DELIVERY:
+                fail.append(f"task {tid!r}: unattended.delivery_state {dstate!r} is not one of "
+                            f"{', '.join(UNATTENDED_DELIVERY)}. Delivery is not a process exit "
+                            f"status and must not borrow its vocabulary.")
+            for field in UNATTENDED_TRAVELS:
+                v = op.get(field)
+                if isinstance(v, str) and _hostpath.search(v):
+                    fail.append(f"task {tid!r}: unattended.{field} carries a host-specific absolute "
+                                f"path. This field travels between hosts in progress.json — use a "
+                                f"portable identifier; host paths belong in 'state_ref' or "
+                                f"'liveness_check', which do not travel.")
+
     # 4. Append-only: nothing that existed before may vanish. This is the framework's
     #    oldest written rule ("NEVER remove tasks — mark superseded instead"), and until now
     #    it was enforced by prose alone.

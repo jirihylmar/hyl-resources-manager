@@ -30,7 +30,10 @@ Classify the invocation before doing anything:
 
 Completion, a green test run, a progress update, a commit, a push, or a changed `current_task` does
 not convert `TASK_BOUNDARY` into `SESSION_CLOSE`. A final-looking task summary is itself a yield: do
-not emit one mid-run. The correct transition is: `Task X.Y complete and pushed. Continuing with
+not emit one mid-run. And a yield of either kind is governed by `PROJECT_CHARTER.md`
+section 11, *Unattended operations*, whenever tracked work depends on a future external state
+change: Step 9a below is the command-backed check that must pass before the response goes out. The
+contract is stated in the charter once, for both executors; this file only enforces it. The correct transition is: `Task X.Y complete and pushed. Continuing with
 X.Z: <plain-language outcome>.` Then invoke tools for X.Z in the same response.
 
 For `TASK_BOUNDARY`, run Steps 1, 2, 3, 3b, 3a when applicable, 4, 6–10, and the task-scoped portion
@@ -659,6 +662,34 @@ done
 **The sub-repo list is discovered, never hardcoded** — same rule and same idiom as `/start-session` Steps 0/0.5/8, where the rationale is argued in full. Steps 9 and 10 here used to read `for dir in infrastructure backend frontend testing`, a fixed list that silently matched **nothing** in any project whose sub-repos are named otherwise. Because every iteration is guarded by `[ -d "$dir/.git" ]`, a non-matching name produced **no error and no output**: the step reported success having reviewed, committed and pushed **zero** sub-repos. `progress.json` `git_repos` remains the **declarative registry** this step reports *into*; the filesystem is what it reads *from*. With no subdirectories the glob is a safe no-op.
 
 > **Why this mattered most in Step 10.** A missed *pull* causes staleness and is recoverable — the work still exists on origin. A missed *push* means the work exists on exactly one disk and nowhere else. The hardcoded list was fixed on the pull side (`/start-session`) before the push side; if you are reading this in a project that resolved zero sub-repos before, those repos were never published by session close, while the Step 12 report rendered as though all was well.
+
+### 9a. Unattended-operation pre-yield gate (before ANY final response)
+
+While tracked work depends on a future external state change, a final response requires proof that
+something is actually watching it. This is `PROJECT_CHARTER.md` § 11's gate, and it is command-backed
+because a prose rule cannot tell a live supervisor from a remembered one:
+
+```bash
+python3 .claude/skills/unattended-check/unattended_check.py --gate
+```
+
+| Exit | Meaning | What you do |
+|---|---|---|
+| `0` | every open operation is proved, or none is declared | continue to Step 10 |
+| `3` | **the yield is refused** | do not send a final response |
+| `2` | `progress.json` unreadable — every operation's state is **unknown** | report it verbatim; unknown is not none |
+
+**Exit 3 is not advisory.** Fix the operation — prove the supervisor, set the next action, name the
+cleanup owner — or record it honestly as `unmonitored` and **say "no watcher is running"** in the
+report. What you may not do is send a response describing it as monitored, watched, or retrying.
+
+**This runs in both modes.** `TASK_BOUNDARY` executes Steps 6–10, so a task boundary that happens to
+end the turn is gated too — which is the point, because the measured failure was exactly a turn that
+ended while its author believed it was still polling.
+
+**Declaring an operation is Step 3's job, not this one.** The gate reads the `unattended` block on
+non-terminal tasks (shape: `.claude/skills/unattended-check/SKILL.md`); a task that starts something
+outliving the turn gains that block when it starts it, and `progress-check` validates it at commit.
 
 ### 10. Commit and Push Your Work (every repo you changed this session)
 

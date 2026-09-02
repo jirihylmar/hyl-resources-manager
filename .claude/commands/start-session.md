@@ -23,6 +23,13 @@ Initialize context and verify previous work before starting new tasks.
 Read `PROJECT_CHARTER.md` completely before acting. It is the executor-neutral delivery contract;
 if older project prose conflicts with it, the charter governs.
 
+That charter's section 11, *Unattended operations*, governs anything this project started that
+outlives a turn — a capacity request, a build, a long job, a deployment. Its classification rule is
+mechanical, and Step 4.0b below applies it before any ordinary task work begins — beside the
+open-work rendering, because a watcher that died overnight changes what the next task should be, and
+the operator has to see that while choosing rather than after. The rules live in the charter, once;
+this file applies them.
+
 ---
 
 ## Multi-Agent Discipline
@@ -728,6 +735,28 @@ deferred phases printed as bare numbers (`Phase 66 (1)`), which is exactly the *
 a description"* failure the tables exist to prevent. The hosts had the correct file; one had zero
 drift. **A row a script emits cannot be dropped for brevity.**
 
+#### 4.0b — Reconcile every claimed unattended operation, mechanically
+
+**Run this immediately after § 4.0, from the project root:**
+
+```bash
+python3 .claude/skills/unattended-check/unattended_check.py --reconcile
+```
+
+Paste its table into the handoff where the template says `{{UNATTENDED_OPERATIONS}}`, and omit that
+section entirely when it prints `no open task declares an unattended operation`. **Exit 3 means a
+watcher is missing, inactive or overdue: its recovery is the first task of this session, ahead of
+unrelated work** — say so in the handoff and make it option 1. Exit 2 means `progress.json` could
+not be read, so the state of every operation is **unknown**; report that verbatim rather than
+omitting the section, because unknown and none look identical and only one of them is safe.
+
+**Why this runs at session start and not only at close.** The close-side gate (`/update-progress`
+Step 9a) can only refuse a yield the executor is present to make. It cannot help when the executor
+already yielded correctly and the supervisor died afterwards — which is the measured case: a
+supervisor went inactive overnight, nothing detected it, and no follow-up happened for over eight
+hours because the next session started ordinary work without ever asking. Only the resuming session
+can catch that, and only if it asks before it does anything else.
+
 #### 4.0a — What the three tables are (the shape the renderer emits)
 
 Scope: **ALL open work, in three buckets — current, stuck, deferred.** Open work is tasks and
@@ -781,6 +810,15 @@ or not an id. Report those lines; do not quietly fix `progress.json` here.
  filled in. Three tables: current phase, "Stuck elsewhere" (omit if empty), "Deferred work"
  (omit ONLY if there are no non-current-phase pending tasks). Do not summarise them into prose,
  and do not drop rows.]
+
+### ⚠ Unattended operations  (omit ONLY if § 4.0b found none)
+
+{{UNATTENDED_OPERATIONS}}
+
+[Verbatim output of § 4.0b. A row reading **watcher-missing**, **overdue** or
+ **terminal-non-delivery** is not informational — it is the next task. Do not summarise these rows
+ into prose and do not drop one for brevity: an operation nobody is watching looks exactly like an
+ operation that finished, and that is the whole failure this section exists to surface.]
 
 ### ⚠ Remote-resident repos  (omit ONLY if Step 2.5 found none needing action)
 [repo → REMOTE (host): this project's skills reference it by a local path that is DEAD.
