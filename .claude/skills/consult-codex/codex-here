@@ -41,6 +41,19 @@ import json, os, shlex, sys
 
 AWSLABS = "awslabs.aws-api-mcp-server"
 
+# Pinned per docs/mcp-server-pinning-policy.md in syndicate-playbooks-examples. Read that file
+# before changing these: the deciding dependency is fastmcp, NOT mcp. awslabs.aws-api-mcp-server
+# declares fastmcp>=3.4.3 and mcp>=1.23.0, both unbounded, and fastmcp is what selects the mcp
+# major (fastmcp-slim 3.4.7 requires mcp<2.0; 4.0.1 requires mcp>=2.0.0). Constraining mcp alone
+# does not pin mcp — it only makes the resolver backtrack fastmcp until nothing satisfies, and
+# then the launch fails outright.
+#
+# Measured on the box, cold cache, 2026-09-02:
+#   unconstrained          -> fastmcp 4.0.1 + mcp 2.1.1 -> ImportError: cannot import name 'McpError'
+#   these three exact pins -> fastmcp 3.4.7 + mcp 1.29.1 -> imports cleanly
+AWSLABS_VERSION = "1.5.4"
+AWSLABS_PINS = ["--with", "fastmcp==3.4.7", "--with", "mcp==1.29.1"]
+
 
 def die(code, msg):
     print(f"codex-here: {msg}", file=sys.stderr)
@@ -147,11 +160,10 @@ def main(argv):
         elif executable(AWSLABS):
             server = {"command": executable(AWSLABS), "args": []}
         elif executable("uvx"):
-            # aws-api-mcp-server 1.5.4 declares mcp>=1.23 with no upper bound but imports an API
-            # removed in mcp 2.x (`McpError`). A fresh uvx resolution therefore starts with an
-            # ImportError and Codex silently exposes no call_aws tool. Keep the compatible major
-            # explicit until the server itself supports mcp 2.x.
-            server = {"command": executable("uvx"), "args": ["--with", "mcp<2", AWSLABS]}
+            # A bare `uvx <pkg>` resolves the whole tree fresh at every launch. Pin the three
+            # packages that decide whether it imports at all — see AWSLABS_PINS above.
+            server = {"command": executable("uvx"),
+                      "args": AWSLABS_PINS + [f"{AWSLABS}=={AWSLABS_VERSION}"]}
         else:
             die(3, f"ACCOUNT-NOT-BOUND — profile {match} matches {declared}, but neither {AWSLABS} nor uvx is on PATH to run the server")
         server.setdefault("env", {})

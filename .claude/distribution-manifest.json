@@ -1,7 +1,7 @@
 {
   "_comment": "Written by /distribute-defaults. Proves the engine delivered these exact bytes. /repo-hygiene reads this BEFORE classifying any default as hand-edited. A hash match here means DELIVERED, whatever the git state. Never edit by hand.",
-  "written_at": "2026-09-02T16:38:11Z",
-  "canonical_commit": "89bc5d36657580a0dae2e9cf391a09e9ffe391ba",
+  "written_at": "2026-09-02T17:41:55Z",
+  "canonical_commit": "ba004b16a4f10857afadfbee5a7f23541409925c",
   "files": {
     ".claude/commands/add-work.md": { "sha256": "2f33f6c65d598c4631401988c4fb05ba3e60926c7269d1f3d8898a3360546e40", "source": "canonical" },
     ".claude/commands/check-aws.md": { "sha256": "24178c91d34397b4deb7714d8779e7db28d4fa288a4cdccbf79512b4c9a8818c", "source": "canonical" },
@@ -27,7 +27,7 @@
     ".claude/skills/consult-codex/consult-posture.sh": { "sha256": "a9c9b12569bd76befca12e1558f9003a55116a19caa0f02e382e2268a27e68ed", "source": "canonical" },
     ".claude/skills/consult-codex/SKILL.md": { "sha256": "f89c9535938105d24b338addd2075c2ab7590ee44123adc41c215438744c4835", "source": "canonical" },
     ".claude/skills/consult-codex/reviewer-prompt.md": { "sha256": "e4958e267a00ed40b9227490f1e6984657c52c6f81e08f6588cb255c787860b8", "source": "canonical" },
-    ".claude/skills/consult-codex/codex-here": { "sha256": "5d3def7f790ac55d96c4d4ab15515b30f32223cf3d5a7c523f41627a66750421", "source": "canonical" },
+    ".claude/skills/consult-codex/codex-here": { "sha256": "1c6b072062cda47843a45189dc84166b369f519104bf7590cde8d327e9301eca", "source": "canonical" },
     ".claude/skills/consult-codex/consult-log.py": { "sha256": "0aba318a449e47b8d55597f1ad274c339e746ca372f6f6a9d7e1018a08948a32", "source": "canonical" },
     ".claude/skills/open-work/SKILL.md": { "sha256": "db2883ba25e03b35c4d5de90d2ad6191d7a5d758a2c0b6b82b00d14513390914", "source": "canonical" },
     ".claude/skills/open-work/open_work.py": { "sha256": "4b13b72de8cc238301c38962f8f42bd1fa41c196977ac6bca05f574ffebf4370", "source": "canonical" },
