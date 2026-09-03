@@ -133,8 +133,21 @@ the log as a finding against the reviewer.
 `NO-TARGET` · `NO-CODEX` · `NOT-LOGGED-IN` · `HOST-NOT-PREPARED` · `SHADOWED` ·
 `NOT-ORIGIN-LATEST` · `NOT-REVIEWABLE:progress-json` · `NOT-REVIEWABLE:no-claude-dir` ·
 `NOT-REVIEWABLE:codex-roots-present` · `NOT-REVIEWABLE:NO-REVIEWABLE-CLAIMS` · `ACCOUNT-AMBIGUOUS` ·
-`ACCOUNT-NOT-BOUND` · `ACCOUNT-MISMATCH` · `POSTURE-BREACH` · `CLONE-FAILED`. Every one is
-recorded in the log and committed. Absence and ignorance are different, and both look empty.
+`ACCOUNT-NOT-BOUND` · `ACCOUNT-MISMATCH` · `AWS-SERVER-UNAVAILABLE` · `POSTURE-BREACH` ·
+`CLONE-FAILED`. Every one is recorded in the log and committed. Absence and ignorance are
+different, and both look empty.
+
+**`AWS-SERVER-UNAVAILABLE` vs `ACCOUNT-MISMATCH` is that rule applied to the preflight**, and it
+was missing until 2026-09-03. `ACCOUNT-MISMATCH` now means one thing only: the server answered
+with a DIFFERENT account, so the binding is wrong. That is a verdict and is never retried.
+`AWS-SERVER-UNAVAILABLE` means the reviewer's AWS reach never started — Codex answers prose and
+exits 0 — so NOTHING is known about the account; the identity probe is retried three times before
+it is believed. Measured on the box that day, with the binding correct and STS-proved, 2 of 6
+probes lost the MCP server to a startup race. Every one of them was reported as an account
+mismatch, which is why two separate sessions went hunting a binding defect that did not exist.
+**`prepare-host.sh` cannot repair either of them** — it writes two Codex config keys and the host
+entry, and nothing whatever about AWS. The refusal record now carries the binding it judges, and
+the evidence is kept under `~/.cache/consult/<project>/failed/<cycle>/`.
 
 **`DIRTY-CHECKOUT` was removed on 2026-08-26 and must not come back.** It refused on any modified
 file — but `consult_notes.md`, this skill's own log, lives in the tree it demanded be clean, so a

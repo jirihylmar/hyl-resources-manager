@@ -106,8 +106,12 @@ refuse(){
   # appended (measured 2026-08-25: a cycle id the grammar rejected), say so LOUDLY, clean up, still exit 3.
   local recorded=1
   pub_begin || pub_abort "the refusal $code"
-  [ -f "$ST/opened" ] || { printf '## cycle %s — %s\n\n**Opening record**\n- entry: B · procedure digest: %s\n- preflight: REFUSED %s%s\n' \
-      "$(st cycle)" "${T:-(no target)}" "$(procedure_digest)" "$code" "${why:+ — $why}" > "$SCR/open.md"; ( append "$SCR/open.md" ) || recorded=0; }
+  # The binding is what a preflight refusal is a VERDICT ON, and until 2026-09-03 the record omitted
+  # it: an ACCOUNT-MISMATCH record named neither the mode, the server, nor the profile, so the one
+  # artefact that survives a refusal could not diagnose the thing it reported. Read from state, not
+  # from $B, so it is right even when the refusal happened before the binding was resolved.
+  [ -f "$ST/opened" ] || { printf '## cycle %s — %s\n\n**Opening record**\n- entry: B · procedure digest: %s\n- binding: %s\n- preflight: REFUSED %s%s\n' \
+      "$(st cycle)" "${T:-(no target)}" "$(procedure_digest)" "$(st bind || printf '(not resolved)')" "$code" "${why:+ — $why}" > "$SCR/open.md"; ( append "$SCR/open.md" ) || recorded=0; }
   printf '**Closing record**\n- outcome: `not-reviewed:%s`\n- opening SHA: %s · result SHA: -\n- procedure digest: %s · rounds: 0 of %s\n- claims: examined 0 · unavailable 0 · skipped 0\n- nothing written to progress.json by this cycle\n' \
       "$code" "$(git -C "$REAL" rev-parse HEAD)" "$(procedure_digest)" "$CAP" > "$SCR/close.md"
   if [ $recorded -eq 1 ] && ( append "$SCR/close.md" ); then
@@ -115,6 +119,17 @@ refuse(){
   else pub_rollback   # the opening record may already have landed; leaving it uncommitted is the
                       # very thing task 31.1's invariant forbids, so the transaction is reversed here too
     say "REFUSAL-NOT-RECORDED — the refusal $code could not be written to consult_notes.md (see the grammar message above), so the log has been left exactly as it was. This is a defect in the skill, not in the project: report it through /syndicate-consult-loop."; fi
+  # Keep the evidence THIS refusal is about. $SCR is per-project, so the next cycle overwrites
+  # id.* — which is exactly how two ACCOUNT-MISMATCH refusals came to be diagnosed from nothing:
+  # the artefact that would have named the cause was destroyed by the first retry, both times.
+  # A refusal that deletes its own diagnosis makes the same defect look new every time it recurs.
+  KEEP="$WORK/failed/$(st cycle)"
+  if mkdir -p "$KEEP" 2>/dev/null; then
+    for f in "$SCR"/id.*.md "$SCR"/id.*.log "$SCR"/id.md; do [ -e "$f" ] && cp -p "$f" "$KEEP/" 2>/dev/null; done
+    printf '%s\n' "code: $code" "why: ${why:-}" "binding: $(st bind)" "declared: $(st declared)" \
+      "identity: $(st identity)" "attempts: $(st id_attempts)" "last codex exit: $(st id_rc)" > "$KEEP/refusal.txt" 2>/dev/null
+    say "evidence kept in $KEEP"
+  fi
   [ -d "$CL" ] && "$POSTURE" destroy "$CL" >/dev/null; rm -rf "$ST"; exit 3
 }
 # ---- the publication transaction (task 31.1) ----------------------------------------------------
@@ -367,15 +382,41 @@ PY
   # clone + baseline
   rm -rf "$CL"; "$POSTURE" clone "$REAL" "$CL" >/dev/null || refuse CLONE-FAILED
   put sha "$(git -C "$CL" rev-parse HEAD)"; "$POSTURE" snapshot "$REAL" "$CL" "$ST" >/dev/null
-  # identity, in aws mode: the reviewer's own server must answer with the declared account
+  # identity, in aws mode: the reviewer's own server must answer with the declared account.
+  #
+  # TWO failures look identical here and are not the same thing. This is rule 1 of the estate's own
+  # probe design — absence and ignorance are different, and both look empty — applied to the loop:
+  #   the server never REGISTERED  -> Codex answers prose ("MCP tool unavailable") and EXITS 0.
+  #                                   Nothing whatever is known about the account. A host fault.
+  #   the server answered ANOTHER account -> the binding is wrong. That is the real ACCOUNT-MISMATCH.
+  # Until 2026-09-03 both collapsed into ACCOUNT-MISMATCH "server answered 'none'", which sent the
+  # operator hunting a binding defect that did not exist — twice (2026-09-01, 2026-09-03), the second
+  # time after phase 46 had "fixed" binding resolution that was never the failing step.
+  #
+  # Measured on the box that day, 6 consecutive identity probes with the binding CORRECT and proved:
+  # 2 of 6 lost the MCP server to a startup race. A 33% infrastructure failure rate was being
+  # reported as an account mismatch. So: retry the UNKNOWN case, refuse the KNOWN-WRONG case at once.
+  # Do NOT "fix" this by retrying a wrong account — a mismatch is a verdict, not a flake.
   DECL="$(sed -n 's/.*declared=\([0-9-]*\).*/\1/p' <<<"$B")"; put declared "$DECL"; put identity "n/a"
   if [ "$MODE" = "aws-read-only" ]; then
     SRV="$(sed -n 's/.*server=\([^ ]*\).*/\1/p' <<<"$B")"
-    ( cd "$CL" && timeout 240 "$HERE" --bind-from "$REAL" exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check -o "$SCR/id.md" \
-        "Call the MCP tool call_aws from the $SRV server with: aws sts get-caller-identity. Reply with the 12-digit Account only. Do not read files." >"$SCR/id.log" 2>&1 </dev/null )
-    ACC="$(grep -oE '[0-9]{12}' "$SCR/id.md" 2>/dev/null | head -1)"; put identity "${ACC:-none}"
+    ACC=""; IDRC=0; ID_TRIES=3
+    for n in $(seq 1 $ID_TRIES); do
+      # A STALE id.md is a false PASS, and it is reachable: $SCR is per-project and never cleared,
+      # so an attempt that crashes or times out before writing would be scored against the PREVIOUS
+      # cycle's answer — the identity proof would certify an account that nothing checked this cycle.
+      rm -f "$SCR/id.md"
+      ( cd "$CL" && timeout 240 "$HERE" --bind-from "$REAL" exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check -o "$SCR/id.md" \
+          "Call the MCP tool call_aws from the $SRV server with: aws sts get-caller-identity. Reply with the 12-digit Account only. Do not read files." >"$SCR/id.$n.log" 2>&1 </dev/null ); IDRC=$?
+      cp -p "$SCR/id.md" "$SCR/id.$n.md" 2>/dev/null || :
+      ACC="$(grep -oE '[0-9]{12}' "$SCR/id.md" 2>/dev/null | head -1)"
+      put identity "${ACC:-none}"; put id_attempts "$n"; put id_rc "$IDRC"
+      [ -n "$ACC" ] && break
+      say "identity attempt $n/$ID_TRIES: the $SRV server returned no account (codex exit $IDRC)$([ "$n" -lt "$ID_TRIES" ] && printf ' — retrying' || printf '')"
+    done
     "$POSTURE" verify "$REAL" "$CL" "$ST" >/dev/null || refuse POSTURE-BREACH "during identity check"
-    [ -n "$ACC" ] && [ "$ACC" = "$DECL" ] || refuse ACCOUNT-MISMATCH "server answered '${ACC:-none}', declared '$DECL'"
+    [ -n "$ACC" ] || refuse AWS-SERVER-UNAVAILABLE "the $SRV server produced no identity in $ID_TRIES attempts (last codex exit $IDRC), so NOTHING is known about the account — this is NOT an account mismatch. The reviewer's AWS reach never started. prepare-host.sh CANNOT repair this: it writes two Codex config keys and the host entry, and nothing about AWS. Reproduce it by hand: $HERE --bind-from $REAL --dry-run exec, then run the printed command. Evidence for this cycle is kept under $WORK/failed/"
+    [ "$ACC" = "$DECL" ] || refuse ACCOUNT-MISMATCH "server answered '$ACC', declared '$DECL' — the binding names the wrong account, which is a verdict and is never retried"
   fi
   put round 0; put opened 1
   { printf '## cycle %s — %s\n\n**Opening record**\n' "$(st cycle)" "$T"
