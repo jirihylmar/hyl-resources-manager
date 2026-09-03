@@ -400,7 +400,7 @@ PY
   DECL="$(sed -n 's/.*declared=\([0-9-]*\).*/\1/p' <<<"$B")"; put declared "$DECL"; put identity "n/a"
   if [ "$MODE" = "aws-read-only" ]; then
     SRV="$(sed -n 's/.*server=\([^ ]*\).*/\1/p' <<<"$B")"
-    ACC=""; IDRC=0; ID_TRIES=3
+    ACC=""; IDRC=0; ID_TRIES=3; RAN_OK=0
     for n in $(seq 1 $ID_TRIES); do
       # A STALE id.md is a false PASS, and it is reachable: $SCR is per-project and never cleared,
       # so an attempt that crashes or times out before writing would be scored against the PREVIOUS
@@ -409,12 +409,20 @@ PY
       ( cd "$CL" && timeout 240 "$HERE" --bind-from "$REAL" exec --dangerously-bypass-approvals-and-sandbox --skip-git-repo-check -o "$SCR/id.md" \
           "Call the MCP tool call_aws from the $SRV server with: aws sts get-caller-identity. Reply with the 12-digit Account only. Do not read files." >"$SCR/id.$n.log" 2>&1 </dev/null ); IDRC=$?
       cp -p "$SCR/id.md" "$SCR/id.$n.md" 2>/dev/null || :
+      # Codex exiting 0 is what separates "the AWS server was missing" from "Codex could not run
+      # at all": a missing MCP server still leaves a completed session that answers in prose, while
+      # a Codex that cannot reach its own backend exits non-zero and writes no -o file whatever.
+      # Measured 2026-09-03 during an OpenAI incident ("Elevated errors across ChatGPT and Codex"):
+      # exit 1, no -o file. Without this the refusal blames the project's AWS reach for an outage
+      # in the reviewer — the same misattribution this whole block exists to stop, one layer up.
+      [ "$IDRC" -eq 0 ] && RAN_OK=1
       ACC="$(grep -oE '[0-9]{12}' "$SCR/id.md" 2>/dev/null | head -1)"
-      put identity "${ACC:-none}"; put id_attempts "$n"; put id_rc "$IDRC"
+      put identity "${ACC:-none}"; put id_attempts "$n"; put id_rc "$IDRC"; put id_ran_ok "$RAN_OK"
       [ -n "$ACC" ] && break
       say "identity attempt $n/$ID_TRIES: the $SRV server returned no account (codex exit $IDRC)$([ "$n" -lt "$ID_TRIES" ] && printf ' — retrying' || printf '')"
     done
     "$POSTURE" verify "$REAL" "$CL" "$ST" >/dev/null || refuse POSTURE-BREACH "during identity check"
+    [ -n "$ACC" ] || [ "$RAN_OK" -eq 1 ] || refuse REVIEWER-UNAVAILABLE "Codex itself could not complete a single run in $ID_TRIES attempts (last exit $IDRC, no output file written), so this says NOTHING about this project, its binding or its AWS reach — the reviewer never ran. Check Codex before anything here: cd /tmp && $(command -v codex || echo codex) exec --skip-git-repo-check 'Say OK'. A 404 on chatgpt.com/backend-api/codex/... is an OpenAI-side outage — see https://status.openai.com — and nothing on this host can fix it. Evidence for this cycle is kept under $WORK/failed/"
     [ -n "$ACC" ] || refuse AWS-SERVER-UNAVAILABLE "the $SRV server produced no identity in $ID_TRIES attempts (last codex exit $IDRC), so NOTHING is known about the account — this is NOT an account mismatch. The reviewer's AWS reach never started. prepare-host.sh CANNOT repair this: it writes two Codex config keys and the host entry, and nothing about AWS. Reproduce it by hand: $HERE --bind-from $REAL --dry-run exec, then run the printed command. Evidence for this cycle is kept under $WORK/failed/"
     [ "$ACC" = "$DECL" ] || refuse ACCOUNT-MISMATCH "server answered '$ACC', declared '$DECL' — the binding names the wrong account, which is a verdict and is never retried"
   fi

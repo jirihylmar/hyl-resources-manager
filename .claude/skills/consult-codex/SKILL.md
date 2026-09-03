@@ -133,8 +133,8 @@ the log as a finding against the reviewer.
 `NO-TARGET` · `NO-CODEX` · `NOT-LOGGED-IN` · `HOST-NOT-PREPARED` · `SHADOWED` ·
 `NOT-ORIGIN-LATEST` · `NOT-REVIEWABLE:progress-json` · `NOT-REVIEWABLE:no-claude-dir` ·
 `NOT-REVIEWABLE:codex-roots-present` · `NOT-REVIEWABLE:NO-REVIEWABLE-CLAIMS` · `ACCOUNT-AMBIGUOUS` ·
-`ACCOUNT-NOT-BOUND` · `ACCOUNT-MISMATCH` · `AWS-SERVER-UNAVAILABLE` · `POSTURE-BREACH` ·
-`CLONE-FAILED`. Every one is recorded in the log and committed. Absence and ignorance are
+`ACCOUNT-NOT-BOUND` · `ACCOUNT-MISMATCH` · `AWS-SERVER-UNAVAILABLE` · `REVIEWER-UNAVAILABLE` ·
+`POSTURE-BREACH` · `CLONE-FAILED`. Every one is recorded in the log and committed. Absence and ignorance are
 different, and both look empty.
 
 **`AWS-SERVER-UNAVAILABLE` vs `ACCOUNT-MISMATCH` is that rule applied to the preflight**, and it
@@ -148,6 +148,17 @@ mismatch, which is why two separate sessions went hunting a binding defect that 
 **`prepare-host.sh` cannot repair either of them** — it writes two Codex config keys and the host
 entry, and nothing whatever about AWS. The refusal record now carries the binding it judges, and
 the evidence is kept under `~/.cache/consult/<project>/failed/<cycle>/`.
+
+**`REVIEWER-UNAVAILABLE` completes the same distinction one layer up.** If Codex cannot complete a
+single run, that says nothing about this project, its binding, or its AWS reach — the reviewer never
+ran. The discriminator is the exit code: a missing MCP server still completes a session and answers
+in prose (**exit 0**), while a Codex that cannot reach its own backend **exits non-zero and writes no
+output file at all**. Measured 2026-09-03 against a live OpenAI incident (*"Elevated errors across
+ChatGPT and Codex"*): exit 1, no `-o` file, on two hosts and two CLI versions with a valid token.
+Without the distinction that outage refused `AWS-SERVER-UNAVAILABLE` and sent the operator to debug
+an MCP server that was never the problem. A 404 on `chatgpt.com/backend-api/codex/...` is upstream —
+check <https://status.openai.com>; nothing on the host can fix it, and downgrading the CLI does not
+(the same 404 reproduced on 0.151.0 and 0.153.0).
 
 **`DIRTY-CHECKOUT` was removed on 2026-08-26 and must not come back.** It refused on any modified
 file — but `consult_notes.md`, this skill's own log, lives in the tree it demanded be clean, so a
