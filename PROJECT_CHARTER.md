@@ -268,3 +268,65 @@ Work is complete only when the promised outcome is achieved; acceptance checks p
 components are verified; infrastructure, source and operating procedures agree; changes are
 committed and published; another executor can continue from a clean clone; discoveries are
 resolved, rejected or owned; and no qualification hides remaining required work.
+
+## 14. Declare what this repository manages
+
+Which repository directs which is a fact about the estate that nothing can discover. Nesting does
+not prove it — a governed repository is usually a separate clone, often on another host — and
+neither does a name, a remote or a shared prefix. So the manager declares it, and that declaration
+is the only source. It belongs in the tracked-work record because it is a property of the
+repository: it then travels with the clone instead of being re-entered on every machine, where the
+copies would drift.
+
+The declaration is a `relations` block at the root of the record, beside `git_repos`:
+
+```json
+"relations": {
+  "version": 1,
+  "members": [
+    {
+      "origin": "https://github.com/org/member.git",
+      "relation": "governed",
+      "note": "Subordinate, not a peer: scope and priorities are directed from here."
+    },
+    {
+      "path": "backend",
+      "origin": "https://github.com/org/backend.git",
+      "relation": "nested"
+    }
+  ]
+}
+```
+
+`version` is `1` and `members` is an array. Each member states a non-empty `relation` and at least
+one of `origin` — the member's git remote, which identifies it wherever it is checked out and in
+whichever URL form a host wrote it — or `path` — relative, inside this repository, no leading `/`
+and no `..` segment, which identifies it only on a host that holds this repository. Give both when
+both are true — the example above does, because a nested member is still a repository that can be
+cloned somewhere else — and always give an origin for a member that has one. `note` is
+optional prose for a human reader and is cut at 200 characters, and no more than 100 members are
+carried.
+
+A member is discarded when it names no relation word, when it names neither an origin nor a path,
+and when the only locator it gives is a path that leads out of this repository — each of those
+leaves nothing that can be joined to anything. A block whose entries are all discarded is broken,
+not empty. An unusable path beside a usable origin costs nothing, because the origin still
+identifies the member; it is still worth correcting, because it says something untrue about where
+the member lives.
+
+Declare downward only. A manager names its members; a member never names its manager. Exactly one
+repository writes each edge, so two repositories cannot contradict each other about who directs
+whom, and a correction has exactly one place to be made.
+
+The relation word is the operator's own. `nested`, `governed` and `metadata-governed` are already in
+use, a better word for a real relationship is legal, and what you write is carried through as
+written. Describe the relationship; do not force it into an existing category.
+
+`"members": []` is a positive claim that this repository manages nothing. Omitting the block claims
+nothing at all and leaves the question open. The two are never reported as the same answer, so write
+the empty array when it is true rather than leaving silence to be read as it.
+
+Nothing about a relation is taken from anywhere else. `git_repos` records where code is pushed and
+whether it arrived; a directory inside this checkout records where files happen to sit. Neither is a
+statement of governance, and neither is read as one. If this repository directs another, the
+`relations` block says so, or nothing does.

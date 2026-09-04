@@ -48,6 +48,7 @@ a fresh clone has no hook until then. When it matters, run it by hand.
 | **An `unattended` block that describes an operation incompletely** | `PROJECT_CHARTER.md` section 11 makes the difference between a watched operation and an unwatched one a fact about recorded state. A half-described operation reads as supervised and is not. Strict rather than prospective, and deliberately so: the key did not exist before 2026-09-02, so there is no historical vocabulary to tolerate. The required fields and the permitted values live in `progress_check.py` and are not restated here. |
 | **A phase that becomes TERMINAL in this commit with no completion date** | Closing a phase is the moment its date is known, and a phase closes rarely — so the rule costs almost nothing and the record keeps saying when the work ended. Prospective: a phase already terminal in the previous commit is left alone. The same rule on *tasks* is a warning, not a failure — see below. |
 | **`current_task` written as an object or a list** | Every reader stringifies this field, so a container publishes `[object Object]` as the project's current work and no task id can ever match it. Prospective, and narrowly so: it blocks at the commit where the shape ENTERS history, and warns where the previous commit already carried one (one live project has, since 2026-07-07) or where the previous commit cannot be read. A project this repository must never write may always commit the fix to its own file. |
+| **A `relations` block the collector cannot read** | `relations` is how a manager declares what it manages, and it is the *only* place that edge is written — nothing else in the estate records it. A shape the reader rejects discards the whole declaration, or silently drops one member from it, while the repository still reports success. Optional throughout: no block at all is silent, and `"members": []` is a legitimate positive claim. See *The declared relations block*. |
 
 ## The project-identity and current-work block
 
@@ -139,6 +140,64 @@ Style observations belong in an estate survey, which costs nobody a commit.
 ```
 
 Pinned by `scripts/test-progress-check-metadata-contract.sh` in the central repo.
+
+## The declared relations block
+
+`relations` is **optional**, and its absence is not a claim. A manager repository uses it to declare
+what it manages — downward only, in its own `progress.json`, never the other way round — so exactly
+one repository writes each edge and two machines can never disagree about it. The declaration
+travels with the clone, so it needs no change to any host's collector configuration.
+
+```json
+"relations": {
+  "version": 1,
+  "members": [
+    { "origin": "https://github.com/org/member.git", "relation": "governed", "note": "why" },
+    { "path": "backend", "relation": "nested" }
+  ]
+}
+```
+
+`origin` joins across hosts; `path` joins inside this repository, on a host that holds it. At least
+one of the two is required — a member naming neither can be joined to nothing. The relation word is
+**yours**: `nested`, `governed`, `metadata-governed` and `orchestrated` are in use today and a new
+one is legal, so nothing here judges it.
+
+**`"members": []` is a positive claim that this repository manages nothing; omitting the block says
+nothing at all.** Those are different facts and the dashboard keeps them apart — it will never
+render silence as a claim. So a file with no `relations` key passes in complete silence, and so does
+an explicit `null`, which the reader also treats as absence.
+
+| It **fails** on | Why that is a failure |
+|---|---|
+| `relations` present and not an object; `version` missing or not `1`; `members` missing or not an array | The **whole block** is discarded and the repository publishes as `malformed`. Every edge named inside it goes unpublished, and the operator who wrote them is told nothing. |
+| a member that is not an object; a member with no non-empty `relation`; a member naming neither `origin` nor `path` | **That member** is dropped. The declaration survives with a hole in it, which reads on the board as a manager governing fewer repositories than it says it does. |
+| a member whose ONLY locator is a `path` that is absolute or contains a `..` segment | A manager may only declare what it **contains**, so the reader discards such a path — and with no `origin` beside it the member then names nothing at all and goes unpublished. |
+| an unsubstituted `{{TEMPLATE_TOKEN}}` in a member's `relation`, `origin`, `path` or `note` | The reader treats a bare token as no value, exactly as it does for project metadata, so the member is dropped without a word anywhere. |
+
+| It **warns** about | Why that is only a warning |
+|---|---|
+| a member repeating another member's `origin` or `path` | Nothing is lost — both entries publish — the member is merely drawn twice. |
+| a `note` longer than 200 characters | Only the *published* copy is truncated; the full text stays in this file, so nothing is destroyed. |
+| an `origin` that resolves to no host plus repository path | Nothing local can reach a remote to prove an origin wrong, and the vocabulary of git remotes is open. It is reported because such an origin joins to nothing — never blocked. |
+| an unusable `path` **beside a usable `origin`** | The reader ignores the path and joins the member by its origin, reporting nothing discarded. The declaration still says something untrue about where the member lives, so it is reported — and never blocked, because blocking a commit the reader accepts is the one mistake this guard may not make. |
+| more than 100 members | The reader publishes the first 100. Nothing in this file is lost, but the count on the board becomes a cap rather than a total. |
+| an `origin` or `path` that is present but empty, or not a string | The reader treats it as no value. The member survives on its other locator; it is only reported so the operator knows one of the two joins is not working. |
+
+The split is this file's own rule applied again: **a failure has to be unambiguous, and has to cost
+the operator something they cannot see.** Both columns are read out of the implementation that
+consumes the block — `syndicate-dashboard/collector/src/progress.ts` (`parseRelations`,
+`declaredMember`, `declaredPath`) and `contracts/src/schema.ts` (`validateMember`) — rather than
+invented here. The dividing line is not "what the reader discards" but **what the reader discards
+with nothing left over**: an unusable path beside a good origin loses nothing, so it warns, while
+the same path alone loses the member, so it fails.
+
+Strict rather than prospective, on the `unattended` precedent: no `progress.json` in the estate
+carried this key before 2026-09-03, so there is no historical vocabulary to tolerate and no project
+can be blocked by a shape it has already committed. Measured 2026-09-04 across every reachable
+project on both hosts — the ones that declare pass, the ones that do not are passed in silence.
+
+Pinned by `scripts/test-progress-check-relations.sh` in the central repo.
 
 ## Plus one thing it warns about: a stale `last_updated`
 

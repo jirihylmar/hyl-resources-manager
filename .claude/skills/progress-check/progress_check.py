@@ -303,6 +303,270 @@ def parse_base(base_text):
     return base_doc if isinstance(base_doc, dict) else None
 
 
+# --- the declared relations block (2026-09-04) ------------------------------
+#: The collector truncates a published note at this length
+#: (`syndicate-dashboard/collector/src/progress.ts`, NOTE_LIMIT).
+RELATIONS_NOTE_LIMIT = 200
+
+#: The collector publishes at most this many members and silently drops the rest
+#: (`syndicate-dashboard/collector/src/progress.ts`, MEMBER_LIMIT).
+RELATIONS_MEMBER_LIMIT = 100
+
+#: The scp-style remote (`git@host:org/repo.git`) — the one git URL shape that is not a URL.
+#: Mirrors the expression in `syndicate-dashboard/contracts/src/identity.ts` (normalizeOrigin).
+_SCP_REMOTE = re.compile(r"^(?:[^@/\s]+@)?([^:/\s]+):(.+)$")
+
+
+def _typename(v):
+    """The value's type as it reads inside a sentence: 'a list', 'an int'."""
+    n = type(v).__name__
+    return f"{'an' if n[:1].lower() in 'aeiou' else 'a'} {n}"
+
+
+def origin_joins(text):
+    """False only when an origin provably normalizes to NOTHING, and so can join to nothing.
+
+    Mirrors `normalizeOrigin` (syndicate-dashboard/contracts/src/identity.ts), which needs both a
+    host and a repository path — `<host>/<path>`, `<scheme>://<host>/<path>`, or the scp form
+    `[user@]<host>:<path>`. It is deliberately NOT a URL validator: the vocabulary of git remotes
+    is open, nothing local can resolve a remote, and a complaint that fires on a working origin is
+    exactly the noise the DESIGN RULE at the top of this file forbids. It answers the one narrow
+    question the dashboard also asks, and it only ever produces a warning.
+    """
+    s = text.strip()
+    if not s:
+        return False
+    if "://" not in s:
+        m = _SCP_REMOTE.match(s)
+        if m:
+            return bool(m.group(1).strip()) and bool(m.group(2).strip().strip("/"))
+    rest = s.split("://", 1)[1] if "://" in s else s
+    host, sep, path = rest.rsplit("@", 1)[-1].partition("/")
+    return bool(host.strip()) and bool(sep) and bool(path.strip().strip("/"))
+
+
+def origin_key(text):
+    """One remote's two spellings folded together, for the duplicate comparison ONLY.
+
+    Lower-cased, trailing '/' and '.git' dropped — the same three foldings normalizeHostPath does,
+    so `…/repo.git` and `…/repo` are recognised as the one member they are.
+    """
+    s = text.strip().lower().rstrip("/")
+    return s[:-4] if s.endswith(".git") else s
+
+
+def relations_findings(doc):
+    """(failures, warnings) for the OPTIONAL root `relations` block a MANAGER declares.
+
+    THE CONTRACT, as implemented in `syndicate-dashboard/collector/src/progress.ts`
+    (parseRelations, declaredMember, declaredPath) and carried on the wire by
+    `contracts/src/schema.ts` (validateMember): a manager names its members DOWNWARD, in its own
+    progress.json, and a member never names its manager — so exactly one repository writes each
+    edge and two hosts can never contradict each other about it. `origin` joins across hosts;
+    `path` joins on a host that holds the manager.
+
+    ABSENCE IS SILENT, and that silence is load-bearing. No block at all — and an explicit `null`,
+    which the collector reads as absent — says NOTHING about what this repository manages, while
+    `"members": []` is a positive claim that it manages nothing. The dashboard keeps those two
+    apart and will never render silence as a claim; so does this check, by having no opinion
+    whatsoever about a file that does not declare.
+
+    The failures are STRICT rather than prospective, on the `unattended` precedent above: no
+    progress.json in the estate carried this key before 2026-09-03, so there is no historical
+    vocabulary to tolerate and no project can be blocked by a shape it already committed. Measured
+    2026-09-04 across all 15 local progress.json files — 2 declare, 13 do not, and every rule below
+    is silent on all 15.
+
+    NOT checked, deliberately: the relation WORD (the vocabulary is the operator's — the collector
+    carries it verbatim and so does the wire schema, so a closed set here would reject a word they
+    chose on purpose); whether a declared `path` exists on disk (that is a per-host observation the
+    collector makes, and a member may legitimately be absent from this clone); and whether an
+    `origin` resolves to a real repository (nothing local can prove that).
+    """
+    fail, warn = [], []
+    declared = doc.get("relations")
+    # Absent, and null-as-absent: the collector reads both as "this file declares nothing", which
+    # is a different fact from declaring emptiness and is never a defect.
+    if declared is None:
+        return fail, warn
+
+    if not isinstance(declared, dict):
+        fail.append(
+            f"relations is {_typename(declared)}, not an object. The block is "
+            f"{{\"version\": 1, \"members\": [...]}} — a block the collector cannot read is "
+            f"published as MALFORMED, and every member named inside it goes unpublished."
+        )
+        return fail, warn
+
+    version = declared.get("version")
+    if not (isinstance(version, (int, float)) and not isinstance(version, bool) and version == 1):
+        shown = repr(version) if "version" in declared else "missing"
+        fail.append(
+            f"relations.version is {shown}, not 1. The collector accepts version 1 and discards "
+            f"the whole block otherwise, so every member declared here would go unpublished."
+        )
+
+    members = declared.get("members")
+    if not isinstance(members, list):
+        shown = _typename(members) if "members" in declared else "missing"
+        fail.append(
+            f"relations.members is {shown}, not an array. `\"members\": []` is how a repository "
+            f"states that it manages nothing; a block whose members cannot be read states nothing "
+            f"at all and is published as MALFORMED."
+        )
+        return fail, warn
+
+    if len(members) > RELATIONS_MEMBER_LIMIT:
+        warn.append(
+            f"relations.members declares {len(members)} members and the collector publishes the "
+            f"first {RELATIONS_MEMBER_LIMIT}, so the rest are never seen and the count on the "
+            f"board is a cap rather than a total. Split the family, or declare the members that "
+            f"matter."
+        )
+
+    seen_origin, seen_path = {}, {}
+    for i, member in enumerate(members):
+        at = f"relations.members[{i}]"
+        if not isinstance(member, dict):
+            fail.append(
+                f"{at} is {_typename(member)}, not an object. Each member is an object "
+                f"naming a 'relation' plus an 'origin' and/or a 'path'."
+            )
+            continue
+
+        origin_raw, path_raw = member.get("origin"), member.get("path")
+        origin = origin_raw.strip() if isinstance(origin_raw, str) else ""
+        path = path_raw.strip() if isinstance(path_raw, str) else ""
+        # Locate the finding by what the member NAMES, not only by its index: an index moves when a
+        # member is inserted above it, and the operator is reading this in a commit message.
+        where = origin or path
+        located = f"{at} ({where})" if where else at
+
+        # The reader nulls any value that is still a bare {{TEMPLATE_TOKEN}}, exactly as it does
+        # for project metadata — so an unsubstituted token in a member's relation or locator makes
+        # the member vanish with no error anywhere. Caught here, where it can be fixed.
+        for field in ("relation", "origin", "path", "note"):
+            value = member.get(field)
+            if unresolved_template(value):
+                fail.append(
+                    f"{located}: '{field}' still contains the unsubstituted template token "
+                    f"{value.strip()!r}. The collector reads a bare token as no value at all, so "
+                    f"this member is silently dropped and its edge is never published. Substitute "
+                    f"it, or remove the key."
+                )
+
+        relation = member.get("relation")
+        if not isinstance(relation, str) or not relation.strip():
+            fail.append(
+                f"{located} has no non-empty 'relation' string. The word itself is yours — "
+                f"'nested', 'governed', 'metadata-governed' and 'orchestrated' are in use, and a "
+                f"new one is legal — but a member without one is dropped by the collector and the "
+                f"edge is never published."
+            )
+
+        if not origin and not path:
+            fail.append(
+                f"{located} declares neither an 'origin' nor a 'path', so it names nothing that "
+                f"can be joined to anything and the collector drops it. Give it the member's "
+                f"remote URL as 'origin' (it joins across hosts) or its directory inside this "
+                f"repository as 'path' (it joins on a host that holds this clone)."
+            )
+        elif origin_raw is not None and not origin:
+            shown = (
+                "empty"
+                if isinstance(origin_raw, str)
+                else f"{_typename(origin_raw)}, not a string"
+            )
+            warn.append(
+                f"{located}: 'origin' is {shown}, so the collector reads no origin here and this "
+                f"member can only ever be joined on a host that holds this clone. Give the remote "
+                f"URL as a string, or drop the key."
+            )
+        # The same fact about the other locator, reported the same way: the reader nulls a
+        # non-string path exactly as it nulls a non-string origin.
+        if path_raw is not None and not path:
+            shown = "empty" if isinstance(path_raw, str) else f"{_typename(path_raw)}, not a string"
+            warn.append(
+                f"{located}: 'path' is {shown}, so the collector reads no path here. Give the "
+                f"member's directory inside this repository as a string, or drop the key."
+            )
+
+        # An unusable path costs the member ONLY when it is the member's only locator. Beside a
+        # usable origin the collector still publishes the member (it reports dropped: 0), so
+        # failing here would block a commit the reader accepts — the one mistake this guard may
+        # never make, because it runs on every commit of progress.json in every project.
+        bad_path = None
+        if path.startswith("/"):
+            bad_path = (
+                f"'path' {path_raw!r} is absolute. A path names a location INSIDE this repository "
+                f"— relative, no leading '/' — because one repository may only declare what it "
+                f"contains."
+            )
+        elif ".." in path.split("/"):
+            bad_path = (
+                f"'path' {path_raw!r} contains a '..' segment, which points OUTSIDE this "
+                f"repository. A manager may only declare what it contains."
+            )
+        if bad_path and not origin:
+            fail.append(
+                f"{at}: {bad_path} The collector discards it, and with no 'origin' beside it "
+                f"the member names nothing at all and goes unpublished. Give the member's remote "
+                f"URL as 'origin' for a repository that is not inside this one."
+            )
+        elif bad_path:
+            warn.append(
+                f"{located}: {bad_path} The collector ignores the path and joins this member by "
+                f"its origin instead, so nothing is lost — but the path claims something untrue "
+                f"about where the member lives. Remove it, or correct it to a directory inside "
+                f"this repository."
+            )
+
+        if origin:
+            key = origin_key(origin)
+            if key in seen_origin:
+                warn.append(
+                    f"{located} repeats the origin already declared by "
+                    f"relations.members[{seen_origin[key]}]. Both entries are published, so one "
+                    f"member is drawn twice — keep one entry per member and let its 'relation' "
+                    f"say what the tie is."
+                )
+            else:
+                seen_origin[key] = i
+            if not origin_joins(origin):
+                warn.append(
+                    f"{located}: 'origin' {origin_raw!r} does not resolve to a host plus a "
+                    f"repository path, so it matches no repository on the board and the member "
+                    f"renders as an unresolved declaration. Not blocking — nothing here can reach "
+                    f"a remote to prove otherwise; use the URL git itself reports (`git remote "
+                    f"get-url origin`)."
+                )
+
+        if path and not path.startswith("/") and ".." not in path.split("/"):
+            key = path.rstrip("/")
+            if key in seen_path:
+                warn.append(
+                    f"{located} repeats the path already declared by "
+                    f"relations.members[{seen_path[key]}]. Both entries are published, so one "
+                    f"member is drawn twice — keep one entry per member and let its 'relation' "
+                    f"say what the tie is."
+                )
+            else:
+                seen_path[key] = i
+
+        note = member.get("note")
+        # The reader trims before it truncates, so a note that is only long because of trailing
+        # whitespace loses nothing.
+        if isinstance(note, str) and len(note.strip()) > RELATIONS_NOTE_LIMIT:
+            note = note.strip()
+            warn.append(
+                f"{located}: 'note' is {len(note)} characters and the collector truncates it at "
+                f"{RELATIONS_NOTE_LIMIT}, so the published note stops mid-sentence. Nothing in "
+                f"this file is lost — shorten it if the published half must read as a whole one."
+            )
+
+    return fail, warn
+
+
 # --- the four checks --------------------------------------------------------
 def check(text, base_text=None):
     """Return (failures, warnings). Empty failures == safe to commit."""
@@ -420,6 +684,14 @@ def check(text, base_text=None):
                                 f"path. This field travels between hosts in progress.json — use a "
                                 f"portable identifier; host paths belong in 'state_ref' or "
                                 f"'liveness_check', which do not travel.")
+
+    # 3b. The declared relations block — OPTIONAL, and absence stays silent. See
+    #     relations_findings() for the contract it enforces and for why it is strict rather than
+    #     prospective. It is placed here, beside the other root-key rules, because it is a fact
+    #     about this document alone: no comparison with the base commit can say anything about it.
+    rfail, rwarn = relations_findings(doc)
+    fail.extend(rfail)
+    warn.extend(rwarn)
 
     # 4. Append-only: nothing that existed before may vanish. This is the framework's
     #    oldest written rule ("NEVER remove tasks — mark superseded instead"), and until now
