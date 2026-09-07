@@ -54,6 +54,50 @@ AWSLABS = "awslabs.aws-api-mcp-server"
 AWSLABS_VERSION = "1.5.4"
 AWSLABS_PINS = ["--with", "fastmcp==3.4.7", "--with", "mcp==1.29.1"]
 
+# SUPERSEDED 2026-09-07. The two constants above describe a `uvx` launcher and are kept only
+# so an older recorded binding is still recognisable. This estate no longer launches any MCP
+# server from a venv — pipx, uvx or otherwise — and codex-here must not mint one.
+#
+# Why (docs/mcp-server-pinning-policy.md, standing decisions 2026-09-06/07): a venv-backed
+# server is a long-lived process whose memory can diverge from its pinned bytes. The
+# workstation's served 40 minutes of working calls and then failed every one for the life of
+# the process, with a perfect install on disk. Pinning cannot reach that; a container that
+# starts clean per invocation can.
+AWSLABS_IMAGE = "syndicate/aws-api-mcp-server:pinned"
+
+
+def image_id(tag):
+    """Resolve an image tag to its content address, or None if it is not on this host.
+
+    The tag is a stable name; the id is what gets written into the binding, so the
+    declaration names bytes rather than a label anyone can re-point."""
+    import subprocess
+    try:
+        r = subprocess.run(["docker", "image", "inspect", tag, "--format", "{{.Id}}"],
+                           capture_output=True, text=True, timeout=20)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    out = r.stdout.strip()
+    return out if r.returncode == 0 and out.startswith("sha256:") else None
+
+
+def container_server(home=None):
+    """The one sanctioned shape for an AWS MCP server in this estate."""
+    img = image_id(AWSLABS_IMAGE)
+    if not img:
+        return None
+    h = home or os.path.expanduser("~")
+    return {"command": "docker",
+            "args": ["run", "-i", "--rm",
+                     "-v", f"{h}/.aws:/aws:ro",
+                     "-e", "HOME=/home/mcp",
+                     "-e", "AWS_CONFIG_FILE=/aws/config",
+                     "-e", "AWS_SHARED_CREDENTIALS_FILE=/aws/credentials",
+                     "-e", "AWS_PROFILE", "-e", "AWS_REGION", "-e", "READ_OPERATIONS_ONLY",
+                     "-e", "AWS_API_MCP_WORKING_DIR=/home/mcp",
+                     "--tmpfs", "/home/mcp:rw,size=64m",
+                     img]}
+
 
 def die(code, msg):
     print(f"codex-here: {msg}", file=sys.stderr)
@@ -165,15 +209,17 @@ def main(argv):
             # adding the proved profile is per invocation and must not mutate Claude's config.
             server = dict(next(iter(cands.values())))
             server["env"] = dict(server.get("env") or {})
-        elif executable(AWSLABS):
-            server = {"command": executable(AWSLABS), "args": []}
-        elif executable("uvx"):
-            # A bare `uvx <pkg>` resolves the whole tree fresh at every launch. Pin the three
-            # packages that decide whether it imports at all — see AWSLABS_PINS above.
-            server = {"command": executable("uvx"),
-                      "args": AWSLABS_PINS + [f"{AWSLABS}=={AWSLABS_VERSION}"]}
+        elif container_server():
+            # The ONLY launcher this estate mints. The pipx-console-binary and `uvx` fallbacks
+            # that stood here until 2026-09-07 both created a venv-backed server; see the
+            # AWSLABS_IMAGE note above for why that shape is prohibited.
+            server = container_server()
         else:
-            die(3, f"ACCOUNT-NOT-BOUND — profile {match} matches {declared}, but neither {AWSLABS} nor uvx is on PATH to run the server")
+            die(3, f"ACCOUNT-NOT-BOUND — profile {match} matches {declared}, but the image "
+                   f"{AWSLABS_IMAGE} is not on this host. Build it from "
+                   f"config/mcp-image/aws-api-mcp-server/ in syndicate-playbooks-examples, or "
+                   f"`docker load` it from a host that has it. This estate does not launch MCP "
+                   f"servers from venvs — see docs/mcp-server-pinning-policy.md.")
         server.setdefault("env", {})
         server["env"].update({"AWS_PROFILE": match, "AWS_REGION": region})
         bound = (f"aws-scan-{str(declared)[-3:]}", server)

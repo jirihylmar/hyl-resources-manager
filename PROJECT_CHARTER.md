@@ -141,6 +141,36 @@ not a final implementation. Work remains open until an emergency change is promo
 authoritative source and redeployed, or reverted and verified absent. A successful deployment does
 not prove reconciliation. Temporary resources have an owner, budget context, purpose and expiry.
 
+### Tool environments are built, not assembled in place
+
+**No MCP server is launched from a virtual environment** — not pipx, not `uvx`, not a project
+`.venv`, not a `~/.local/bin` console script fronting one. Every launched server is a container
+referenced by content address. Set by the operator, 2026-09-07.
+
+This is § 9 applied to tooling, and it was learned the same way § 9 was. A venv assembled in place
+is a direct change to a machine: its contents are decided by whoever ran `install` last and by what
+the index happened to serve that day, and nothing versioned records what it produced. Three
+measured consequences, of which only the first is fixed by pinning versions:
+
+1. **It re-resolves.** `uvx <pkg>` resolves its whole tree at every launch.
+2. **Its pin cannot travel.** A pipx pin lives in that host's recorded `--pip-args`, frequently as
+   an absolute path — machine state, not source.
+3. **Its running process drifts from its own bytes.** A perfect, matched, pinned install served 40
+   minutes of working calls and then failed every one for the rest of the process's life. And a
+   host was found running `...@latest` servers *six days after* the config that spawned them had
+   been pinned: the declaration was pinned, the process was not, because nothing restarted it.
+
+A container is the versioned operational mechanism this section already requires: resolution
+happens once, at build, behind an assertion that the result actually works; the artifact is
+addressed by content; and it starts clean on every invocation, so what runs and what is declared
+cannot diverge.
+
+**A project's own application venv is not covered by this.** A CDK app or a test harness may use
+one. The rule is about what *launches an MCP server*.
+
+Reference: `docs/mcp-server-pinning-policy.md` § 9 in `syndicate-playbooks-examples`. Enforced by
+`scripts/mcp-pin-audit.sh` (exit 2 on a violation) and the estate probe `venv-launcher`.
+
 ## 10. Verify reality
 
 Completion evidence tests the real outcome against real systems or representative real data.
