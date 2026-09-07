@@ -1,7 +1,7 @@
 {
   "_comment": "Written by /distribute-defaults. Proves the engine delivered these exact bytes. /repo-hygiene reads this BEFORE classifying any default as hand-edited. A hash match here means DELIVERED, whatever the git state. Never edit by hand.",
-  "written_at": "2026-09-07T06:57:04Z",
-  "canonical_commit": "dfe821d4f100cf997a9c736dcdbab68b7a39218d",
+  "written_at": "2026-09-07T15:03:43Z",
+  "canonical_commit": "1692cbddaa28a8806d227893a457de8451d55e80",
   "files": {
     ".claude/commands/add-work.md": { "sha256": "2f33f6c65d598c4631401988c4fb05ba3e60926c7269d1f3d8898a3360546e40", "source": "canonical" },
     ".claude/commands/check-aws.md": { "sha256": "24178c91d34397b4deb7714d8779e7db28d4fa288a4cdccbf79512b4c9a8818c", "source": "canonical" },
@@ -17,6 +17,8 @@
     ".claude/skills/server-report/SKILL.md": { "sha256": "80cfaa9a3211f29e28833d52f8484c7f05b8f5e457761f76c8828b7d22807ef5", "source": "canonical" },
     ".claude/skills/syndicate-connect/connect.sh": { "sha256": "d82c836496aa9bc307babefe0143afbcfec2cf89f099852d45fd7a5873d3ebb1", "source": "canonical" },
     ".claude/skills/syndicate-connect/SKILL.md": { "sha256": "0c74edac4dd578892ae495d4afe4d64f40b3d0f73852cdbb35dae3ca1bf38c75", "source": "canonical" },
+    ".claude/skills/overlay-check/SKILL.md": { "sha256": "76e4fa640976fcf98443df3d87c5eabf73ae119ed7ff9bc93ade26f64f9f68e7", "source": "canonical" },
+    ".claude/skills/overlay-check/overlay_check.py": { "sha256": "1e738402c08a2c4b92d054c03fed87f01570a375e8353586e3822cec57b80570", "source": "canonical" },
     ".claude/skills/progress-check/progress_check.py": { "sha256": "92e1d3d76df0e97dac6f69bd5322d422989499251cac6b6aa9540780148b8b23", "source": "canonical" },
     ".claude/skills/progress-check/SKILL.md": { "sha256": "2cad943720dcbbe4f557518223948cabf3c493dc1d9de93a7c57397e925cc3cb", "source": "canonical" },
     ".claude/skills/unattended-check/SKILL.md": { "sha256": "c1afab97a625efa8d8c85984d7a37520fb875936d0834daf3a2f2e1c091261a2", "source": "canonical" },
@@ -40,6 +42,7 @@
     ".agents/skills/consult-claude/SKILL.md": { "sha256": "ff6ec781845f3de1ab5a75ebfb466877b9672b526d8f3387c31a825d99ba9143", "source": "canonical" },
     ".agents/skills/syndicate-refresh-remote/SKILL.md": { "sha256": "95ed6c33cebd309994cd91357b48c503487912294bfb746416c736ea4995153e", "source": "canonical" },
     ".agents/skills/setup/SKILL.md": { "sha256": "ee182f03c7928f108622c78451c50cdc0e6d609303e1775284c6b8062cf5e299", "source": "canonical" },
+    ".agents/skills/overlay-check/SKILL.md": { "sha256": "7b3d77b200c3f1fd5cd0f9b819f9cbff4c704975aca52f5163051e22da0c1a4a", "source": "canonical" },
     ".agents/skills/progress-check/SKILL.md": { "sha256": "c7ae46f45fd90576156f5c682a737b68896f54bbb37cff29d82921b66041a19e", "source": "canonical" },
     ".agents/skills/add-work/SKILL.md": { "sha256": "95ae7a07b4fea4d9b116bb5a239dec85af4e40a0ff45df07c3d51e9ca53be9d3", "source": "canonical" },
     ".agents/skills/check-aws/SKILL.md": { "sha256": "5cc6cddfdd3bdd783d409d0f1adb2db54360ab421e22b324296222f4e9303c2b", "source": "canonical" },
