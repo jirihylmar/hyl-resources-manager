@@ -8,6 +8,21 @@ description: Start or resume work in a syndicate playbook project by synchronizi
 Read `PROJECT_CHARTER.md`, `AGENTS.md` and `CLAUDE.md` completely when they exist. Then read
 `.claude/commands/start-session.md` completely and execute its procedure as the canonical workflow.
 
+**When they conflict, `PROJECT_CHARTER.md` governs.** It is the executor-neutral delivery contract
+and it is centrally maintained; a project's own `CLAUDE.md` is older prose that no one updates when
+the contract changes. Claude's copy of this procedure has carried that precedence rule since it was
+written; this one did not, and the gap is not hypothetical.
+
+> **Measured 2026-09-07.** Eleven project `CLAUDE.md` files across both hosts carry a section
+> *"No Virtual Environments"* whose prescribed remedy is `pip3 install package` — a bare user-site
+> install. That is not the cure for a venv, it is a venv you cannot see: it lands in
+> `~/.local/lib/pythonX.Y/site-packages`, global to the interpreter, shadowing every environment on
+> the host. On the box it had accumulated 153 packages including `mcp` 2.0.0 and `boto3` 1.43.62 —
+> and when a container mounted that home, the host's packages won and the MCP server died with
+> `ImportError: FastMCP server support is not installed`. Charter § 9 now states the actual rule
+> (containers, by content address). Without this precedence line you would read both and have no
+> instruction about which one to follow.
+
 The canonical file is shared with existing Claude executors. Ignore its YAML `allowed-tools` list
 and translate Claude-specific tool identifiers to equivalent available Codex capabilities. A slash
 command named in that procedure means its corresponding repository skill when one exists; for
