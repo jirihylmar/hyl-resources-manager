@@ -165,9 +165,13 @@ def is_absent(v):
                     `{{CREATION_DATE}}` as last_updated and on task 0.1, and both example playbooks
                     carry it, so every freshly bootstrapped project would otherwise open its life
                     with a warning about a value the framework itself put there. Substituting it is
-                    the project's own job at bootstrap — nothing outside the project may fill it in
-                    — and once the project has a committed base the required-root-metadata rule in
-                    check() blocks the token outright instead of merely tolerating it here.
+                    the project's own job at bootstrap — nothing outside the project may fill it in.
+                    For `project`, `description` and `created_at` the required-root-metadata rule in
+                    check() blocks the token outright once the project has a committed base; for
+                    `last_updated` and the completion dates NOTHING blocks it — it is tolerated here
+                    as absence, and the DATE-ONLY warning stays silent on it too (V15c). Verified
+                    2026-09-15: `{{CREATION_DATE}}` in last_updated, checked against a committed
+                    base, is "progress-check: ok", rc 0.
     Calling either malformed would put a false warning on a large share of the estate, and a checker
     that cries wolf is a checker that gets switched off.
     """
@@ -904,6 +908,27 @@ def check(text, base_text=None):
     lu = iso_date(lu_raw)
     if lu is None and not is_absent(lu_raw):
         malformed.append(f"last_updated={lu_raw!r}")
+    # DATE-ONLY — `last_updated` is a bare calendar date. Not malformed: iso_date() accepts it and
+    # the freshness comparison below works at day precision. But it carries no time, and the estate
+    # dashboard's rule (since 2026-09-15) is to render this field as "project updated" at exactly
+    # the precision recorded — a date without a time is shown as that date only, never as minutes
+    # or hours ago. Measured 2026-09-15: 29 of 36 rows on the board read as a midnight-exact
+    # instant, 28 of them from a bare date the collector had expanded to a midnight the source
+    # never stated, and the engine repo's own row read "16 hours ago" twenty minutes after a push.
+    # A WARNING, on the same charter reasoning as STALE below: nothing is
+    # lost and exit stays 0. Fires only on a value that IS a real date — a calendar-invalid one is
+    # already named in the malformed warning and gets no second sentence. Judged on the TRIMMED
+    # string: _ISO_DATE accepts '2026-09-15 ' (a space is a permitted separator with nothing after
+    # it) and '$' matches before a trailing newline, so both reach here as real dates, and the
+    # collector and the survey probe both trim before classifying — three measurements of one rule
+    # must not disagree on whitespace. Found by the reviewer, 2026-09-15.
+    lu_bare = lu_raw.strip() if isinstance(lu_raw, str) else ""
+    if lu is not None and re.fullmatch(r"\d{4}-\d{2}-\d{2}", lu_bare):
+        warn.append(
+            f"DATE-ONLY last_updated: '{lu_bare}' carries no time. The estate dashboard's rule is to "
+            f"show it as that date only, never as minutes or hours ago. Write an instant: "
+            f"date -u +%Y-%m-%dT%H:%M:%SZ"
+        )
     for label, key, raw in completion_fields(doc):
         # absence (null, or an unsubstituted {{placeholder}}) is not malformation — see is_absent()
         if is_absent(raw):

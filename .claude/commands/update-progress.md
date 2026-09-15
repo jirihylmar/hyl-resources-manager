@@ -54,7 +54,7 @@ the stopping posture—of ending a session.
 - Add `verify_result` field
 - Add NEW tasks with NEW IDs
 - Update `current_task` pointer
-- Update `last_updated` timestamp
+- Update `last_updated` timestamp — a UTC instant, never a bare date (Step 3)
 - Update `last_session_summary`
 - **Set a phase's `status` — but ONLY as the reconciliation in Step 3b, never as a free edit.**
   This entry exists because its absence made Step 3a unreachable: 3a is triggered by a phase's
@@ -357,6 +357,16 @@ session_notes. Two consecutive skips make the slice MANDATORY at the next sessio
   }
 }
 ```
+
+**`last_updated` is an INSTANT, never a bare date.** Set it to the current UTC time from
+`date -u +%Y-%m-%dT%H:%M:%SZ` — the `T…Z` is part of the value; `2026-09-15` alone is a date, not
+a time. Why: the estate dashboard's rule is to render this field as *"project updated"* at exactly
+the precision recorded, so a date without a time is shown as that date only and never reads as
+minutes or hours ago — the project looks untouched all day, whatever it did. Measured 2026-09-15:
+29 of 36 rows on the board read as a midnight-exact instant, 28 of them from a bare date the
+collector had expanded to a midnight the source never stated, and this engine repo's own row read
+*"16 hours ago"* twenty minutes after a push. `/progress-check` warns `DATE-ONLY last_updated` on
+a bare date at commit time; the remedy is that one command, not a hand-typed time.
 
 ### 3b. Reconcile every phase's status against its own tasks (before 3a, every session)
 

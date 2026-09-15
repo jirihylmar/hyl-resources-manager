@@ -294,7 +294,7 @@ Create based on gathered info:
   "project": "{project_name}",
   "description": "{description}",
   "created_at": "{today}",
-  "last_updated": "{today}",
+  "last_updated": "{now_utc}",
   "last_session_summary": "Workflow injected into existing project",
 
   "context_hints": {
@@ -329,6 +329,12 @@ Create based on gathered info:
   "blockers": []
 }
 ```
+
+`{now_utc}` is the current UTC instant from `date -u +%Y-%m-%dT%H:%M:%SZ`, never a bare date:
+the estate dashboard's rule is to render `last_updated` at the precision recorded, so a date
+without a time is shown as that date only and never as minutes or hours ago (`/update-progress`
+Step 3 states the rule; `/progress-check` warns `DATE-ONLY` on a bare date at commit time).
+`{today}` in `created_at` and `started_at` may stay a calendar date.
 
 Write to `progress.json`.
 

@@ -358,6 +358,11 @@ If no `progress.json`, create from existing spec:
 }
 ```
 
+`{now}` is the current UTC instant from `date -u +%Y-%m-%dT%H:%M:%SZ`, never a bare date — the
+estate dashboard's rule is to render `last_updated` at the precision recorded, so a date without a
+time is shown as that date only and never as minutes or hours ago (`/update-progress` Step 3
+states the rule; `/progress-check` warns `DATE-ONLY` on a bare date at commit time).
+
 Ask user to define tasks or read from existing task documentation.
 
 ### 4. Create executor instruction entries (if missing)

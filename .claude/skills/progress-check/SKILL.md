@@ -234,8 +234,22 @@ blocking this commit"*. Until 2026-08-25 `--quiet` swallowed warnings outright, 
 the only automated caller — passes `--quiet`, so a warning was in practice printed to nobody at
 the one moment it was written for.
 
-Pinned by `scripts/test-progress-check-freshness.sh` in the central repo (16 cases, including the
-shipped bootstrap and both example playbooks staying silent).
+**And, since 2026-09-15, a date-only `last_updated`.** A bare `YYYY-MM-DD` is a valid date and
+takes part in the comparison above, but it carries no time, and the estate dashboard's rule is to
+render this field as *"project updated"* at exactly the precision recorded — a date without a time
+is shown as that date only, never as minutes or hours ago. Measured 2026-09-15: 29 of 36 rows on
+the board read as a midnight-exact instant, 28 of them from a bare date the collector had expanded
+to a midnight the source never stated, and the engine repo's own row read "16 hours ago" twenty
+minutes after a push. The warning is
+`DATE-ONLY last_updated`; it names the value, and the remedy it prints is
+`date -u +%Y-%m-%dT%H:%M:%SZ` — the same command `/update-progress` Step 3 now prescribes. Same
+charter as STALE: a warning, never a failure. A `null`, an unsubstituted `{{CREATION_DATE}}`, a
+timestamp of any form, or a value that is not a real calendar date does not fire it (the last is
+already named as malformed). Surrounding whitespace is ignored — `"2026-09-15 "` is the bare date
+to the dashboard's collector and to the survey probe, so it is the bare date here too.
+
+Pinned by `scripts/test-progress-check-freshness.sh` in the central repo — including the shipped
+bootstrap and both example playbooks staying silent, and the DATE-ONLY cases.
 
 ## Terminal-task drift warning
 
