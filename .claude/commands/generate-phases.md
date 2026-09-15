@@ -348,8 +348,7 @@ After running this command:
 - progress.json (created)
 
 ### Ready to Start
-- Run `/start-session` to begin Phase 1
-- First task: 1.1 - [name]
+- Continuing with task 1.1 - [name]
 ```
 
 ---
@@ -357,8 +356,11 @@ After running this command:
 ## Notes
 
 - Run this ONCE after specification approval, before starting implementation
-- DO NOT code during this session - only generate phases
-- Commit phase files and end session
-- Coding starts in next session with `/start-session`
+- Generate phases before coding; do not interleave the two
+- Commit the phase files, then **continue with task 1.1 in the same session**. Generating tasks
+  is a task boundary, not a session boundary (project CLAUDE.md, *Working Style*): announce the
+  transition and keep going. Yield only for a declared checkpoint, a blocker, or an explicit stop.
+  (Until 2026-09-15 this note said "end session", and a project session reported the
+  contradiction with its own rules — it followed the rules, correctly.)
 - If tasks need adjustment later, use `/add-work` to add tasks with sub-IDs
 - Always use actual environment values, not placeholders

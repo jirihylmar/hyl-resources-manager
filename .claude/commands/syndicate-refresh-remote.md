@@ -304,6 +304,7 @@ The skill above is the conversational front-end that:
 | Symptom | Likely cause | Fix |
 |---|---|---|
 | `syndicate-refresh-remote: command not found` | Binary not installed on this machine | `~/syndicate-remote/scripts/install.sh` |
+| `box.json` exists but is **empty (0 bytes)** | `install.sh` generated the shim from a device-named file that had no content, or the stub was never filled | Not a parse error and not "no remote": fill `~/.syndicate-remote-secrets/<device>.json`, re-run `install.sh`. `estate-reach` reports this file as `EMPTY (0 bytes)`. If this project does not use the remote box, the empty file is harmless — say so and move on. |
 | `no remote configured at ~/.syndicate-remote-secrets/box.json` | First-time setup not done | Run install.sh; it creates a stub. Fill in the **device-named** file, then re-run install.sh to regenerate the shim the binary reads. |
 | `ssh: connect to host … port 22: Operation timed out` | The host is down, or the network path to it is | Check the host is up. **Do NOT "fix" this by putting an IP in `host`** — see the ⚠ below. |
 | `Connection refused` | Something is listening-but-refusing, or a firewall on the host rejects your source address | Check the host's own firewall (e.g. `ufw status`) and that sshd is running. This is a host-side answer, not a config edit. |
